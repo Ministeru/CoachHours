@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coach Hours">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Coach Hours</title>
+<style>
+  :root {
+    --bg: #111111;
+    --bg2: #1a1a1a;
+    --bg3: #222222;
+    --border: rgba(255,255,255,0.1);
+    --border2: rgba(255,255,255,0.18);
+    --text: #f0f0f0;
+    --text2: #999999;
+    --text3: #555555;
+    --accent: #ffffff;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.12);
+    --blue: #60a5fa;
+    --blue-bg: rgba(96,165,250,0.12);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* SCREENS */
+  .screen { display: none; flex: 1; flex-direction: column; padding-bottom: 88px; overflow-y: auto; }
+  .screen.active { display: flex; }
+
+  /* HEADER */
+  .header { padding: 56px 20px 16px; }
+  .header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
+  .header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin: 0 16px 12px; }
+  .card-label { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* TEXTAREA */
+  textarea {
+    width: 100%;
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px;
+    font-size: 15px; line-height: 1.7; color: var(--text);
+    resize: none; font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: var(--border2); }
+  textarea::placeholder { color: var(--text3); }
+  #log-input { min-height: 160px; }
+
+  /* INPUTS */
+  input[type="text"], input[type="number"] {
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 9px 12px;
+    font-size: 14px; color: var(--text); font-family: inherit;
+    width: 100%;
+  }
+  input:focus { outline: none; border-color: var(--border2); }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%; padding: 14px; border: none;
+    border-radius: var(--radius-sm); font-size: 15px;
+    font-weight: 600; cursor: pointer; margin-top: 10px;
+    transition: opacity 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn:active { opacity: 0.8; transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #111; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border); }
+  .btn-whatsapp {
+    background: #25D366; color: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-whatsapp svg { width: 20px; height: 20px; fill: #fff; flex-shrink: 0; }
+  .btn-icon {
+    background: none; border: none; cursor: pointer;
+    color: var(--text2); font-size: 18px; padding: 4px 8px;
+    font-family: inherit;
+  }
+  .btn-icon:active { color: var(--red); }
+
+  /* RATES */
+  .rate-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-row label { flex: 1; font-size: 14px; color: var(--text); }
+  .rate-row input { width: 85px; text-align: right; }
+  .rate-suffix { font-size: 13px; color: var(--text2); white-space: nowrap; }
+
+  /* KEYWORD LISTS */
+  .keyword-list { display: flex; flex-direction: column; gap: 8px; }
+  .keyword-row { display: flex; align-items: center; gap: 8px; }
+  .keyword-row input { flex: 1; }
+  .keyword-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 10px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  }
+  .tag-group { background: var(--blue-bg); color: var(--blue); }
+  .tag-private { background: var(--green-bg); color: var(--green); }
+  .tag-remove { cursor: pointer; font-size: 14px; opacity: 0.7; line-height: 1; }
+  .tag-remove:hover { opacity: 1; }
+  .add-keyword-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-keyword-row input { flex: 1; }
+  .add-keyword-row button {
+    padding: 9px 14px; background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 13px;
+    cursor: pointer; white-space: nowrap; font-family: inherit;
+  }
+  .add-keyword-row button:active { opacity: 0.7; }
+
+  /* STATS */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
+  .stat { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 8px; text-align: center; }
+  .stat .val { font-size: 20px; font-weight: 600; color: var(--text); }
+  .stat .lbl { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+  /* SESSION ROWS */
+  .session-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .session-row:last-child { border-bottom: none; }
+  .session-time { font-size: 12px; color: var(--text2); }
+  .session-name { font-size: 14px; font-weight: 500; margin-top: 2px; }
+  .session-right { text-align: right; flex-shrink: 0; margin-left: 8px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .badge-group { background: var(--blue-bg); color: var(--blue); }
+  .badge-private { background: var(--green-bg); color: var(--green); }
+  .badge-unknown { background: rgba(255,255,255,0.08); color: var(--text2); }
+  .session-earn { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* OUTPUT MESSAGE */
+  .output-box {
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px;
+    font-size: 14px; line-height: 1.9; white-space: pre-wrap;
+    color: var(--text); direction: rtl; text-align: right;
+    font-family: inherit;
+  }
+  .copy-fb { text-align: center; font-size: 13px; color: var(--green); margin-top: 6px; min-height: 20px; }
+
+  /* HISTORY */
+  .history-item { padding: 12px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .history-item:last-child { border-bottom: none; }
+  .history-item:active { opacity: 0.7; }
+  .hi-date { font-size: 14px; font-weight: 500; }
+  .hi-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 24px 0; }
+
+  /* ERROR */
+  .error-box { background: var(--red-bg); color: var(--red); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-top: 8px; display: none; }
+
+  /* BREAKDOWN */
+  .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-label { font-size: 14px; }
+  .breakdown-val { font-size: 14px; font-weight: 500; }
+
+  /* SETTINGS SECTION DIVIDER */
+  .section-divider { font-size: 13px; font-weight: 600; color: var(--text2); margin: 4px 16px 8px; padding-top: 4px; }
+
+  /* BOTTOM NAV */
+  .nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: rgba(17,17,17,0.92);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 0.5px solid var(--border);
+    display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; background: none; border: none; cursor: pointer;
+    color: var(--text3); padding: 6px 0; transition: color 0.15s;
+    font-family: inherit;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 22px; height: 22px; }
+  .nav-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.02em; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── LOG SCREEN ── -->
+  <div id="screen-log" class="screen active">
+    <div class="header">
+      <h1>Coach Hours</h1>
+      <p>Enter your session log</p>
+    </div>
+    <div class="card">
+      <textarea id="log-input" placeholder="Enter message"></textarea>
+      <div id="parse-error" class="error-box"></div>
+      <button class="btn btn-primary" onclick="parseLog()">Calculate →</button>
+    </div>
+  </div>
+
+  <!-- ── RESULT SCREEN ── -->
+  <div id="screen-result" class="screen">
+    <div class="header">
+      <h1>Summary</h1>
+      <p id="result-subtitle"></p>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="val" id="stat-hours">-</div><div class="lbl">Hours</div></div>
+      <div class="stat"><div class="val" id="stat-sessions">-</div><div class="lbl">Sessions</div></div>
+      <div class="stat"><div class="val" id="stat-earn">-</div><div class="lbl">Earned ₪</div></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Sessions</div>
+      <div id="session-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Message for your boss</div>
+      <div class="output-box" id="output-msg"></div>
+      <div class="copy-fb" id="copy-fb"></div>
+      <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Send via WhatsApp
+      </button>
+      <button class="btn btn-secondary" onclick="copyMsg()">Copy message</button>
+      <button class="btn btn-secondary" style="margin-top:6px" onclick="showScreen('log')">← New log</button>
+    </div>
+  </div>
+
+  <!-- ── HISTORY SCREEN ── -->
+  <div id="screen-history" class="screen">
+    <div class="header">
+      <h1>History</h1>
+      <p>All logged days</p>
+    </div>
+    <div class="card">
+      <div id="history-list"><div class="empty">No days logged yet</div></div>
+    </div>
+  </div>
+
+  <!-- ── OVERVIEW SCREEN ── -->
+  <div id="screen-overview" class="screen">
+    <div class="header">
+      <h1>Overview</h1>
+      <p>All-time stats</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="val" id="sum-hours">-</div><div class="lbl">Total hours</div></div>
+      <div class="stat"><div class="val" id="sum-days">-</div><div class="lbl">Days</div></div>
+      <div class="stat"><div class="val" id="sum-earn">-</div><div class="lbl">Total ₪</div></div>
+    </div>
+    <div class="card">
+      <div class="card-label">By session type</div>
+      <div id="type-breakdown"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Effective hourly rates</div>
+      <div id="per-hour-check"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Monthly breakdown</div>
+      <div id="monthly-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS SCREEN ── -->
+  <div id="screen-settings" class="screen">
+    <div class="header">
+      <h1>Settings</h1>
+      <p>Rates & session rules</p>
+    </div>
+
+    <!-- RATES -->
+    <div class="card">
+      <div class="card-label">Global rates</div>
+      <div class="rate-row">
+        <label>Private lesson</label>
+        <input type="number" id="rate-private" value="80" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">₪ / hour</span>
+      </div>
+      <div class="rate-row">
+        <label>Group lesson</label>
+        <input type="number" id="rate-group" value="50" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">₪ / hour</span>
+      </div>
+    </div>
+
+    <!-- GROUP KEYWORDS -->
+    <div class="card">
+      <div class="card-label">Group lesson keywords</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Group</p>
+      <div class="keyword-tags" id="tags-group"></div>
+      <div class="add-keyword-row">
+        <input type="text" id="input-group-kw" placeholder="e.g. קבוצה, group, צליל..." onkeydown="if(event.key==='Enter') addKeyword('group')">
+        <button onclick="addKeyword('group')">+ Add</button>
+      </div>
+    </div>
+
+    <!-- PRIVATE KEYWORDS -->
+    <div class="card">
+      <div class="card-label">Private lesson keywords</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Private. If neither list matches, it defaults to Private.</p>
+      <div class="keyword-tags" id="tags-private"></div>
+      <div class="add-keyword-row">
+        <input type="text" id="input-private-kw" placeholder="e.g. פרטי, private..." onkeydown="if(event.key==='Enter') addKeyword('private')">
+        <button onclick="addKeyword('private')">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-log" onclick="showScreen('log')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Log</span>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-btn" id="nav-overview" onclick="showScreen('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Overview</span>
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let appHistory = JSON.parse(localStorage.getItem('ch_history') || '[]');
+let currentResult = null;
+
+const defaultSettings = {
+  ratePrivate: 80,
+  rateGroup: 50,
+  groupKeywords: ['קבוצ', 'group', 'גרופ'],
+  privateKeywords: []
+};
+let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('ch_settings') || '{}'));
+
+// ─── INIT ─────────────────────────────────────────────────
+function init() {
+  document.getElementById('rate-private').value = settings.ratePrivate;
+  document.getElementById('rate-group').value = settings.rateGroup;
+  renderKeywordTags('group');
+  renderKeywordTags('private');
+}
+init();
+
+// ─── SETTINGS ─────────────────────────────────────────────
+function saveSettings() {
+  settings.ratePrivate = parseFloat(document.getElementById('rate-private').value) || 80;
+  settings.rateGroup = parseFloat(document.getElementById('rate-group').value) || 50;
+  localStorage.setItem('ch_settings', JSON.stringify(settings));
+}
+
+function addKeyword(type) {
+  const inputId = type === 'group' ? 'input-group-kw' : 'input-private-kw';
+  const val = document.getElementById(inputId).value.trim();
+  if (!val) return;
+  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
+  if (!settings[key].includes(val)) {
+    settings[key].push(val);
+    saveSettings();
+    renderKeywordTags(type);
+  }
+  document.getElementById(inputId).value = '';
+}
+
+function removeKeyword(type, word) {
+  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
+  settings[key] = settings[key].filter(k => k !== word);
+  saveSettings();
+  renderKeywordTags(type);
+}
+
+function renderKeywordTags(type) {
+  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
+  const containerId = type === 'group' ? 'tags-group' : 'tags-private';
+  const cls = type === 'group' ? 'tag-group' : 'tag-private';
+  const el = document.getElementById(containerId);
+  if (!settings[key].length) { el.innerHTML = ''; return; }
+  el.innerHTML = settings[key].map(w => `
+    <span class="tag ${cls}">
+      ${w}
+      <span class="tag-remove" onclick="removeKeyword('${type}','${w.replace(/'/g,"\\'")}')">×</span>
+    </span>
+  `).join('');
+}
+
+// ─── SESSION TYPE DETECTION ───────────────────────────────
+function getSessionType(name) {
+  const lower = name.toLowerCase();
+  for (const kw of settings.groupKeywords) {
+    if (lower.includes(kw.toLowerCase())) return 'group';
+  }
+  for (const kw of settings.privateKeywords) {
+    if (lower.includes(kw.toLowerCase())) return 'private';
+  }
+  // Default: if no group keyword matched → private
+  return 'private';
+}
+
+// ─── PARSE ────────────────────────────────────────────────
+function timeToMins(t) {
+  const [h, m] = t.trim().split(':').map(Number);
+  return h * 60 + m;
+}
+
+function fmtHours(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? h + ':' + String(m).padStart(2, '0') : String(h);
+}
+
+function parseLog() {
+  const raw = document.getElementById('log-input').value.trim();
+  const errEl = document.getElementById('parse-error');
+  errEl.style.display = 'none';
+
+  if (!raw) {
+    errEl.textContent = 'Please enter your session log.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const lines = raw.split('\n').map(l => l.replace(/\*/g, '').trim()).filter(Boolean);
+  let dateStr = '', bossName = '';
+  const sessions = [];
+  const sessionRe = /^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s*[-–]\s*(.+)$/;
+
+  for (const line of lines) {
+    if (sessionRe.test(line)) {
+      const m = line.match(sessionRe);
+      const start = m[1].trim();
+      const end = m[2].trim();
+      const name = m[3].trim();
+      const durMins = timeToMins(end) - timeToMins(start);
+      if (durMins <= 0) continue;
+      const type = getSessionType(name);
+      const rate = type === 'group' ? settings.rateGroup : settings.ratePrivate;
+      const earned = (durMins / 60) * rate;
+      sessions.push({ start, end, name, durMins, type, earned });
+    } else if (!dateStr && /יום|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{2}\/\d{2}\/\d{4}/i.test(line)) {
+      dateStr = line.replace(/:$/, '').trim();
+    } else if (dateStr && !bossName && !sessionRe.test(line)) {
+      bossName = line.replace(/:$/, '').trim();
+    }
+  }
+
+  if (!sessions.length) {
+    errEl.textContent = 'No sessions found. Make sure format is: HH:MM - HH:MM - name';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const totalMins = sessions.reduce((a, s) => a + s.durMins, 0);
+  const totalEarned = sessions.reduce((a, s) => a + s.earned, 0);
+
+  // Build output message — preserve original lines exactly, just add סה״כ
+  let msg = '';
+  if (dateStr) msg += '*' + dateStr + ':*\n';
+  if (bossName) msg += '*' + bossName + ':*\n';
+  for (const s of sessions) {
+    msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
+  }
+  msg += 'סה״כ: ' + fmtHours(totalMins) + ' שעות ' + Math.round(totalEarned) + ' ₪ + נסיעות';
+
+  currentResult = { dateStr, bossName, sessions, totalMins, totalEarned, msg, ts: Date.now() };
+
+  // Save / update history
+  const key = (dateStr + bossName).trim();
+  const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === key);
+  if (idx >= 0) appHistory[idx] = currentResult;
+  else appHistory.unshift(currentResult);
+  localStorage.setItem('ch_history', JSON.stringify(appHistory));
+
+  renderResult(currentResult);
+  showScreen('result');
+}
+
+// ─── RENDER RESULT ────────────────────────────────────────
+function renderResult(r) {
+  document.getElementById('result-subtitle').textContent =
+    (r.dateStr || '') + (r.bossName ? ' · ' + r.bossName : '');
+  document.getElementById('stat-hours').textContent = fmtHours(r.totalMins);
+  document.getElementById('stat-sessions').textContent = r.sessions.length;
+  document.getElementById('stat-earn').textContent = Math.round(r.totalEarned) + '₪';
+
+  document.getElementById('session-list').innerHTML = r.sessions.map(s => `
+    <div class="session-row">
+      <div>
+        <div class="session-time">${s.start} – ${s.end} (${s.durMins}min)</div>
+        <div class="session-name">${s.name}</div>
+      </div>
+      <div class="session-right">
+        <span class="badge ${s.type === 'group' ? 'badge-group' : 'badge-private'}">
+          ${s.type === 'group' ? 'Group' : 'Private'}
+        </span>
+        <div class="session-earn">${Math.round(s.earned)}₪</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('output-msg').textContent = r.msg;
+  document.getElementById('copy-fb').textContent = '';
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────
+function sendWhatsApp() {
+  if (!currentResult) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(currentResult.msg), '_blank');
+}
+
+function copyMsg() {
+  const msg = document.getElementById('output-msg').textContent;
+  const fb = document.getElementById('copy-fb');
+  navigator.clipboard.writeText(msg).then(() => {
+    fb.textContent = '✓ Copied to clipboard';
+    setTimeout(() => fb.textContent = '', 2500);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = msg; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    fb.textContent = '✓ Copied';
+    setTimeout(() => fb.textContent = '', 2500);
+  });
+}
+
+// ─── HISTORY ──────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!appHistory.length) { el.innerHTML = '<div class="empty">No days logged yet</div>'; return; }
+  el.innerHTML = appHistory.map((h, i) => `
+    <div class="history-item" onclick="viewHistory(${i})">
+      <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
+      <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
+    </div>
+  `).join('');
+}
+
+function viewHistory(i) {
+  currentResult = appHistory[i];
+  renderResult(currentResult);
+  showScreen('result');
+}
+
+// ─── OVERVIEW ─────────────────────────────────────────────
+function renderOverview() {
+  const totalMins = appHistory.reduce((a, h) => a + h.totalMins, 0);
+  const totalEarned = appHistory.reduce((a, h) => a + h.totalEarned, 0);
+  document.getElementById('sum-hours').textContent = fmtHours(totalMins);
+  document.getElementById('sum-days').textContent = appHistory.length;
+  document.getElementById('sum-earn').textContent = Math.round(totalEarned) + '₪';
+
+  let pMins = 0, gMins = 0, pEarned = 0, gEarned = 0;
+  appHistory.forEach(h => h.sessions.forEach(s => {
+    if (s.type === 'group') { gMins += s.durMins; gEarned += s.earned; }
+    else { pMins += s.durMins; pEarned += s.earned; }
+  }));
+
+  document.getElementById('type-breakdown').innerHTML = `
+    <div class="breakdown-row">
+      <span class="breakdown-label">Private lessons</span>
+      <div style="text-align:right"><div class="breakdown-val">${Math.round(pEarned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(pMins)}h</div></div>
+    </div>
+    <div class="breakdown-row">
+      <span class="breakdown-label">Group lessons</span>
+      <div style="text-align:right"><div class="breakdown-val">${Math.round(gEarned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(gMins)}h</div></div>
+    </div>`;
+
+  const avgRate = totalMins > 0 ? totalEarned / (totalMins / 60) : 0;
+  const pRate = pMins > 0 ? pEarned / (pMins / 60) : 0;
+  const gRate = gMins > 0 ? gEarned / (gMins / 60) : 0;
+  document.getElementById('per-hour-check').innerHTML = `
+    <div class="breakdown-row"><span class="breakdown-label">Overall average</span><span class="breakdown-val">${Math.round(avgRate)}₪/h</span></div>
+    <div class="breakdown-row"><span class="breakdown-label">Private effective rate</span><span class="breakdown-val">${Math.round(pRate)}₪/h</span></div>
+    <div class="breakdown-row"><span class="breakdown-label">Group effective rate</span><span class="breakdown-val">${Math.round(gRate)}₪/h</span></div>`;
+
+  const months = {};
+  appHistory.forEach(h => {
+    const match = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const key = match ? match[2] + '/' + match[3] : 'Unknown';
+    if (!months[key]) months[key] = { mins: 0, earned: 0, days: 0 };
+    months[key].mins += h.totalMins;
+    months[key].earned += h.totalEarned;
+    months[key].days++;
+  });
+  const mKeys = Object.keys(months).sort().reverse();
+  document.getElementById('monthly-breakdown').innerHTML = mKeys.length
+    ? mKeys.map(k => `
+      <div class="breakdown-row">
+        <div><div class="breakdown-label">${k}</div><div style="font-size:12px;color:var(--text2)">${months[k].days} days</div></div>
+        <div style="text-align:right"><div class="breakdown-val">${Math.round(months[k].earned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(months[k].mins)}h</div></div>
+      </div>`).join('')
+    : '<div class="empty">No data yet</div>';
+}
+
+// ─── NAV ──────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav-' + name);
+  if (nb) nb.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'overview') renderOverview();
+  window.scrollTo(0, 0);
+}
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
