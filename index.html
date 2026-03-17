@@ -256,6 +256,12 @@
     <div class="card">
       <div id="history-list"><div class="empty">No days logged yet</div></div>
     </div>
+    <div id="deleted-section" style="display:none">
+      <div class="section-divider" style="color:var(--red);margin-top:4px">Recently Deleted</div>
+      <div class="card">
+        <div id="deleted-list"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ── OVERVIEW SCREEN ── -->
@@ -268,6 +274,17 @@
       <div class="stat"><div class="val" id="sum-hours">-</div><div class="lbl">Total hours</div></div>
       <div class="stat"><div class="val" id="sum-days">-</div><div class="lbl">Days</div></div>
       <div class="stat"><div class="val" id="sum-earn">-</div><div class="lbl">Total ₪</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <button onclick="changeMonth(-1)" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;line-height:1;font-family:inherit">‹</button>
+        <div style="text-align:center">
+          <div id="month-label" style="font-size:16px;font-weight:600;color:var(--text)"></div>
+          <div id="month-earn-label" style="font-size:12px;color:var(--text2);margin-top:2px;min-height:16px"></div>
+        </div>
+        <button onclick="changeMonth(1)" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;line-height:1;font-family:inherit">›</button>
+      </div>
+      <div id="month-calendar"></div>
     </div>
     <div class="card">
       <div class="card-label">By session type</div>
@@ -352,7 +369,9 @@
 <script>
 // ─── STATE ───────────────────────────────────────────────
 let appHistory = JSON.parse(localStorage.getItem('ch_history') || '[]');
+let deletedHistory = JSON.parse(localStorage.getItem('ch_deleted') || '[]');
 let currentResult = null;
+let confirmingDelete = new Set();
 
 const defaultSettings = {
   ratePrivate: 80,
@@ -478,6 +497,8 @@ function parseLog() {
     return;
   }
 
+  sessions.forEach(s => addNameToKeywords(s.name, s.type));
+
   const totalMins = sessions.reduce((a, s) => a + s.durMins, 0);
   const totalEarned = sessions.reduce((a, s) => a + s.earned, 0);
 
@@ -511,15 +532,22 @@ function renderResult(r) {
   document.getElementById('stat-sessions').textContent = r.sessions.length;
   document.getElementById('stat-earn').textContent = Math.round(r.totalEarned) + '₪';
 
-  document.getElementById('session-list').innerHTML = r.sessions.map(s => `
-    <div class="session-row">
-      <div>
+  document.getElementById('session-list').innerHTML = r.sessions.map((s, i) => `
+    <div class="session-row" style="align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
         <div class="session-time">${s.start} – ${s.end} (${s.durMins}min)</div>
-        <div class="session-name">${s.name}</div>
+        <input
+          value="${s.name.replace(/"/g, '&quot;')}"
+          onblur="saveSessionName(${i}, this)"
+          onkeydown="if(event.key==='Enter'){this.blur()}"
+          style="background:none;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:14px;font-weight:500;width:100%;padding:2px 0;margin-top:2px;font-family:inherit;outline:none"
+        >
       </div>
-      <div class="session-right">
-        <span class="badge ${s.type === 'group' ? 'badge-group' : 'badge-private'}">
-          ${s.type === 'group' ? 'Group' : 'Private'}
+      <div class="session-right" style="flex-shrink:0">
+        <span class="badge ${s.type === 'group' ? 'badge-group' : 'badge-private'}"
+          onclick="toggleSessionType(${i})"
+          style="cursor:pointer;user-select:none">
+          ${s.type === 'group' ? 'Group' : 'Private'} ⇄
         </span>
         <div class="session-earn">${Math.round(s.earned)}₪</div>
       </div>
@@ -528,6 +556,52 @@ function renderResult(r) {
 
   document.getElementById('output-msg').textContent = r.msg;
   document.getElementById('copy-fb').textContent = '';
+}
+
+function addNameToKeywords(name, type) {
+  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
+  const opposite = type === 'group' ? 'privateKeywords' : 'groupKeywords';
+  if (!settings[key].includes(name)) settings[key].push(name);
+  settings[opposite] = settings[opposite].filter(k => k !== name);
+  localStorage.setItem('ch_settings', JSON.stringify(settings));
+  renderKeywordTags('group');
+  renderKeywordTags('private');
+}
+
+function saveCurrentResult() {
+  currentResult.totalEarned = currentResult.sessions.reduce((a, s) => a + s.earned, 0);
+  let msg = '';
+  if (currentResult.dateStr) msg += '*' + currentResult.dateStr + ':*\n';
+  if (currentResult.bossName) msg += '*' + currentResult.bossName + ':*\n';
+  for (const s of currentResult.sessions) {
+    msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
+  }
+  msg += 'סה״כ: ' + fmtHours(currentResult.totalMins) + ' שעות ' + Math.round(currentResult.totalEarned) + ' ₪ + נסיעות';
+  currentResult.msg = msg;
+  const hKey = (currentResult.dateStr + currentResult.bossName).trim();
+  const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === hKey);
+  if (idx >= 0) appHistory[idx] = currentResult;
+  localStorage.setItem('ch_history', JSON.stringify(appHistory));
+}
+
+function saveSessionName(i, inputEl) {
+  const newName = inputEl.value.trim();
+  if (!newName) { inputEl.value = currentResult.sessions[i].name; return; }
+  if (newName === currentResult.sessions[i].name) return;
+  currentResult.sessions[i].name = newName;
+  addNameToKeywords(newName, currentResult.sessions[i].type);
+  saveCurrentResult();
+  document.getElementById('output-msg').textContent = currentResult.msg;
+  document.getElementById('stat-earn').textContent = Math.round(currentResult.totalEarned) + '₪';
+}
+
+function toggleSessionType(i) {
+  const s = currentResult.sessions[i];
+  s.type = s.type === 'group' ? 'private' : 'group';
+  s.earned = (s.durMins / 60) * (s.type === 'group' ? settings.rateGroup : settings.ratePrivate);
+  addNameToKeywords(s.name, s.type);
+  saveCurrentResult();
+  renderResult(currentResult);
 }
 
 // ─── ACTIONS ──────────────────────────────────────────────
@@ -554,13 +628,19 @@ function copyMsg() {
 // ─── HISTORY ──────────────────────────────────────────────
 function renderHistory() {
   const el = document.getElementById('history-list');
-  if (!appHistory.length) { el.innerHTML = '<div class="empty">No days logged yet</div>'; return; }
-  el.innerHTML = appHistory.map((h, i) => `
-    <div class="history-item" onclick="viewHistory(${i})">
-      <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
-      <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
-    </div>
-  `).join('');
+  if (!appHistory.length) { el.innerHTML = '<div class="empty">No days logged yet</div>'; }
+  else {
+    el.innerHTML = appHistory.map((h, i) => `
+      <div class="history-item" style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1" onclick="viewHistory(${i})">
+          <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
+          <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
+        </div>
+        <button class="btn-icon" onclick="deleteHistory(${i})" style="font-size:16px;padding:6px 10px;color:var(--text3)">🗑</button>
+      </div>
+    `).join('');
+  }
+  renderDeleted();
 }
 
 function viewHistory(i) {
@@ -569,8 +649,273 @@ function viewHistory(i) {
   showScreen('result');
 }
 
+function deleteHistory(i) {
+  const [item] = appHistory.splice(i, 1);
+  deletedHistory.unshift(item);
+  localStorage.setItem('ch_history', JSON.stringify(appHistory));
+  localStorage.setItem('ch_deleted', JSON.stringify(deletedHistory));
+  renderHistory();
+}
+
+function restoreHistory(i) {
+  const [item] = deletedHistory.splice(i, 1);
+  appHistory.unshift(item);
+  localStorage.setItem('ch_history', JSON.stringify(appHistory));
+  localStorage.setItem('ch_deleted', JSON.stringify(deletedHistory));
+  confirmingDelete.delete('d' + i);
+  renderHistory();
+}
+
+function permanentDelete(i) {
+  const key = 'd' + i;
+  if (!confirmingDelete.has(key)) {
+    confirmingDelete.add(key);
+    renderDeleted();
+    return;
+  }
+  confirmingDelete.delete(key);
+  deletedHistory.splice(i, 1);
+  localStorage.setItem('ch_deleted', JSON.stringify(deletedHistory));
+  renderDeleted();
+}
+
+function renderDeleted() {
+  const section = document.getElementById('deleted-section');
+  if (!deletedHistory.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('deleted-list').innerHTML = deletedHistory.map((h, i) => {
+    const key = 'd' + i;
+    const confirming = confirmingDelete.has(key);
+    return `
+      <div class="history-item" style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;opacity:0.6">
+          <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
+          <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
+        </div>
+        <button onclick="restoreHistory(${i})" style="background:var(--green-bg);color:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">Undo</button>
+        <button onclick="permanentDelete(${i})" style="background:${confirming ? 'var(--red)' : 'var(--red-bg)'};color:${confirming ? '#fff' : 'var(--red)'};border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">${confirming ? 'Sure?' : '✕ Delete'}</button>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── MONTH CALENDAR ───────────────────────────────────────
+let currentMonthYear = null;
+let monthlyReceived = JSON.parse(localStorage.getItem('ch_received') || '{}');
+
+function monthKey(year, month) {
+  return String(month).padStart(2, '0') + '/' + year;
+}
+
+function saveMonthReceived(year, month, val) {
+  const k = monthKey(year, month);
+  if (val === '' || val === null) delete monthlyReceived[k];
+  else monthlyReceived[k] = parseFloat(val);
+  localStorage.setItem('ch_received', JSON.stringify(monthlyReceived));
+  renderMonthCalendar();
+}
+
+async function handleSalaryPDF(event, year, month) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(x => x.str).join(' ') + '\n';
+  }
+
+  // Try common Israeli payslip patterns
+  const patterns = [
+    /נטו\s+לתשלום[\s:]+([0-9,]+)/,
+    /לתשלום[\s:]+([0-9,]+)/,
+    /סה"כ\s+נטו[\s:]+([0-9,]+)/,
+    /net\s+pay[\s:]+([0-9,]+)/i,
+  ];
+  let found = null;
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) { found = parseFloat(m[1].replace(/,/g, '')); break; }
+  }
+
+  showPDFModal(text, year, month, found);
+}
+
+function showPDFModal(text, year, month) {
+  const existing = document.getElementById('pdf-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'pdf-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:flex-end;padding-bottom:env(safe-area-inset-bottom)';
+  const received = monthlyReceived[monthKey(year, month)];
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border-radius:16px 16px 0 0;width:100%;max-width:430px;margin:0 auto;padding:20px">
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">PDF — Enter Net Salary</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Check the extracted text and enter the net amount you received:</div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;font-size:11px;color:var(--text2);max-height:220px;overflow-y:auto;white-space:pre-wrap;direction:rtl;text-align:right;line-height:1.6;margin-bottom:12px">${text.replace(/</g,'&lt;').substring(0, 3000)}</div>
+      <input type="number" id="pdf-amount-input" placeholder="Net amount ₪" value="${received !== undefined ? received : ''}"
+        style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px">
+      <button onclick="confirmPDFAmount(${year},${month})"
+        style="width:100%;padding:13px;background:var(--accent);color:#111;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">Save</button>
+      <button onclick="document.getElementById('pdf-modal').remove()"
+        style="width:100%;padding:13px;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;font-size:15px;cursor:pointer;font-family:inherit">Cancel</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function confirmPDFAmount(year, month) {
+  const val = document.getElementById('pdf-amount-input').value;
+  document.getElementById('pdf-modal').remove();
+  if (val) saveMonthReceived(year, month, parseFloat(val));
+}
+
+// Returns { month, year } of the work month a calendar date belongs to.
+// Work month starts on the 10th: day >= 10 → same month; day < 10 → previous month.
+function dateToWorkMonth(day, month, year) {
+  if (day >= 10) return { month, year };
+  const m = month - 1 < 1 ? 12 : month - 1;
+  const y = month - 1 < 1 ? year - 1 : year;
+  return { month: m, year: y };
+}
+
+function changeMonth(delta) {
+  currentMonthYear.month += delta;
+  if (currentMonthYear.month > 12) { currentMonthYear.month = 1; currentMonthYear.year++; }
+  if (currentMonthYear.month < 1)  { currentMonthYear.month = 12; currentMonthYear.year--; }
+  renderMonthCalendar();
+}
+
+function renderMonthCalendar() {
+  const { year, month } = currentMonthYear;
+
+  // Work month: 10th of month/year  →  9th of nextMonth/nextYear
+  const nextMonth = month === 12 ? 1  : month + 1;
+  const nextYear  = month === 12 ? year + 1 : year;
+
+  // Map "mo-day" → earned for fast lookup
+  const workDayMap = {};
+  let monthEarned = 0, monthMins = 0;
+
+  appHistory.forEach(h => {
+    const m = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) {
+      const d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
+      const wm = dateToWorkMonth(d, mo, y);
+      if (wm.month === month && wm.year === year) {
+        workDayMap[`${mo}-${d}`] = (workDayMap[`${mo}-${d}`] || 0) + h.totalEarned;
+        monthEarned += h.totalEarned;
+        monthMins += h.totalMins;
+      }
+    }
+  });
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('month-label').textContent = monthNames[month - 1] + ' ' + year;
+  const workDayCount = Object.keys(workDayMap).length;
+  document.getElementById('month-earn-label').textContent = workDayCount
+    ? Math.round(monthEarned) + '₪  ·  ' + fmtHours(monthMins) + 'h  ·  ' + workDayCount + ' days'
+    : 'No sessions logged';
+
+  // Build the day list: 10..end-of-month, then 1..9 of next month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const days = [];
+  for (let d = 10; d <= daysInMonth; d++) days.push({ d, mo: month, y: year });
+  for (let d = 1;  d <= 9;           d++) days.push({ d, mo: nextMonth, y: nextYear });
+
+  // Offset so grid starts on the correct weekday
+  const startDow = new Date(year, month - 1, 10).getDay();
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;margin-top:10px">';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(lbl => {
+    html += `<div style="font-size:10px;color:var(--text3);font-weight:600;padding:4px 0">${lbl}</div>`;
+  });
+  for (let i = 0; i < startDow; i++) html += '<div></div>';
+  days.forEach(({ d, mo, y }) => {
+    const hasWork = !!workDayMap[`${mo}-${d}`];
+    const isOverflow = mo === nextMonth; // days 1-9 of next month
+    html += `<div style="padding:6px 2px;border-radius:6px;font-size:13px;` +
+      `background:${hasWork ? 'var(--green-bg)' : 'transparent'};` +
+      `color:${hasWork ? 'var(--green)' : isOverflow ? 'var(--text3)' : 'var(--text2)'};` +
+      `font-weight:${hasWork ? '600' : '400'}"` +
+      `${hasWork ? ` title="${Math.round(workDayMap[`${mo}-${d}`])}₪"` : ''}>${d}</div>`;
+  });
+  html += `</div><div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:right">` +
+    `${shortNames[month-1]} 10 – ${shortNames[nextMonth-1]} 9</div>`;
+
+  // Salary comparison
+  const k = monthKey(year, month);
+  const received = monthlyReceived[k];
+  const calc = Math.round(monthEarned);
+  const hasCalc = monthEarned > 0;
+  const hasReceived = received !== undefined && received !== null;
+
+  let diffHtml = '';
+  if (hasCalc && hasReceived) {
+    const diff = Math.round(received - calc);
+    const color = diff >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = diff >= 0 ? '+' : '';
+    diffHtml = `<div style="display:flex;justify-content:space-between;align-items:center;border-top:0.5px solid var(--border);margin-top:10px;padding-top:10px">
+      <span style="font-size:12px;color:var(--text2)">Difference</span>
+      <span style="font-size:15px;font-weight:700;color:${color}">${sign}${diff}₪</span>
+    </div>`;
+  }
+
+  html += `<div style="border-top:0.5px solid var(--border);margin-top:14px;padding-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text2)">Calculated</span>
+      <span style="font-size:14px;font-weight:600">${hasCalc ? calc + '₪' : '—'}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--text2)">Received</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="received-input" value="${hasReceived ? received : ''}" placeholder="—"
+          style="width:100px;text-align:right;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:14px;color:var(--text);font-family:inherit"
+          onchange="saveMonthReceived(${year},${month},this.value)">
+        <label style="cursor:pointer;padding:5px 8px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;font-size:12px;color:var(--text2);white-space:nowrap" title="Upload salary PDF">
+          📎 PDF
+          <input type="file" accept=".pdf" style="display:none" onchange="handleSalaryPDF(event,${year},${month})">
+        </label>
+      </div>
+    </div>
+    ${diffHtml}
+  </div>`;
+
+  document.getElementById('month-calendar').innerHTML = html;
+}
+
 // ─── OVERVIEW ─────────────────────────────────────────────
 function renderOverview() {
+  const now = new Date();
+  if (!currentMonthYear) {
+    // Default to today's work month
+    const today = now.getDate();
+    currentMonthYear = dateToWorkMonth(today, now.getMonth() + 1, now.getFullYear());
+    // Override with most recent history item's work month
+    for (const h of appHistory) {
+      const m = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) {
+        currentMonthYear = dateToWorkMonth(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
+        break;
+      }
+    }
+  }
+  renderMonthCalendar();
+
   const totalMins = appHistory.reduce((a, h) => a + h.totalMins, 0);
   const totalEarned = appHistory.reduce((a, h) => a + h.totalEarned, 0);
   document.getElementById('sum-hours').textContent = fmtHours(totalMins);
@@ -604,7 +949,11 @@ function renderOverview() {
   const months = {};
   appHistory.forEach(h => {
     const match = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    const key = match ? match[2] + '/' + match[3] : 'Unknown';
+    let key = 'Unknown';
+    if (match) {
+      const wm = dateToWorkMonth(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+      key = String(wm.month).padStart(2, '0') + '/' + wm.year;
+    }
     if (!months[key]) months[key] = { mins: 0, earned: 0, days: 0 };
     months[key].mins += h.totalMins;
     months[key].earned += h.totalEarned;
