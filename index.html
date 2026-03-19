@@ -510,7 +510,7 @@ let viewingUserId = null; // admin "view as" override
 // First-time bootstrap: seed admin account and migrate any existing data
 if (!authUsers) {
   // Admin password is stored as a one-way hash — plain text is not in this source.
-  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: '36f144a4', role: 'admin', createdAt: Date.now() }];
+  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: '237882a9', role: 'admin', createdAt: Date.now() }];
   localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
   // Migrate existing localStorage keys → namespaced under admin id
   ['ch_history','ch_deleted','ch_settings','ch_received','ch_groups','ch_attendance'].forEach(k => {
@@ -1573,7 +1573,7 @@ function renderBuilder() {
 }
 
 function renderBuilderSessionForm() {
-  const allKw = [...settings.groupKeywords, ...settings.privateKeywords].filter((v,i,a) => a.indexOf(v)===i);
+  const allKw = builder.sessionType === 'group' ? settings.groupKeywords : settings.privateKeywords;
   const gArr = Object.values(groups);
   return `<div style="border-top:0.5px solid var(--border);margin-bottom:12px;padding-top:14px">
     <div class="build-label">New session</div>
