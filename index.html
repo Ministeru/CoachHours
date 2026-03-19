@@ -279,6 +279,7 @@
       </div>
       <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">Sign In</button>
       <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">Register as new coach</button>
+      <button class="btn btn-secondary" onclick="quickLogin()" style="margin-top:8px;font-size:13px">Quick Login (Admin)</button>
     </div>
   </div>
 
@@ -1729,6 +1730,18 @@ function toggleAuthMode() {
   document.getElementById('auth-submit-btn').textContent = isReg ? 'Register' : 'Sign In';
   document.getElementById('auth-toggle-btn').textContent = isReg ? 'Already have an account? Sign in' : 'Register as new coach';
   document.getElementById('auth-error').style.display = 'none';
+}
+
+function quickLogin() {
+  let admin = authUsers.find(u => u.role === 'admin');
+  if (!admin) {
+    admin = { id: 'u_admin', username: 'יוסף סקובלו', role: 'admin', createdAt: Date.now() };
+    authUsers.push(admin);
+    localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
+  }
+  currentUser = admin;
+  localStorage.setItem('ch_session', JSON.stringify(currentUser));
+  onLogin();
 }
 
 function submitAuth() {
