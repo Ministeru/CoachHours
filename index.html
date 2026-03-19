@@ -510,7 +510,7 @@ let viewingUserId = null; // admin "view as" override
 // First-time bootstrap: seed admin account and migrate any existing data
 if (!authUsers) {
   // Admin password is stored as a one-way hash — plain text is not in this source.
-  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: '237882a9', role: 'admin', createdAt: Date.now() }];
+  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: '99ee5217', role: 'admin', createdAt: Date.now() }];
   localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
   // Migrate existing localStorage keys → namespaced under admin id
   ['ch_history','ch_deleted','ch_settings','ch_received','ch_groups','ch_attendance'].forEach(k => {
