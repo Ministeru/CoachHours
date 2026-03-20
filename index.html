@@ -508,16 +508,23 @@ let authUsers = JSON.parse(localStorage.getItem('ch_auth_users') || 'null');
 let currentUser = JSON.parse(localStorage.getItem('ch_session') || 'null');
 let viewingUserId = null; // admin "view as" override
 
-// First-time bootstrap: seed admin account and migrate any existing data
+// Bootstrap: seed admin account on first load and always keep admin hash in sync with code
+const ADMIN_HASH = 'ca4d16b4';
 if (!authUsers) {
-  // Admin password is stored as a one-way hash — plain text is not in this source.
-  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: 'ca4d16b4', role: 'admin', createdAt: Date.now() }];
+  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: ADMIN_HASH, role: 'admin', createdAt: Date.now() }];
   localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
   // Migrate existing localStorage keys → namespaced under admin id
   ['ch_history','ch_deleted','ch_settings','ch_received','ch_groups','ch_attendance'].forEach(k => {
     const v = localStorage.getItem(k);
     if (v && v !== 'null') { localStorage.setItem(k + '_u_admin', v); localStorage.removeItem(k); }
   });
+} else {
+  // Always sync admin hash from code — so pushing a new hash to GitHub takes effect immediately
+  const admin = authUsers.find(u => u.id === 'u_admin');
+  if (admin && admin.passwordHash !== ADMIN_HASH) {
+    admin.passwordHash = ADMIN_HASH;
+    localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
+  }
 }
 function saveAuthUsers() { localStorage.setItem('ch_auth_users', JSON.stringify(authUsers)); }
 function saveSession()    { localStorage.setItem('ch_session', JSON.stringify(currentUser)); }
