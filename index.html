@@ -74,7 +74,7 @@
   #log-input { min-height: 160px; }
 
   /* INPUTS */
-  input[type="text"], input[type="number"] {
+  input[type="text"], input[type="number"], input[type="password"] {
     background: var(--bg3); border: 0.5px solid var(--border);
     border-radius: var(--radius-sm); padding: 9px 12px;
     font-size: 14px; color: var(--text); font-family: inherit;
@@ -417,7 +417,7 @@
       <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Group</p>
       <div class="keyword-tags" id="tags-group"></div>
       <div class="add-keyword-row">
-        <input type="text" id="input-group-kw" placeholder="e.g. קבוצה, group, צליל..." onkeydown="if(event.key==='Enter') addKeyword('group')">
+        <input type="text" id="input-group-kw" onkeydown="if(event.key==='Enter') addKeyword('group')">
         <button onclick="addKeyword('group')">+ Add</button>
       </div>
     </div>
@@ -428,7 +428,7 @@
       <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Private. If neither list matches, it defaults to Private.</p>
       <div class="keyword-tags" id="tags-private"></div>
       <div class="add-keyword-row">
-        <input type="text" id="input-private-kw" placeholder="e.g. פרטי, private..." onkeydown="if(event.key==='Enter') addKeyword('private')">
+        <input type="text" id="input-private-kw" onkeydown="if(event.key==='Enter') addKeyword('private')">
         <button onclick="addKeyword('private')">+ Add</button>
       </div>
     </div>
@@ -544,7 +544,7 @@ let confirmingDelete = new Set();
 const defaultSettings = {
   ratePrivate: 80,
   rateGroup: 50,
-  groupKeywords: ['קבוצ', 'group', 'גרופ'],
+  groupKeywords: [],
   privateKeywords: []
 };
 let settings = Object.assign({}, defaultSettings);
@@ -675,8 +675,6 @@ function parseLog() {
     errEl.style.display = 'block';
     return;
   }
-
-  sessions.forEach(s => addNameToKeywords(s.name, s.type));
 
   const totalMins = sessions.reduce((a, s) => a + s.durMins, 0);
   const totalEarned = sessions.reduce((a, s) => a + s.earned, 0);
@@ -830,7 +828,6 @@ function saveSessionName(i, inputEl) {
   if (!newName) { inputEl.value = currentResult.sessions[i].name; return; }
   if (newName === currentResult.sessions[i].name) return;
   currentResult.sessions[i].name = newName;
-  addNameToKeywords(newName, currentResult.sessions[i].type);
   saveCurrentResult();
   document.getElementById('output-msg').textContent = currentResult.msg;
   document.getElementById('stat-earn').textContent = Math.round(currentResult.totalEarned) + '₪';
@@ -840,7 +837,6 @@ function toggleSessionType(i) {
   const s = currentResult.sessions[i];
   s.type = s.type === 'group' ? 'private' : 'group';
   s.earned = (s.durMins / 60) * (s.type === 'group' ? settings.rateGroup : settings.ratePrivate);
-  addNameToKeywords(s.name, s.type);
   saveCurrentResult();
   renderResult(currentResult);
 }
@@ -1234,6 +1230,9 @@ let groupAttendance = JSON.parse(localStorage.getItem('ch_attendance') || '{}');
 function saveGroups() { setUD('ch_groups', groups); }
 function saveGroupAttendance() { setUD('ch_attendance', groupAttendance); }
 function getGroup(id) { return groups[id]; }
+// Handles both old format (array) and new format ({ present, savedAt })
+function attPlayers(entry) { if (!entry) return []; return Array.isArray(entry) ? entry : (entry.present || []); }
+
 
 let expandedGroupIds = new Set();
 
@@ -1309,30 +1308,56 @@ function toggleGroupExpand(id) {
 }
 
 function getGroupMonthStats(groupId, month, year) {
-  const att = groupAttendance[groupId] || {};
   const counts = {};
-  const sessionDates = new Set();
-  Object.entries(att).forEach(([dateKey, players]) => {
-    const m = dateKey.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (!m) return;
-    const wm = dateToWorkMonth(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
-    if (wm.month === month && wm.year === year) {
-      sessionDates.add(dateKey);
-      players.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
-    }
+  let totalSessions = 0;
+  appHistory.forEach(h => {
+    const datePart = (h.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
+    if (!datePart) return;
+    const dm = datePart.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!dm) return;
+    const wm = dateToWorkMonth(parseInt(dm[1]), parseInt(dm[2]), parseInt(dm[3]));
+    if (wm.month !== month || wm.year !== year) return;
+    (h.sessions || []).forEach(s => {
+      if (s.groupId !== groupId || !s.attendance) return;
+      totalSessions++;
+      (s.attendance.present || []).forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+    });
   });
-  return { totalSessions: sessionDates.size, counts };
+  return { totalSessions, counts };
 }
 
 function openAddGroupModal() {
-  showInputModal('New Group', 'Group name', name => {
-    if (!name.trim()) return;
+  const usedNames = new Set(Object.values(groups).map(g => g.name));
+  const available = settings.groupKeywords.filter(k => !usedNames.has(k));
+  const kwChips = available.length ? `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Pick from keywords:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      ${available.map(k => `<button onclick="document.getElementById('new-group-input').value='${escQ(k)}'"
+        style="padding:5px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);cursor:pointer;font-family:inherit">${k}</button>`).join('')}
+    </div>` : '';
+  createModal(`
+    <div class="sheet-title">New Group</div>
+    ${kwChips}
+    <input type="text" id="new-group-input" placeholder="Group name"
+      style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px"
+      onkeydown="if(event.key==='Enter')document.getElementById('new-group-ok').click()">
+    <button id="new-group-ok" class="btn btn-primary" style="margin-top:0"
+      onclick="window._addGroupCb()">Confirm</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+  `);
+  window._addGroupCb = () => {
+    const v = document.getElementById('new-group-input')?.value.trim();
+    closeModal();
+    if (!v) return;
     const id = 'g' + Date.now();
-    groups[id] = { id, name: name.trim(), players: [] };
+    groups[id] = { id, name: v, players: [] };
     saveGroups();
+    addNameToKeywords(v, 'group');
+    saveSettings();
     expandedGroupIds.add(id);
     renderGroups();
-  });
+  };
+  setTimeout(() => document.getElementById('new-group-input')?.focus(), 80);
 }
 
 function addPlayer(groupId, name) {
@@ -1414,28 +1439,24 @@ function openAttendanceSheet(sessionIdx) {
   const s = currentResult?.sessions[sessionIdx];
   if (!s || s.type !== 'group') return;
   const gArr = Object.values(groups);
-  const dateKey = (currentResult.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
+  const datePart = (currentResult.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
+  const dateKey = datePart + (s.start ? '_' + s.start : '');
 
   let group = s.groupId ? getGroup(s.groupId) : null;
 
   if (!group) {
-    if (!gArr.length) {
-      createModal(`
-        <div class="sheet-title">Attendance</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:16px">No groups defined yet. Go to the Groups tab to create one.</p>
-        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
-      `);
-      return;
-    }
-    _attPending = { sessionIdx, dateKey };
+    // Auto-match by session name
+    const nameLower = (s.name || '').toLowerCase();
+    group = gArr.find(g => g.name.toLowerCase() === nameLower)
+      || gArr.find(g => nameLower.includes(g.name.toLowerCase()) || g.name.toLowerCase().includes(nameLower));
+    if (group) s.groupId = group.id;
+  }
+
+  if (!group) {
     createModal(`
-      <div class="sheet-title">Select Group</div>
-      ${gArr.map(g => `
-        <button onclick="selectGroupForAtt('${g.id}')"
-          style="width:100%;padding:13px;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;font-size:15px;color:var(--text);font-family:inherit;cursor:pointer;text-align:left;margin-bottom:8px">
-          ${g.name} <span style="font-size:12px;color:var(--text2)">${g.players.length} players</span>
-        </button>`).join('')}
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <div class="sheet-title">Attendance</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">No matching group found. Make sure a group exists with the same name as this session.</p>
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
     `);
     return;
   }
@@ -1453,10 +1474,14 @@ function selectGroupForAtt(groupId) {
 }
 
 function showAttChecklist(g, sessionIdx, dateKey) {
-  const current = (groupAttendance[g.id]?.[dateKey]) || [];
+  const s = currentResult?.sessions[sessionIdx];
+  const current = s?.attendance?.present || [];
+  const savedAt = s?.attendance?.savedAt || null;
+  const histTs = currentResult?.ts || 0;
+  const sessionStart = s?.start || '';
   createModal(`
     <div class="sheet-title">${g.name}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${dateKey || 'Unknown date'}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${dateKey.replace('_',' · ') || 'Unknown date'}${savedAt ? ' · Saved ' + savedAt : ''}</div>
     ${g.players.map(name => `
       <label style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
         <input type="checkbox" id="att-${escId(name)}" ${current.includes(name) ? 'checked' : ''}
@@ -1465,33 +1490,33 @@ function showAttChecklist(g, sessionIdx, dateKey) {
       </label>`).join('')}
     ${!g.players.length ? '<p style="color:var(--text2);font-size:13px;padding:12px 0">No players in this group.</p>' : ''}
     <button class="btn btn-primary" style="margin-top:14px"
-      onclick="saveAttFromModal('${g.id}','${dateKey}','${g.players.map(escQ).join(',')}')">Save attendance</button>
+      onclick="saveAttFromModal(${histTs},'${sessionStart}','${g.players.map(escQ).join(',')}')">Save attendance</button>
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
   `);
 }
 
-function saveAttFromModal(groupId, dateKey, playersCsv) {
-  const g = getGroup(groupId);
-  if (!g) return;
+function saveAttFromModal(histTs, sessionStart, playersCsv) {
+  const h = appHistory.find(h => h.ts === histTs);
+  if (!h) return;
+  const s = h.sessions.find(s => s.start === sessionStart);
+  if (!s) return;
   const present = playersCsv ? playersCsv.split(',').filter(name => document.getElementById('att-' + escId(name))?.checked) : [];
-  if (!groupAttendance[groupId]) groupAttendance[groupId] = {};
-  groupAttendance[groupId][dateKey] = present;
-  saveGroupAttendance();
+  const now = new Date();
+  const savedAt = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  s.attendance = { present, savedAt };
+  setUD('ch_history', appHistory);
   closeModal();
-  renderResult(currentResult);
+  if (currentResult?.ts === histTs) renderResult(currentResult);
   if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
 }
 
 function sessionAttHtml(s, r, i) {
   if (s.type !== 'group') return '';
-  const dateKey = (r.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
   let info = '';
   if (s.groupId && groups[s.groupId]) {
     const g = groups[s.groupId];
-    const present = (groupAttendance[s.groupId]?.[dateKey] || []).length;
+    const present = (s.attendance?.present || []).length;
     info = `: ${present}/${g.players.length} · ${g.name}`;
-  } else if (dateKey) {
-    info = '';
   }
   return `<div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer;user-select:none" onclick="openAttendanceSheet(${i})">👥 Attendance${info}</div>`;
 }
@@ -1511,7 +1536,7 @@ function setLogMode(mode) {
 let builder = {
   date: '', entries: [], nextStart: '09:00', form: null,
   dur: 60, customDur: '', sessionType: 'private',
-  sessionName: '', sessionGroupId: '', breakDur: 15, customBreakDur: ''
+  sessionName: '', breakDur: 15, customBreakDur: ''
 };
 
 function addMins(time, mins) {
@@ -1604,14 +1629,6 @@ function renderBuilderSessionForm() {
       <button class="type-btn ${builder.sessionType==='group'?'act-group':''}" onclick="setBuilderType('group')">Group</button>
     </div>
   </div>
-  ${builder.sessionType==='group' && gArr.length ? `<div class="build-section">
-    <div class="build-label">Group (for attendance)</div>
-    <select onchange="builder.sessionGroupId=this.value"
-      style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--text);font-family:inherit">
-      <option value="">— None —</option>
-      ${gArr.map(g => `<option value="${g.id}" ${builder.sessionGroupId===g.id?'selected':''}>${g.name}</option>`).join('')}
-    </select>
-  </div>` : ''}
   <div class="build-section">
     <div class="build-label">Session name</div>
     ${allKw.length ? `<select onchange="handleBuilderNameSelect(this.value)"
@@ -1652,7 +1669,7 @@ function renderBuilderBreakForm() {
 
 function openBuilderForm(type) {
   builder.form = type;
-  builder.sessionName = ''; builder.sessionGroupId = '';
+  builder.sessionName = '';
   renderBuilder();
 }
 function cancelBuilderForm() { builder.form = null; renderBuilder(); }
@@ -1661,7 +1678,7 @@ function setBuilderType(t) { builder.sessionType = t; renderBuilder(); }
 function setBuilderBreakDur(d) { builder.breakDur = d; renderBuilder(); }
 
 function handleBuilderNameSelect(val) {
-  if (val) { builder.sessionName = val; builder.sessionType = getSessionType(val); }
+  if (val) builder.sessionName = val;
   renderBuilder();
 }
 
@@ -1670,7 +1687,7 @@ function confirmBuilderSession() {
   const name = (document.getElementById('builder-name-input')?.value || builder.sessionName).trim() || 'Session';
   const start = builder.nextStart;
   const end = addMins(start, durMins);
-  builder.entries.push({ type:'session', start, end, durMins, name, sessionType:builder.sessionType, groupId:builder.sessionGroupId });
+  builder.entries.push({ type:'session', start, end, durMins, name, sessionType:builder.sessionType });
   builder.nextStart = end;
   builder.form = null;
   renderBuilder();
@@ -1702,9 +1719,16 @@ function generateFromBuilder() {
     dateStr = `${d}/${m}/${y}`;
   }
 
-  // Build groupId side-channel map indexed by session position
+  // Build auto-link map: match group session names to group names
   const groupLinks = {};
-  sessions.forEach((e, i) => { if (e.groupId) groupLinks[i] = e.groupId; });
+  const gArr2 = Object.values(groups);
+  sessions.forEach((e, i) => {
+    if (e.sessionType !== 'group') return;
+    const nameLower = e.name.toLowerCase();
+    const matched = gArr2.find(g => g.name.toLowerCase() === nameLower)
+      || gArr2.find(g => nameLower.includes(g.name.toLowerCase()) || g.name.toLowerCase().includes(nameLower));
+    if (matched) groupLinks[i] = matched.id;
+  });
 
   let logText = dateStr ? dateStr + '\n' : '';
   logText += sessions.map(e => `${e.start} - ${e.end} - ${e.name}`).join('\n');
