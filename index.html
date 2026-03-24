@@ -279,7 +279,36 @@
       </div>
       <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">Sign In</button>
       <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">Register as new coach</button>
-      <button class="btn btn-secondary" onclick="quickLogin()" style="margin-top:8px;font-size:13px">Quick Login (Admin)</button>
+    </div>
+  </div>
+
+  <!-- ── FIRST-RUN SETUP SCREEN ── -->
+  <div id="screen-firstrun" class="screen" style="justify-content:center;align-items:center">
+    <div style="width:100%;padding:40px 24px;max-width:400px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:42px;margin-bottom:10px">🏃</div>
+        <h1 style="font-size:26px;font-weight:600;letter-spacing:-0.5px">Welcome</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">Set up your admin account to get started</p>
+      </div>
+      <div id="firstrun-error" class="error-box" style="margin-bottom:10px"></div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Your name</label>
+        <input type="text" id="firstrun-name" placeholder="Full name" style="width:100%">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Username</label>
+        <input type="text" id="firstrun-username" placeholder="Username" style="width:100%">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Password</label>
+        <input type="password" id="firstrun-password" placeholder="Min 6 characters" style="width:100%">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Confirm password</label>
+        <input type="password" id="firstrun-confirm" placeholder="Repeat password" style="width:100%"
+          onkeydown="if(event.key==='Enter')submitFirstRun()">
+      </div>
+      <button class="btn btn-primary" onclick="submitFirstRun()" style="margin-top:0">Create account</button>
     </div>
   </div>
 
@@ -445,6 +474,26 @@
       </div>
     </div>
 
+    <!-- CHANGE PASSWORD -->
+    <div class="card">
+      <div class="card-label">Change password</div>
+      <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Current password</label>
+        <input type="password" id="pwd-current" style="width:100%">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">New password</label>
+        <input type="password" id="pwd-new" style="width:100%">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Confirm new password</label>
+        <input type="password" id="pwd-confirm" style="width:100%">
+      </div>
+      <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Update password</button>
+      <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">Password updated</div>
+    </div>
+
     <!-- ADMIN PANEL -->
     <div id="admin-panel" style="display:none">
       <div class="section-divider" style="color:var(--accent)">Admin</div>
@@ -452,6 +501,10 @@
         <div class="card-label">Coaches</div>
         <div id="admin-user-list"><div class="empty">No other coaches registered yet.</div></div>
         <p style="font-size:12px;color:var(--text2);margin-top:10px">Coaches register themselves from the login screen. Use "View" to access and edit their dashboard.</p>
+      </div>
+      <div class="card">
+        <div class="card-label" style="cursor:pointer" onclick="toggleActivityLog()">Activity log <span id="activity-log-arrow" style="font-size:12px">›</span></div>
+        <div id="activity-log-body" style="display:none;margin-top:8px;font-size:12px;color:var(--text2);max-height:200px;overflow-y:auto" id="activity-log-list"></div>
       </div>
     </div>
   </div>
@@ -496,7 +549,7 @@
 <script>
 // ─── AUTH ────────────────────────────────────────────────
 // Password hash (FNV-1a 32-bit + app salt). NOT cryptographically secure.
-// ⚠️  Make your GitHub repo PRIVATE so this source is not publicly readable.
+// Passwords are set by users and stored only in localStorage — never in source code.
 function hashPwd(str) {
   const s = 'CoachH0urs_' + str;
   let h = 0x811c9dc5;
@@ -508,32 +561,22 @@ let authUsers = JSON.parse(localStorage.getItem('ch_auth_users') || 'null');
 let currentUser = JSON.parse(localStorage.getItem('ch_session') || 'null');
 let viewingUserId = null; // admin "view as" override
 
-// Bootstrap: seed admin account on first load and always keep admin hash in sync with code
-const ADMIN_HASH = 'ca4d16b4';
+// Bootstrap: on first load (no users), migrate legacy data. First-run screen shown at page bottom.
 if (!authUsers) {
-  authUsers = [{ id: 'u_admin', username: 'יוסף סקובלו', passwordHash: ADMIN_HASH, role: 'admin', createdAt: Date.now() }];
-  localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
-  // Migrate existing localStorage keys → namespaced under admin id
+  // Migrate existing localStorage keys → namespaced under u_admin (legacy single-user migration)
   ['ch_history','ch_deleted','ch_settings','ch_received','ch_groups','ch_attendance'].forEach(k => {
     const v = localStorage.getItem(k);
     if (v && v !== 'null') { localStorage.setItem(k + '_u_admin', v); localStorage.removeItem(k); }
   });
-} else {
-  // Always sync admin hash from code — so pushing a new hash to GitHub takes effect immediately
-  const admin = authUsers.find(u => u.id === 'u_admin');
-  if (admin && admin.passwordHash !== ADMIN_HASH) {
-    admin.passwordHash = ADMIN_HASH;
-    localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
-  }
 }
 function saveAuthUsers() { localStorage.setItem('ch_auth_users', JSON.stringify(authUsers)); }
-function saveSession()    { localStorage.setItem('ch_session', JSON.stringify(currentUser)); }
+function saveSession()    { localStorage.setItem('ch_session', JSON.stringify({ ...currentUser, loginTime: Date.now() })); }
 
 // Active user ID: admin can "view as" another coach
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
 function ud(key)     { return key + '_' + activeUid(); }
-function getUD(key, def) { return JSON.parse(localStorage.getItem(ud(key)) ?? JSON.stringify(def)); }
-function setUD(key, val) { localStorage.setItem(ud(key), JSON.stringify(val)); }
+function getUD(key, def) { try { return JSON.parse(localStorage.getItem(ud(key)) ?? JSON.stringify(def)); } catch { return def; } }
+function setUD(key, val) { try { localStorage.setItem(ud(key), JSON.stringify(val)); } catch(e) { console.error('[CoachHours] Storage write failed:', e); } }
 
 // ─── STATE ───────────────────────────────────────────────
 let appHistory = [];
@@ -604,8 +647,8 @@ function renderKeywordTags(type) {
   if (!settings[key].length) { el.innerHTML = ''; return; }
   el.innerHTML = settings[key].map(w => `
     <span class="tag ${cls}">
-      ${w}
-      <span class="tag-remove" onclick="removeKeyword('${type}','${w.replace(/'/g,"\\'")}')">×</span>
+      ${escH(w)}
+      <span class="tag-remove" onclick="removeKeyword('${type}','${escQ(w)}')">×</span>
     </span>
   `).join('');
 }
@@ -821,6 +864,7 @@ function saveCurrentResult() {
   const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === hKey);
   if (idx >= 0) appHistory[idx] = currentResult;
   setUD('ch_history', appHistory);
+  logActivity('SAVE_RESULT', currentResult.dateStr || 'unnamed');
 }
 
 function saveSessionName(i, inputEl) {
@@ -870,7 +914,7 @@ function renderHistory() {
     el.innerHTML = appHistory.map((h, i) => `
       <div class="history-item" style="display:flex;align-items:center;gap:10px">
         <div style="flex:1" onclick="viewHistory(${i})">
-          <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
+          <div class="hi-date">${escH(h.dateStr || 'Unnamed')}${h.bossName ? ' · ' + escH(h.bossName) : ''}</div>
           <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
         </div>
         <button class="btn-icon" onclick="deleteHistory(${i})" style="font-size:16px;padding:6px 10px;color:var(--text3)">🗑</button>
@@ -926,7 +970,7 @@ function renderDeleted() {
     return `
       <div class="history-item" style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;opacity:0.6">
-          <div class="hi-date">${h.dateStr || 'Unnamed'}${h.bossName ? ' · ' + h.bossName : ''}</div>
+          <div class="hi-date">${escH(h.dateStr || 'Unnamed')}${h.bossName ? ' · ' + escH(h.bossName) : ''}</div>
           <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
         </div>
         <button onclick="restoreHistory(${i})" style="background:var(--green-bg);color:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">Undo</button>
@@ -1256,7 +1300,7 @@ function renderGroups() {
 
     if (expanded) {
       const chips = g.players.map(name =>
-        `<span class="player-chip">${name}<span class="rm" onclick="removePlayer('${g.id}','${escQ(name)}')">×</span></span>`
+        `<span class="player-chip">${escH(name)}<span class="rm" onclick="removePlayer('${g.id}','${escQ(name)}')">×</span></span>`
       ).join('') || '<span style="font-size:13px;color:var(--text3)">No players yet</span>';
 
       let attHtml = '';
@@ -1267,7 +1311,7 @@ function renderGroups() {
             const c = stats.counts[name] || 0;
             const pct = stats.totalSessions > 0 ? (c / stats.totalSessions) * 100 : 0;
             return `<div class="att-row">
-              <span style="font-size:13px;min-width:90px;flex-shrink:0">${name}</span>
+              <span style="font-size:13px;min-width:90px;flex-shrink:0">${escH(name)}</span>
               <div class="att-bar"><div class="att-fill" style="width:${pct}%"></div></div>
               <span style="font-size:12px;color:var(--text2);min-width:38px;text-align:right">${c}/${stats.totalSessions}</span>
             </div>`;
@@ -1291,7 +1335,7 @@ function renderGroups() {
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleGroupExpand('${g.id}')">
         <div>
-          <div style="font-size:15px;font-weight:600">${g.name}</div>
+          <div style="font-size:15px;font-weight:600">${escH(g.name)}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length} players${stats.totalSessions > 0 ? ' · ' + stats.totalSessions + ' sessions this month' : ''}</div>
         </div>
         <span style="font-size:22px;color:var(--text3);display:inline-block;transform:rotate(${expanded?'90':'0'}deg)">›</span>
@@ -1333,7 +1377,7 @@ function openAddGroupModal() {
     <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Pick from keywords:</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
       ${available.map(k => `<button onclick="document.getElementById('new-group-input').value='${escQ(k)}'"
-        style="padding:5px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);cursor:pointer;font-family:inherit">${k}</button>`).join('')}
+        style="padding:5px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);cursor:pointer;font-family:inherit">${escH(k)}</button>`).join('')}
     </div>` : '';
   createModal(`
     <div class="sheet-title">New Group</div>
@@ -1392,6 +1436,7 @@ function confirmDeleteGroup(id) {
 }
 
 function escQ(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 // ─── MODAL HELPERS ────────────────────────────────────────
@@ -1752,6 +1797,10 @@ function generateFromBuilder() {
 
 // ─── AUTH FUNCTIONS ───────────────────────────────────────
 let authMode = 'login';
+let loginAttempts = 0;
+let loginLockedUntil = 0;
+
+function requireAuth() { if (!currentUser) { logoutUser(); return false; } return true; }
 
 function toggleAuthMode() {
   authMode = authMode === 'login' ? 'register' : 'login';
@@ -1763,37 +1812,39 @@ function toggleAuthMode() {
   document.getElementById('auth-error').style.display = 'none';
 }
 
-function quickLogin() {
-  let admin = authUsers.find(u => u.role === 'admin');
-  if (!admin) {
-    admin = { id: 'u_admin', username: 'יוסף סקובלו', role: 'admin', createdAt: Date.now() };
-    authUsers.push(admin);
-    localStorage.setItem('ch_auth_users', JSON.stringify(authUsers));
-  }
-  currentUser = admin;
-  localStorage.setItem('ch_session', JSON.stringify(currentUser));
-  onLogin();
-}
-
 function submitAuth() {
   const username = document.getElementById('auth-username').value.trim();
   const password = document.getElementById('auth-password').value;
   const errEl = document.getElementById('auth-error');
   errEl.style.display = 'none';
+
+  // Rate limiting
+  if (Date.now() < loginLockedUntil) {
+    const secs = Math.ceil((loginLockedUntil - Date.now()) / 1000);
+    errEl.textContent = `Too many failed attempts. Try again in ${secs}s.`; errEl.style.display = 'block'; return;
+  }
+
   if (!username || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
+  if (username.length > 50) { errEl.textContent = 'Username is too long.'; errEl.style.display = 'block'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (password.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
 
   if (authMode === 'login') {
-    const user = authUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const user = authUsers?.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (!user || user.passwordHash !== hashPwd(password)) {
+      loginAttempts++;
+      if (loginAttempts >= 5) { loginLockedUntil = Date.now() + 60000; loginAttempts = 0; }
       errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return;
     }
+    loginAttempts = 0; loginLockedUntil = 0;
     currentUser = { id: user.id, username: user.username, role: user.role };
   } else {
     const fullname = document.getElementById('auth-fullname').value.trim() || username;
-    if (authUsers.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+    if (authUsers?.find(u => u.username.toLowerCase() === username.toLowerCase())) {
       errEl.textContent = 'Username already taken.'; errEl.style.display = 'block'; return;
     }
     const nu = { id: 'u_' + Date.now(), username: fullname, passwordHash: hashPwd(password), role: 'coach', createdAt: Date.now() };
+    if (!authUsers) authUsers = [];
     authUsers.push(nu);
     saveAuthUsers();
     currentUser = { id: nu.id, username: nu.username, role: nu.role };
@@ -1802,7 +1853,50 @@ function submitAuth() {
   onLogin();
 }
 
+function submitFirstRun() {
+  const name = document.getElementById('firstrun-name').value.trim();
+  const username = document.getElementById('firstrun-username').value.trim();
+  const password = document.getElementById('firstrun-password').value;
+  const confirm = document.getElementById('firstrun-confirm').value;
+  const errEl = document.getElementById('firstrun-error');
+  errEl.style.display = 'none';
+  if (!name || !username || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
+  if (username.length > 50) { errEl.textContent = 'Username must be 50 characters or fewer.'; errEl.style.display = 'block'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (password.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
+  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  authUsers = [{ id: 'u_admin', username: name, passwordHash: hashPwd(password), role: 'admin', createdAt: Date.now() }];
+  saveAuthUsers();
+  currentUser = { id: 'u_admin', username: name, role: 'admin' };
+  saveSession();
+  document.getElementById('screen-firstrun').classList.remove('active');
+  onLogin();
+}
+
+function changePassword() {
+  if (!requireAuth()) return;
+  const curPwd = document.getElementById('pwd-current').value;
+  const newPwd = document.getElementById('pwd-new').value;
+  const confirmPwd = document.getElementById('pwd-confirm').value;
+  const errEl = document.getElementById('change-pwd-error');
+  const okEl = document.getElementById('change-pwd-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  const user = authUsers?.find(u => u.id === currentUser.id);
+  if (!user || user.passwordHash !== hashPwd(curPwd)) { errEl.textContent = 'Current password is incorrect.'; errEl.style.display = 'block'; return; }
+  if (newPwd.length < 6) { errEl.textContent = 'New password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (newPwd.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
+  if (newPwd !== confirmPwd) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  user.passwordHash = hashPwd(newPwd);
+  saveAuthUsers();
+  document.getElementById('pwd-current').value = '';
+  document.getElementById('pwd-new').value = '';
+  document.getElementById('pwd-confirm').value = '';
+  okEl.style.display = 'block';
+  logActivity('CHANGE_PASSWORD', currentUser.username);
+}
+
 function onLogin() {
+  logActivity('LOGIN', currentUser?.username);
   viewingUserId = null;
   loadUserState();
   document.getElementById('main-nav').style.display = '';
@@ -1818,6 +1912,7 @@ function onLogin() {
 }
 
 function logoutUser() {
+  logActivity('LOGOUT', currentUser?.username);
   currentUser = null; viewingUserId = null;
   localStorage.removeItem('ch_session');
   appHistory=[]; deletedHistory=[]; settings=Object.assign({},defaultSettings);
@@ -1845,8 +1940,8 @@ function renderAdminPanel() {
   el.innerHTML = others.map(u => `
     <div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:0.5px solid var(--border)">
       <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.username}</div>
-        <div style="font-size:11px;color:var(--text3)">${u.role}</div>
+        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(u.username)}</div>
+        <div style="font-size:11px;color:var(--text3)">${escH(u.role)}</div>
       </div>
       <button onclick="adminView('${u.id}')" style="background:var(--blue-bg);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">View</button>
       <button onclick="adminToggleRole('${u.id}')" style="background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">${u.role==='admin'?'Revoke admin':'Make admin'}</button>
@@ -1854,7 +1949,22 @@ function renderAdminPanel() {
     </div>`).join('');
 }
 
+function toggleActivityLog() {
+  const body = document.getElementById('activity-log-body');
+  const arrow = document.getElementById('activity-log-arrow');
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.textContent = open ? '↓' : '›';
+  if (open) {
+    body.innerHTML = activityLog.length
+      ? activityLog.map(e => `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(e.t)} <strong>${escH(e.action)}</strong>${e.detail ? ' · ' + escH(e.detail) : ''}</div>`).join('')
+      : '<div style="padding:8px 0">No activity yet this session.</div>';
+  }
+}
+
 function adminView(userId) {
+  logActivity('ADMIN_VIEW', userId);
   viewingUserId = userId;
   loadUserState();
   const u = authUsers.find(u => u.id === userId);
@@ -1863,7 +1973,7 @@ function adminView(userId) {
   let banner = document.getElementById('admin-view-banner');
   if (!banner) { banner = document.createElement('div'); banner.id = 'admin-view-banner'; app?.prepend(banner); }
   banner.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:150;background:var(--blue);color:#111;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:13px;font-weight:600;box-sizing:border-box';
-  banner.innerHTML = `<span>Viewing: ${u?.username||'Unknown'}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">✕ Exit</button>`;
+  banner.innerHTML = `<span>Viewing: ${escH(u?.username||'Unknown')}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">✕ Exit</button>`;
   currentMonthYear = null;
   showScreen('log');
 }
@@ -1882,6 +1992,7 @@ function adminToggleRole(userId) {
   if (!u) return;
   u.role = u.role === 'admin' ? 'coach' : 'admin';
   saveAuthUsers();
+  logActivity('ADMIN_ROLE', `${u.username} → ${u.role}`);
   renderAdminPanel();
 }
 
@@ -1889,18 +2000,42 @@ function adminRemove(userId) {
   const u = authUsers.find(u => u.id === userId);
   if (!u) return;
   showConfirmModal(`Remove "${u.username}"? Their data is preserved but they won't be able to sign in.`, () => {
+    logActivity('ADMIN_REMOVE', u.username);
     authUsers = authUsers.filter(u => u.id !== userId);
     saveAuthUsers();
     renderAdminPanel();
   });
 }
 
+// ─── ACTIVITY LOGGING ─────────────────────────────────────
+let activityLog = [];
+function logActivity(action, detail) {
+  const entry = { t: new Date().toLocaleTimeString(), action, detail: detail || '' };
+  activityLog.unshift(entry);
+  if (activityLog.length > 100) activityLog.length = 100;
+  console.log(`[CoachHours] ${entry.t} — ${action}${detail ? ': ' + detail : ''}`);
+}
+
+// ─── GLOBAL ERROR HANDLING ────────────────────────────────
+window.onerror = (msg, src, line) => { console.error('[CoachHours Error]', msg, 'at', src + ':' + line); return false; };
+window.onunhandledrejection = e => console.error('[CoachHours Promise]', e.reason);
+
 // ─── INITIAL AUTH CHECK ───────────────────────────────────
-if (currentUser) {
+const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
+if (currentUser?.loginTime && Date.now() - currentUser.loginTime > SESSION_TTL) {
+  localStorage.removeItem('ch_session'); currentUser = null;
+}
+
+if (!authUsers) {
+  // First launch — show first-run setup screen
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('screen-firstrun').classList.add('active');
+} else if (currentUser) {
   loadUserState();
   document.getElementById('main-nav').style.display = '';
   init();
   showScreen('log');
+  logActivity('SESSION_RESUME', currentUser.username);
 }
 // (else: screen-auth is already active, nav stays hidden)
 
