@@ -290,6 +290,9 @@
         <h1 style="font-size:26px;font-weight:600;letter-spacing:-0.5px">Welcome</h1>
         <p style="font-size:14px;color:var(--text2);margin-top:6px">Set up your admin account to get started</p>
       </div>
+      <div id="firstrun-existing-notice" style="display:none;background:var(--accent,#e8f4fd);color:var(--text1,#333);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+        Your previous data was found and will be restored once you complete setup.
+      </div>
       <div id="firstrun-error" class="error-box" style="margin-bottom:10px"></div>
       <div style="margin-bottom:10px">
         <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Your name</label>
@@ -571,6 +574,17 @@ if (!authUsers) {
 }
 function saveAuthUsers() { localStorage.setItem('ch_auth_users', JSON.stringify(authUsers)); }
 function saveSession()    { localStorage.setItem('ch_session', JSON.stringify({ ...currentUser, loginTime: Date.now() })); }
+
+// ─── DATA VERSION & MIGRATION ─────────────────────────────
+// Bump DATA_VERSION whenever a future release changes localStorage key names or shapes.
+// Add a migration block inside runMigrations() for each version step.
+const DATA_VERSION = 1;
+function runMigrations() {
+  const stored = parseInt(localStorage.getItem('ch_data_version') || '0');
+  if (stored >= DATA_VERSION) return;
+  // v0 → v1: no structural changes; just stamp the version for the first time
+  localStorage.setItem('ch_data_version', String(DATA_VERSION));
+}
 
 // Active user ID: admin can "view as" another coach
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
@@ -1897,6 +1911,7 @@ function changePassword() {
 
 function onLogin() {
   logActivity('LOGIN', currentUser?.username);
+  runMigrations();
   viewingUserId = null;
   loadUserState();
   document.getElementById('main-nav').style.display = '';
@@ -2030,7 +2045,13 @@ if (!authUsers) {
   // First launch — show first-run setup screen
   document.getElementById('screen-auth').classList.remove('active');
   document.getElementById('screen-firstrun').classList.add('active');
+  // If legacy data exists under u_admin keys, reassure the user it will be restored
+  const hasExisting = ['ch_history','ch_groups','ch_settings','ch_received'].some(k => {
+    try { const v = localStorage.getItem(k + '_u_admin'); return v && v !== 'null' && v !== '[]' && v !== '{}'; } catch { return false; }
+  });
+  if (hasExisting) document.getElementById('firstrun-existing-notice').style.display = '';
 } else if (currentUser) {
+  runMigrations();
   loadUserState();
   document.getElementById('main-nav').style.display = '';
   init();
