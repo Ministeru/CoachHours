@@ -269,8 +269,8 @@
         <input type="text" id="auth-fullname" placeholder="Your full name" style="width:100%">
       </div>
       <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Username</label>
-        <input type="text" id="auth-username" placeholder="Username" style="width:100%">
+        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Email</label>
+        <input type="email" id="auth-email" placeholder="Email address" style="width:100%">
       </div>
       <div style="margin-bottom:18px">
         <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Password</label>
@@ -279,39 +279,6 @@
       </div>
       <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">Sign In</button>
       <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">Register as new coach</button>
-    </div>
-  </div>
-
-  <!-- ── FIRST-RUN SETUP SCREEN ── -->
-  <div id="screen-firstrun" class="screen" style="justify-content:center;align-items:center">
-    <div style="width:100%;padding:40px 24px;max-width:400px">
-      <div style="text-align:center;margin-bottom:32px">
-        <div style="font-size:42px;margin-bottom:10px">🏃</div>
-        <h1 style="font-size:26px;font-weight:600;letter-spacing:-0.5px">Welcome</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">Set up your admin account to get started</p>
-      </div>
-      <div id="firstrun-existing-notice" style="display:none;background:var(--accent,#e8f4fd);color:var(--text1,#333);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">
-        Your previous data was found and will be restored once you complete setup.
-      </div>
-      <div id="firstrun-error" class="error-box" style="margin-bottom:10px"></div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Your name</label>
-        <input type="text" id="firstrun-name" placeholder="Full name" style="width:100%">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Username</label>
-        <input type="text" id="firstrun-username" placeholder="Username" style="width:100%">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Password</label>
-        <input type="password" id="firstrun-password" placeholder="Min 6 characters" style="width:100%">
-      </div>
-      <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Confirm password</label>
-        <input type="password" id="firstrun-confirm" placeholder="Repeat password" style="width:100%"
-          onkeydown="if(event.key==='Enter')submitFirstRun()">
-      </div>
-      <button class="btn btn-primary" onclick="submitFirstRun()" style="margin-top:0">Create account</button>
     </div>
   </div>
 
@@ -482,10 +449,6 @@
       <div class="card-label">Change password</div>
       <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
       <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Current password</label>
-        <input type="password" id="pwd-current" style="width:100%">
-      </div>
-      <div style="margin-bottom:10px">
         <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">New password</label>
         <input type="password" id="pwd-new" style="width:100%">
       </div>
@@ -495,6 +458,21 @@
       </div>
       <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Update password</button>
       <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">Password updated</div>
+    </div>
+
+    <!-- EXPORT / IMPORT -->
+    <div class="card">
+      <div class="card-label">Data backup</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Export your data to move it between devices or browsers (e.g. from local to GitHub Pages).</p>
+      <div style="display:flex;gap:8px">
+        <button onclick="exportData()" style="flex:1;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit">Export</button>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer">
+          Import
+          <input type="file" accept=".json" onchange="importData(this)" style="display:none">
+        </label>
+      </div>
+      <div id="import-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">Data imported — reloading…</div>
+      <div id="import-error" style="display:none;color:var(--red);font-size:13px;margin-top:8px;text-align:center"></div>
     </div>
 
     <!-- ADMIN PANEL -->
@@ -547,50 +525,44 @@
       <span>Settings</span>
     </button>
   </nav>
+
+  <!-- ── LOADING OVERLAY ── -->
+  <div id="loading-overlay" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center">
+    <div style="font-size:14px;color:var(--text2)">Loading…</div>
+  </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
-// ─── AUTH ────────────────────────────────────────────────
-// Password hash (FNV-1a 32-bit + app salt). NOT cryptographically secure.
-// Passwords are set by users and stored only in localStorage — never in source code.
-function hashPwd(str) {
-  const s = 'CoachH0urs_' + str;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); h >>>= 0; }
-  return h.toString(16).padStart(8, '0');
-}
+// ─── FIREBASE ─────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDopX9hVDEx3c-_uXyce6LLDdAjIeeynNQ",
+  authDomain: "coachhours-49524.firebaseapp.com",
+  projectId: "coachhours-49524",
+  storageBucket: "coachhours-49524.firebasestorage.app",
+  messagingSenderId: "727995088282",
+  appId: "1:727995088282:web:120efebd8dc2f072690e23"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+db.enablePersistence().catch(() => {});
 
-let authUsers = JSON.parse(localStorage.getItem('ch_auth_users') || 'null');
-let currentUser = JSON.parse(localStorage.getItem('ch_session') || 'null');
+let currentUser = null;   // { id, username, role }
 let viewingUserId = null; // admin "view as" override
-
-// Bootstrap: on first load (no users), migrate legacy data. First-run screen shown at page bottom.
-if (!authUsers) {
-  // Migrate existing localStorage keys → namespaced under u_admin (legacy single-user migration)
-  ['ch_history','ch_deleted','ch_settings','ch_received','ch_groups','ch_attendance'].forEach(k => {
-    const v = localStorage.getItem(k);
-    if (v && v !== 'null') { localStorage.setItem(k + '_u_admin', v); localStorage.removeItem(k); }
-  });
-}
-function saveAuthUsers() { localStorage.setItem('ch_auth_users', JSON.stringify(authUsers)); }
-function saveSession()    { localStorage.setItem('ch_session', JSON.stringify({ ...currentUser, loginTime: Date.now() })); }
-
-// ─── DATA VERSION & MIGRATION ─────────────────────────────
-// Bump DATA_VERSION whenever a future release changes localStorage key names or shapes.
-// Add a migration block inside runMigrations() for each version step.
-const DATA_VERSION = 1;
-function runMigrations() {
-  const stored = parseInt(localStorage.getItem('ch_data_version') || '0');
-  if (stored >= DATA_VERSION) return;
-  // v0 → v1: no structural changes; just stamp the version for the first time
-  localStorage.setItem('ch_data_version', String(DATA_VERSION));
-}
 
 // Active user ID: admin can "view as" another coach
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
-function ud(key)     { return key + '_' + activeUid(); }
-function getUD(key, def) { try { return JSON.parse(localStorage.getItem(ud(key)) ?? JSON.stringify(def)); } catch { return def; } }
-function setUD(key, val) { try { localStorage.setItem(ud(key), JSON.stringify(val)); } catch(e) { console.error('[CoachHours] Storage write failed:', e); } }
+
+// Save a data key to Firestore (fire-and-forget)
+function saveUD(key, val) {
+  if (!auth.currentUser) return;
+  db.collection('users').doc(activeUid()).collection('data').doc(key)
+    .set({ data: val })
+    .catch(e => console.error('[CoachHours] Firestore save failed:', e));
+}
 
 // ─── STATE ───────────────────────────────────────────────
 let appHistory = [];
@@ -606,13 +578,19 @@ const defaultSettings = {
 };
 let settings = Object.assign({}, defaultSettings);
 
-function loadUserState() {
-  appHistory      = getUD('ch_history',   []);
-  deletedHistory  = getUD('ch_deleted',   []);
-  settings        = Object.assign({}, defaultSettings, getUD('ch_settings', {}));
-  monthlyReceived = getUD('ch_received',  {});
-  groups          = getUD('ch_groups',    {});
-  groupAttendance = getUD('ch_attendance',{});
+async function loadUserState() {
+  const ref = db.collection('users').doc(activeUid()).collection('data');
+  const [hist, del, set, rec, grp] = await Promise.all([
+    ref.doc('ch_history').get(), ref.doc('ch_deleted').get(),
+    ref.doc('ch_settings').get(), ref.doc('ch_received').get(),
+    ref.doc('ch_groups').get(),
+  ]);
+  appHistory      = hist.exists ? hist.data().data : [];
+  deletedHistory  = del.exists  ? del.data().data  : [];
+  settings        = Object.assign({}, defaultSettings, set.exists ? set.data().data : {});
+  monthlyReceived = rec.exists  ? rec.data().data  : {};
+  groups          = grp.exists  ? grp.data().data  : {};
+  groupAttendance = {};
   currentResult   = null;
   currentMonthYear = null;
   confirmingDelete = new Set();
@@ -630,7 +608,7 @@ function init() {
 function saveSettings() {
   settings.ratePrivate = parseFloat(document.getElementById('rate-private').value) || 80;
   settings.rateGroup = parseFloat(document.getElementById('rate-group').value) || 50;
-  setUD('ch_settings', settings);
+  saveUD('ch_settings', settings);
 }
 
 function addKeyword(type) {
@@ -754,7 +732,7 @@ function parseLog() {
     showDayConflictModal(idx, currentResult);
   } else {
     appHistory.unshift(currentResult);
-    setUD('ch_history', appHistory);
+    saveUD('ch_history', appHistory);
     renderResult(currentResult);
     showScreen('result');
   }
@@ -791,7 +769,7 @@ function extendDay() {
   for (const s of existing.sessions) msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
   msg += 'סה״כ: ' + fmtHours(existing.totalMins) + ' שעות ' + Math.round(existing.totalEarned) + ' ₪ + נסיעות';
   existing.msg = msg;
-  setUD('ch_history', appHistory);
+  saveUD('ch_history', appHistory);
   currentResult = existing;
   renderResult(existing);
   showScreen('result');
@@ -802,7 +780,7 @@ function replaceDay() {
   const newResult = window._conflictNew;
   if (idx === undefined || !newResult) return;
   appHistory[idx] = newResult;
-  setUD('ch_history', appHistory);
+  saveUD('ch_history', appHistory);
   currentResult = newResult;
   renderResult(newResult);
   showScreen('result');
@@ -859,7 +837,7 @@ function addNameToKeywords(name, type) {
   const opposite = type === 'group' ? 'privateKeywords' : 'groupKeywords';
   if (!settings[key].includes(name)) settings[key].push(name);
   settings[opposite] = settings[opposite].filter(k => k !== name);
-  setUD('ch_settings', settings);
+  saveUD('ch_settings', settings);
   renderKeywordTags('group');
   renderKeywordTags('private');
 }
@@ -877,7 +855,7 @@ function saveCurrentResult() {
   const hKey = (currentResult.dateStr + currentResult.bossName).trim();
   const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === hKey);
   if (idx >= 0) appHistory[idx] = currentResult;
-  setUD('ch_history', appHistory);
+  saveUD('ch_history', appHistory);
   logActivity('SAVE_RESULT', currentResult.dateStr || 'unnamed');
 }
 
@@ -947,16 +925,16 @@ function viewHistory(i) {
 function deleteHistory(i) {
   const [item] = appHistory.splice(i, 1);
   deletedHistory.unshift(item);
-  setUD('ch_history', appHistory);
-  setUD('ch_deleted', deletedHistory);
+  saveUD('ch_history', appHistory);
+  saveUD('ch_deleted', deletedHistory);
   renderHistory();
 }
 
 function restoreHistory(i) {
   const [item] = deletedHistory.splice(i, 1);
   appHistory.unshift(item);
-  setUD('ch_history', appHistory);
-  setUD('ch_deleted', deletedHistory);
+  saveUD('ch_history', appHistory);
+  saveUD('ch_deleted', deletedHistory);
   confirmingDelete.delete('d' + i);
   renderHistory();
 }
@@ -970,7 +948,7 @@ function permanentDelete(i) {
   }
   confirmingDelete.delete(key);
   deletedHistory.splice(i, 1);
-  setUD('ch_deleted', deletedHistory);
+  saveUD('ch_deleted', deletedHistory);
   renderDeleted();
 }
 
@@ -996,7 +974,7 @@ function renderDeleted() {
 
 // ─── MONTH CALENDAR ───────────────────────────────────────
 let currentMonthYear = null;
-let monthlyReceived = JSON.parse(localStorage.getItem('ch_received') || '{}');
+let monthlyReceived = {};
 
 function monthKey(year, month) {
   return String(month).padStart(2, '0') + '/' + year;
@@ -1006,7 +984,7 @@ function saveMonthReceived(year, month, val) {
   const k = monthKey(year, month);
   if (val === '' || val === null) delete monthlyReceived[k];
   else monthlyReceived[k] = parseFloat(val);
-  setUD('ch_received', monthlyReceived);
+  saveUD('ch_received', monthlyReceived);
   renderMonthCalendar();
 }
 
@@ -1281,12 +1259,12 @@ function showScreen(name) {
 
 // ─── GROUPS STATE ─────────────────────────────────────────
 // { [id]: { id, name, players: string[] } }
-let groups = JSON.parse(localStorage.getItem('ch_groups') || '{}');
+let groups = {};
 // { [groupId]: { 'DD/MM/YYYY': [playerName, ...] } }
-let groupAttendance = JSON.parse(localStorage.getItem('ch_attendance') || '{}');
+let groupAttendance = {};
 
-function saveGroups() { setUD('ch_groups', groups); }
-function saveGroupAttendance() { setUD('ch_attendance', groupAttendance); }
+function saveGroups() { saveUD('ch_groups', groups); }
+function saveGroupAttendance() {} // attendance stored on session objects; no separate doc needed
 function getGroup(id) { return groups[id]; }
 // Handles both old format (array) and new format ({ present, savedAt })
 function attPlayers(entry) { if (!entry) return []; return Array.isArray(entry) ? entry : (entry.present || []); }
@@ -1563,7 +1541,7 @@ function saveAttFromModal(histTs, sessionStart, playersCsv) {
   const now = new Date();
   const savedAt = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
   s.attendance = { present, savedAt };
-  setUD('ch_history', appHistory);
+  saveUD('ch_history', appHistory);
   closeModal();
   if (currentResult?.ts === histTs) renderResult(currentResult);
   if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
@@ -1811,8 +1789,6 @@ function generateFromBuilder() {
 
 // ─── AUTH FUNCTIONS ───────────────────────────────────────
 let authMode = 'login';
-let loginAttempts = 0;
-let loginLockedUntil = 0;
 
 function requireAuth() { if (!currentUser) { logoutUser(); return false; } return true; }
 
@@ -1826,122 +1802,122 @@ function toggleAuthMode() {
   document.getElementById('auth-error').style.display = 'none';
 }
 
-function submitAuth() {
-  const username = document.getElementById('auth-username').value.trim();
+async function submitAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
-  const errEl = document.getElementById('auth-error');
+  const errEl    = document.getElementById('auth-error');
   errEl.style.display = 'none';
-
-  // Rate limiting
-  if (Date.now() < loginLockedUntil) {
-    const secs = Math.ceil((loginLockedUntil - Date.now()) / 1000);
-    errEl.textContent = `Too many failed attempts. Try again in ${secs}s.`; errEl.style.display = 'block'; return;
-  }
-
-  if (!username || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
-  if (username.length > 50) { errEl.textContent = 'Username is too long.'; errEl.style.display = 'block'; return; }
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
   if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  if (password.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
-
-  if (authMode === 'login') {
-    const user = authUsers?.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user || user.passwordHash !== hashPwd(password)) {
-      loginAttempts++;
-      if (loginAttempts >= 5) { loginLockedUntil = Date.now() + 60000; loginAttempts = 0; }
-      errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return;
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+  try {
+    if (authMode === 'login') {
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      const name = document.getElementById('auth-fullname').value.trim();
+      if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; btn.disabled = false; return; }
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      const existing = await db.collection('users').limit(1).get();
+      const role = existing.empty ? 'admin' : 'coach';
+      await db.collection('users').doc(cred.user.uid).set({ username: name, email, role, createdAt: Date.now() });
     }
-    loginAttempts = 0; loginLockedUntil = 0;
-    currentUser = { id: user.id, username: user.username, role: user.role };
-  } else {
-    const fullname = document.getElementById('auth-fullname').value.trim() || username;
-    if (authUsers?.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-      errEl.textContent = 'Username already taken.'; errEl.style.display = 'block'; return;
-    }
-    const nu = { id: 'u_' + Date.now(), username: fullname, passwordHash: hashPwd(password), role: 'coach', createdAt: Date.now() };
-    if (!authUsers) authUsers = [];
-    authUsers.push(nu);
-    saveAuthUsers();
-    currentUser = { id: nu.id, username: nu.username, role: nu.role };
+    // onAuthStateChanged fires automatically — clear form
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-fullname').value = '';
+    authMode = 'login';
+    document.getElementById('auth-name-row').style.display = 'none';
+    document.getElementById('auth-submit-btn').textContent = 'Sign In';
+    document.getElementById('auth-toggle-btn').textContent = 'Register as new coach';
+  } catch(e) {
+    errEl.textContent = firebaseAuthError(e.code); errEl.style.display = 'block';
   }
-  saveSession();
-  onLogin();
+  btn.disabled = false;
 }
 
-function submitFirstRun() {
-  const name = document.getElementById('firstrun-name').value.trim();
-  const username = document.getElementById('firstrun-username').value.trim();
-  const password = document.getElementById('firstrun-password').value;
-  const confirm = document.getElementById('firstrun-confirm').value;
-  const errEl = document.getElementById('firstrun-error');
-  errEl.style.display = 'none';
-  if (!name || !username || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
-  if (username.length > 50) { errEl.textContent = 'Username must be 50 characters or fewer.'; errEl.style.display = 'block'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  if (password.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
-  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
-  authUsers = [{ id: 'u_admin', username: name, passwordHash: hashPwd(password), role: 'admin', createdAt: Date.now() }];
-  saveAuthUsers();
-  currentUser = { id: 'u_admin', username: name, role: 'admin' };
-  saveSession();
-  document.getElementById('screen-firstrun').classList.remove('active');
-  onLogin();
+function firebaseAuthError(code) {
+  return {
+    'auth/invalid-email': 'Invalid email address.',
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/user-not-found': 'No account with that email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/email-already-in-use': 'An account with that email already exists.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/too-many-requests': 'Too many attempts. Try again later.',
+  }[code] || 'Something went wrong. Try again.';
 }
 
-function changePassword() {
+async function changePassword() {
   if (!requireAuth()) return;
-  const curPwd = document.getElementById('pwd-current').value;
   const newPwd = document.getElementById('pwd-new').value;
-  const confirmPwd = document.getElementById('pwd-confirm').value;
+  const confPwd = document.getElementById('pwd-confirm').value;
   const errEl = document.getElementById('change-pwd-error');
-  const okEl = document.getElementById('change-pwd-ok');
+  const okEl  = document.getElementById('change-pwd-ok');
   errEl.style.display = 'none'; okEl.style.display = 'none';
-  const user = authUsers?.find(u => u.id === currentUser.id);
-  if (!user || user.passwordHash !== hashPwd(curPwd)) { errEl.textContent = 'Current password is incorrect.'; errEl.style.display = 'block'; return; }
-  if (newPwd.length < 6) { errEl.textContent = 'New password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  if (newPwd.length > 100) { errEl.textContent = 'Password is too long.'; errEl.style.display = 'block'; return; }
-  if (newPwd !== confirmPwd) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
-  user.passwordHash = hashPwd(newPwd);
-  saveAuthUsers();
-  document.getElementById('pwd-current').value = '';
-  document.getElementById('pwd-new').value = '';
-  document.getElementById('pwd-confirm').value = '';
-  okEl.style.display = 'block';
-  logActivity('CHANGE_PASSWORD', currentUser.username);
+  if (newPwd.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (newPwd !== confPwd) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  try {
+    await auth.currentUser.updatePassword(newPwd);
+    document.getElementById('pwd-new').value = '';
+    document.getElementById('pwd-confirm').value = '';
+    okEl.style.display = 'block';
+    logActivity('CHANGE_PASSWORD', currentUser?.username);
+  } catch(e) {
+    errEl.textContent = e.code === 'auth/requires-recent-login'
+      ? 'Sign out and back in first, then try again.'
+      : 'Failed to update password.';
+    errEl.style.display = 'block';
+  }
 }
 
-function onLogin() {
-  logActivity('LOGIN', currentUser?.username);
-  runMigrations();
-  viewingUserId = null;
-  loadUserState();
-  document.getElementById('main-nav').style.display = '';
-  document.getElementById('auth-username').value = '';
-  document.getElementById('auth-password').value = '';
-  document.getElementById('auth-fullname').value = '';
-  authMode = 'login';
-  document.getElementById('auth-name-row').style.display = 'none';
-  document.getElementById('auth-submit-btn').textContent = 'Sign In';
-  document.getElementById('auth-toggle-btn').textContent = 'Register as new coach';
-  init();
-  showScreen('log');
+async function exportData() {
+  if (!requireAuth()) return;
+  try {
+    const snap = await db.collection('users').doc(currentUser.id).collection('data').get();
+    const out = {};
+    snap.docs.forEach(d => { out[d.id] = d.data().data; });
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'coachhours-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click(); URL.revokeObjectURL(a.href);
+    logActivity('EXPORT_DATA', currentUser?.username);
+  } catch(e) {
+    console.error('[CoachHours] Export failed:', e);
+  }
+}
+
+function importData(input) {
+  const file = input.files[0]; if (!file) return;
+  const errEl = document.getElementById('import-error');
+  const okEl  = document.getElementById('import-ok');
+  errEl.style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid format');
+      const ref = db.collection('users').doc(currentUser.id).collection('data');
+      await Promise.all(
+        Object.entries(data).filter(([k]) => k.startsWith('ch_')).map(([k, v]) => ref.doc(k).set({ data: v }))
+      );
+      okEl.style.display = 'block';
+      setTimeout(() => location.reload(), 1200);
+    } catch {
+      errEl.textContent = 'Invalid backup file.'; errEl.style.display = 'block';
+    }
+  };
+  reader.readAsText(file);
 }
 
 function logoutUser() {
   logActivity('LOGOUT', currentUser?.username);
-  currentUser = null; viewingUserId = null;
-  localStorage.removeItem('ch_session');
-  appHistory=[]; deletedHistory=[]; settings=Object.assign({},defaultSettings);
-  monthlyReceived={}; groups={}; groupAttendance={};
-  currentResult=null; currentMonthYear=null; confirmingDelete=new Set();
-  document.getElementById('main-nav').style.display = 'none';
-  document.getElementById('admin-view-banner')?.remove();
-  document.querySelector('.app')?.classList.remove('viewing');
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-auth').classList.add('active');
+  auth.signOut(); // onAuthStateChanged fires → shows auth screen
 }
 
 // ─── ADMIN FUNCTIONS ──────────────────────────────────────
-function renderAdminPanel() {
+async function renderAdminPanel() {
   if (!currentUser) return;
   document.getElementById('account-name').textContent = currentUser.username;
   document.getElementById('account-role').textContent = currentUser.role === 'admin' ? 'Admin · Coach' : 'Coach';
@@ -1949,19 +1925,27 @@ function renderAdminPanel() {
   if (!panel) return;
   if (currentUser.role !== 'admin') { panel.style.display = 'none'; return; }
   panel.style.display = '';
-  const others = authUsers.filter(u => u.id !== currentUser.id);
-  const el = document.getElementById('admin-user-list');
-  if (!others.length) { el.innerHTML = '<div class="empty">No other coaches registered yet.</div>'; return; }
-  el.innerHTML = others.map(u => `
-    <div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:0.5px solid var(--border)">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(u.username)}</div>
-        <div style="font-size:11px;color:var(--text3)">${escH(u.role)}</div>
-      </div>
-      <button onclick="adminView('${u.id}')" style="background:var(--blue-bg);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">View</button>
-      <button onclick="adminToggleRole('${u.id}')" style="background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">${u.role==='admin'?'Revoke admin':'Make admin'}</button>
-      <button onclick="adminRemove('${u.id}')" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
-    </div>`).join('');
+  try {
+    const snap = await db.collection('users').get();
+    const others = snap.docs.filter(d => d.id !== currentUser.id && !d.data().removed);
+    const el = document.getElementById('admin-user-list');
+    if (!others.length) { el.innerHTML = '<div class="empty">No other coaches registered yet.</div>'; return; }
+    el.innerHTML = others.map(d => {
+      const u = d.data();
+      return `
+      <div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:0.5px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(u.username)}</div>
+          <div style="font-size:11px;color:var(--text3)">${escH(u.role)}</div>
+        </div>
+        <button onclick="adminView('${d.id}')" style="background:var(--blue-bg);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">View</button>
+        <button onclick="adminToggleRole('${d.id}')" style="background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">${u.role==='admin'?'Revoke admin':'Make admin'}</button>
+        <button onclick="adminRemove('${d.id}')" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[CoachHours] Admin panel error:', e);
+  }
 }
 
 function toggleActivityLog() {
@@ -1978,47 +1962,56 @@ function toggleActivityLog() {
   }
 }
 
-function adminView(userId) {
+async function adminView(userId) {
+  if (!requireAuth()) return;
   logActivity('ADMIN_VIEW', userId);
   viewingUserId = userId;
-  loadUserState();
-  const u = authUsers.find(u => u.id === userId);
+  await loadUserState();
+  const snap = await db.collection('users').doc(userId).get();
+  const u = snap.exists ? snap.data() : null;
   const app = document.querySelector('.app');
   app?.classList.add('viewing');
   let banner = document.getElementById('admin-view-banner');
   if (!banner) { banner = document.createElement('div'); banner.id = 'admin-view-banner'; app?.prepend(banner); }
   banner.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:150;background:var(--blue);color:#111;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:13px;font-weight:600;box-sizing:border-box';
   banner.innerHTML = `<span>Viewing: ${escH(u?.username||'Unknown')}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">✕ Exit</button>`;
+  init();
   currentMonthYear = null;
   showScreen('log');
 }
 
-function adminExitView() {
+async function adminExitView() {
   viewingUserId = null;
   document.getElementById('admin-view-banner')?.remove();
   document.querySelector('.app')?.classList.remove('viewing');
-  loadUserState();
+  await loadUserState();
+  init();
   currentMonthYear = null;
   showScreen('settings');
 }
 
-function adminToggleRole(userId) {
-  const u = authUsers.find(u => u.id === userId);
-  if (!u) return;
-  u.role = u.role === 'admin' ? 'coach' : 'admin';
-  saveAuthUsers();
-  logActivity('ADMIN_ROLE', `${u.username} → ${u.role}`);
-  renderAdminPanel();
+async function adminToggleRole(userId) {
+  try {
+    const doc = await db.collection('users').doc(userId).get();
+    if (!doc.exists) return;
+    const newRole = doc.data().role === 'admin' ? 'coach' : 'admin';
+    await db.collection('users').doc(userId).update({ role: newRole });
+    logActivity('ADMIN_ROLE', `${doc.data().username} → ${newRole}`);
+    renderAdminPanel();
+  } catch(e) {
+    console.error('[CoachHours] Toggle role failed:', e);
+  }
 }
 
 function adminRemove(userId) {
-  const u = authUsers.find(u => u.id === userId);
-  if (!u) return;
-  showConfirmModal(`Remove "${u.username}"? Their data is preserved but they won't be able to sign in.`, () => {
-    logActivity('ADMIN_REMOVE', u.username);
-    authUsers = authUsers.filter(u => u.id !== userId);
-    saveAuthUsers();
-    renderAdminPanel();
+  db.collection('users').doc(userId).get().then(doc => {
+    if (!doc.exists) return;
+    const u = doc.data();
+    showConfirmModal(`Remove "${escH(u.username)}"? Their data is preserved but they won't be able to sign in.`, async () => {
+      logActivity('ADMIN_REMOVE', u.username);
+      await db.collection('users').doc(userId).update({ removed: true });
+      renderAdminPanel();
+    });
   });
 }
 
@@ -2035,30 +2028,36 @@ function logActivity(action, detail) {
 window.onerror = (msg, src, line) => { console.error('[CoachHours Error]', msg, 'at', src + ':' + line); return false; };
 window.onunhandledrejection = e => console.error('[CoachHours Promise]', e.reason);
 
-// ─── INITIAL AUTH CHECK ───────────────────────────────────
-const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
-if (currentUser?.loginTime && Date.now() - currentUser.loginTime > SESSION_TTL) {
-  localStorage.removeItem('ch_session'); currentUser = null;
-}
-
-if (!authUsers) {
-  // First launch — show first-run setup screen
-  document.getElementById('screen-auth').classList.remove('active');
-  document.getElementById('screen-firstrun').classList.add('active');
-  // If legacy data exists under u_admin keys, reassure the user it will be restored
-  const hasExisting = ['ch_history','ch_groups','ch_settings','ch_received'].some(k => {
-    try { const v = localStorage.getItem(k + '_u_admin'); return v && v !== 'null' && v !== '[]' && v !== '{}'; } catch { return false; }
-  });
-  if (hasExisting) document.getElementById('firstrun-existing-notice').style.display = '';
-} else if (currentUser) {
-  runMigrations();
-  loadUserState();
-  document.getElementById('main-nav').style.display = '';
-  init();
-  showScreen('log');
-  logActivity('SESSION_RESUME', currentUser.username);
-}
-// (else: screen-auth is already active, nav stays hidden)
+// ─── STARTUP ──────────────────────────────────────────────
+auth.onAuthStateChanged(async (fbUser) => {
+  if (fbUser) {
+    try {
+      const profileDoc = await db.collection('users').doc(fbUser.uid).get();
+      if (!profileDoc.exists || profileDoc.data().removed) { await auth.signOut(); return; }
+      const p = profileDoc.data();
+      currentUser = { id: fbUser.uid, username: p.username, role: p.role };
+      viewingUserId = null;
+      await loadUserState();
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('main-nav').style.display = '';
+      init();
+      showScreen('log');
+      logActivity('SESSION_RESUME', currentUser.username);
+    } catch(e) {
+      console.error('[CoachHours] Auth state error:', e);
+      document.getElementById('loading-overlay').style.display = 'none';
+      await auth.signOut();
+    }
+  } else {
+    currentUser = null;
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('main-nav').style.display = 'none';
+    document.getElementById('admin-view-banner')?.remove();
+    document.querySelector('.app')?.classList.remove('viewing');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-auth').classList.add('active');
+  }
+});
 
 // Service Worker
 if ('serviceWorker' in navigator) {
