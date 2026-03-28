@@ -1,4 +1,4 @@
-const CACHE = 'coach-hours-v3';
+const CACHE = 'coach-hours-v4';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,6 +15,7 @@ self.addEventListener('activate', e => {
 
 // Network-first: always fetch fresh when online, fall back to cache when offline
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     fetch(e.request)
       .then(response => {

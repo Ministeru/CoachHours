@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coach Hours">
@@ -264,6 +265,7 @@
         <p style="font-size:14px;color:var(--text2);margin-top:6px" id="auth-subtitle">Sign in to continue</p>
       </div>
       <div id="auth-error" class="error-box" style="margin-bottom:10px"></div>
+      <div id="auth-success" style="display:none;margin-bottom:10px;padding:10px 12px;background:var(--green-bg);border:0.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;color:var(--green)"></div>
       <div id="auth-name-row" style="display:none;margin-bottom:10px">
         <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Full name</label>
         <input type="text" id="auth-fullname" placeholder="Your full name" style="width:100%">
@@ -548,10 +550,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
-db.enablePersistence().catch(() => {});
+db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 
 let currentUser = null;   // { id, username, role }
 let viewingUserId = null; // admin "view as" override
+let registering = false;  // blocks onAuthStateChanged during registration
 
 // Active user ID: admin can "view as" another coach
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
@@ -1817,20 +1820,32 @@ async function submitAuth() {
     } else {
       const name = document.getElementById('auth-fullname').value.trim();
       if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; btn.disabled = false; return; }
+      registering = true;
       const cred = await auth.createUserWithEmailAndPassword(email, password);
-      const existing = await db.collection('users').limit(1).get();
-      const role = existing.empty ? 'admin' : 'coach';
+      // Check if this is the first user by reading the meta/firstUser doc (no collection query needed)
+      const metaDoc = await db.collection('meta').doc('firstUser').get();
+      const role = !metaDoc.exists ? 'admin' : 'coach';
       await db.collection('users').doc(cred.user.uid).set({ username: name, email, role, createdAt: Date.now() });
+      if (!metaDoc.exists) await db.collection('meta').doc('firstUser').set({ uid: cred.user.uid });
+      registering = false;
+      // Sign out and return to login — onAuthStateChanged will not auto-enter the app
+      await auth.signOut();
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+      document.getElementById('auth-fullname').value = '';
+      document.getElementById('auth-name-row').style.display = 'none';
+      authMode = 'login';
+      document.getElementById('auth-submit-btn').textContent = 'Sign In';
+      document.getElementById('auth-toggle-btn').textContent = 'Register as new coach';
+      document.getElementById('auth-error').style.display = 'none';
+      const successEl = document.getElementById('auth-success');
+      successEl.textContent = 'Account created! Sign in to continue.';
+      successEl.style.display = 'block';
+      btn.disabled = false;
+      return;
     }
-    // onAuthStateChanged fires automatically — clear form
-    document.getElementById('auth-email').value = '';
-    document.getElementById('auth-password').value = '';
-    document.getElementById('auth-fullname').value = '';
-    authMode = 'login';
-    document.getElementById('auth-name-row').style.display = 'none';
-    document.getElementById('auth-submit-btn').textContent = 'Sign In';
-    document.getElementById('auth-toggle-btn').textContent = 'Register as new coach';
   } catch(e) {
+    registering = false;
     errEl.textContent = firebaseAuthError(e.code); errEl.style.display = 'block';
   }
   btn.disabled = false;
@@ -2030,9 +2045,18 @@ window.onunhandledrejection = e => console.error('[CoachHours Promise]', e.reaso
 
 // ─── STARTUP ──────────────────────────────────────────────
 auth.onAuthStateChanged(async (fbUser) => {
+  if (registering) return;
   if (fbUser) {
     try {
-      const profileDoc = await db.collection('users').doc(fbUser.uid).get();
+      // Retry once if Firestore network isn't ready yet
+      let profileDoc;
+      try {
+        profileDoc = await db.collection('users').doc(fbUser.uid).get();
+      } catch(netErr) {
+        if (netErr.code !== 'unavailable') throw netErr;
+        await new Promise(r => setTimeout(r, 2000));
+        profileDoc = await db.collection('users').doc(fbUser.uid).get();
+      }
       if (!profileDoc.exists || profileDoc.data().removed) { await auth.signOut(); return; }
       const p = profileDoc.data();
       currentUser = { id: fbUser.uid, username: p.username, role: p.role };
@@ -2046,7 +2070,14 @@ auth.onAuthStateChanged(async (fbUser) => {
     } catch(e) {
       console.error('[CoachHours] Auth state error:', e);
       document.getElementById('loading-overlay').style.display = 'none';
-      await auth.signOut();
+      if (e.code === 'unavailable' || e.message?.includes('offline')) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-auth').classList.add('active');
+        document.getElementById('auth-error').textContent = 'Connection error. Check your internet and try again.';
+        document.getElementById('auth-error').style.display = 'block';
+      } else {
+        await auth.signOut();
+      }
     }
   } else {
     currentUser = null;
