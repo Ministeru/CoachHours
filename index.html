@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,47 +7,24 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Coach Hours">
+<meta name="apple-mobile-web-app-title" content="שעות אימון">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Coach Hours</title>
+<title>שעות אימון</title>
 <style>
   :root {
-    --bg: #111111;
-    --bg2: #1a1a1a;
-    --bg3: #222222;
-    --border: rgba(255,255,255,0.1);
-    --border2: rgba(255,255,255,0.18);
-    --text: #f0f0f0;
-    --text2: #999999;
-    --text3: #555555;
-    --accent: #ffffff;
-    --green: #22c55e;
-    --green-bg: rgba(34,197,94,0.12);
-    --blue: #60a5fa;
-    --blue-bg: rgba(96,165,250,0.12);
-    --red: #f87171;
-    --red-bg: rgba(248,113,113,0.12);
-    --radius: 12px;
-    --radius-sm: 8px;
+    --bg: #111111; --bg2: #1a1a1a; --bg3: #222222;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+    --text: #f0f0f0; --text2: #999999; --text3: #555555; --accent: #ffffff;
+    --green: #22c55e; --green-bg: rgba(34,197,94,0.12);
+    --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.12);
+    --red: #f87171; --red-bg: rgba(248,113,113,0.12);
+    --orange: #fb923c; --orange-bg: rgba(251,146,60,0.12);
+    --radius: 12px; --radius-sm: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-  .app {
-    max-width: 430px;
-    margin: 0 auto;
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; }
+  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; position: relative; }
 
   /* SCREENS */
   .screen { display: none; flex: 1; flex-direction: column; padding-bottom: 88px; overflow-y: auto; }
@@ -62,117 +39,32 @@
   .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin: 0 16px 12px; }
   .card-label { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 12px; }
 
-  /* TEXTAREA */
-  textarea {
-    width: 100%;
-    background: var(--bg3); border: 0.5px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px;
-    font-size: 15px; line-height: 1.7; color: var(--text);
-    resize: none; font-family: inherit;
-  }
-  textarea:focus { outline: none; border-color: var(--border2); }
-  textarea::placeholder { color: var(--text3); }
-  #log-input { min-height: 160px; }
-
   /* INPUTS */
-  input[type="text"], input[type="number"], input[type="password"] {
+  input[type="text"], input[type="number"], input[type="password"], input[type="email"], input[type="date"], input[type="time"] {
     background: var(--bg3); border: 0.5px solid var(--border);
     border-radius: var(--radius-sm); padding: 9px 12px;
-    font-size: 14px; color: var(--text); font-family: inherit;
-    width: 100%;
+    font-size: 14px; color: var(--text); font-family: inherit; width: 100%;
   }
   input:focus { outline: none; border-color: var(--border2); }
+  select { background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; color: var(--text); font-family: inherit; width: 100%; }
+  select:focus { outline: none; border-color: var(--border2); }
 
   /* BUTTONS */
-  .btn {
-    width: 100%; padding: 14px; border: none;
-    border-radius: var(--radius-sm); font-size: 15px;
-    font-weight: 600; cursor: pointer; margin-top: 10px;
-    transition: opacity 0.15s, transform 0.1s;
-    font-family: inherit;
-  }
-  .btn:active { opacity: 0.8; transform: scale(0.98); }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; font-family: inherit; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.8; }
   .btn-primary { background: var(--accent); color: #111; }
   .btn-secondary { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border); }
-  .btn-whatsapp {
-    background: #25D366; color: #fff;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-whatsapp svg { width: 20px; height: 20px; fill: #fff; flex-shrink: 0; }
-  .btn-icon {
-    background: none; border: none; cursor: pointer;
-    color: var(--text2); font-size: 18px; padding: 4px 8px;
-    font-family: inherit;
-  }
-  .btn-icon:active { color: var(--red); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red); }
 
-  /* RATES */
-  .rate-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
-  .rate-row:last-child { border-bottom: none; }
-  .rate-row label { flex: 1; font-size: 14px; color: var(--text); }
-  .rate-row input { width: 85px; text-align: right; }
-  .rate-suffix { font-size: 13px; color: var(--text2); white-space: nowrap; }
-
-  /* KEYWORD LISTS */
-  .keyword-list { display: flex; flex-direction: column; gap: 8px; }
-  .keyword-row { display: flex; align-items: center; gap: 8px; }
-  .keyword-row input { flex: 1; }
-  .keyword-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 10px; }
-  .tag {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  }
-  .tag-group { background: var(--blue-bg); color: var(--blue); }
-  .tag-private { background: var(--green-bg); color: var(--green); }
-  .tag-remove { cursor: pointer; font-size: 14px; opacity: 0.7; line-height: 1; }
-  .tag-remove:hover { opacity: 1; }
-  .add-keyword-row { display: flex; gap: 8px; margin-top: 8px; }
-  .add-keyword-row input { flex: 1; }
-  .add-keyword-row button {
-    padding: 9px 14px; background: var(--bg3); border: 0.5px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); font-size: 13px;
-    cursor: pointer; white-space: nowrap; font-family: inherit;
-  }
-  .add-keyword-row button:active { opacity: 0.7; }
-
-  /* STATS */
-  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
-  .stat { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 8px; text-align: center; }
-  .stat .val { font-size: 20px; font-weight: 600; color: var(--text); }
-  .stat .lbl { font-size: 11px; color: var(--text2); margin-top: 3px; }
-
-  /* SESSION ROWS */
-  .session-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-  .session-row:last-child { border-bottom: none; }
-  .session-time { font-size: 12px; color: var(--text2); }
-  .session-name { font-size: 14px; font-weight: 500; margin-top: 2px; }
-  .session-right { text-align: right; flex-shrink: 0; margin-left: 8px; }
-  .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
-  .badge-group { background: var(--blue-bg); color: var(--blue); }
-  .badge-private { background: var(--green-bg); color: var(--green); }
-  .badge-unknown { background: rgba(255,255,255,0.08); color: var(--text2); }
-  .session-earn { font-size: 13px; color: var(--text2); margin-top: 4px; }
-
-  /* OUTPUT MESSAGE */
-  .output-box {
-    background: var(--bg3); border: 0.5px solid var(--border);
-    border-radius: var(--radius-sm); padding: 14px;
-    font-size: 14px; line-height: 1.9; white-space: pre-wrap;
-    color: var(--text); direction: rtl; text-align: right;
-    font-family: inherit;
-  }
-  .copy-fb { text-align: center; font-size: 13px; color: var(--green); margin-top: 6px; min-height: 20px; }
-
-  /* HISTORY */
-  .history-item { padding: 12px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
-  .history-item:last-child { border-bottom: none; }
-  .history-item:active { opacity: 0.7; }
-  .hi-date { font-size: 14px; font-weight: 500; }
-  .hi-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
-  .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 24px 0; }
-
-  /* ERROR */
+  /* ERROR / SUCCESS */
   .error-box { background: var(--red-bg); color: var(--red); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-top: 8px; display: none; }
+  .success-box { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; display: none; }
+
+  /* SECTION DIVIDER */
+  .section-divider { font-size: 13px; font-weight: 600; color: var(--text2); margin: 4px 16px 8px; padding-top: 4px; }
+
+  /* EMPTY */
+  .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 24px 0; }
 
   /* BREAKDOWN */
   .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
@@ -180,77 +72,115 @@
   .breakdown-label { font-size: 14px; }
   .breakdown-val { font-size: 14px; font-weight: 500; }
 
-  /* SETTINGS SECTION DIVIDER */
-  .section-divider { font-size: 13px; font-weight: 600; color: var(--text2); margin: 4px 16px 8px; padding-top: 4px; }
-
-  /* VIEWING-AS BANNER */
-  #view-banner { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; z-index:150; background:var(--blue); color:#111; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:13px; font-weight:600; }
-  .app.viewing .header { padding-top: 96px; }
-
-  /* MODE TOGGLE */
-  .mode-toggle { display:flex; gap:8px; padding:0 16px 12px; }
-  .mode-btn { padding:7px 16px; border-radius:20px; font-size:13px; font-weight:500; background:var(--bg3); border:0.5px solid var(--border); color:var(--text2); cursor:pointer; font-family:inherit; }
-  .mode-btn.active { background:var(--accent); color:#111; border-color:var(--accent); }
-
-  /* CHIPS */
-  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
-  .chip-btn { padding:7px 14px; border-radius:20px; font-size:13px; font-weight:500; background:var(--bg3); border:0.5px solid var(--border); color:var(--text2); cursor:pointer; font-family:inherit; }
-  .chip-btn.active { background:var(--accent); color:#111; border-color:var(--accent); }
-  .chip-btn:active { opacity:0.7; }
-
-  /* TYPE TOGGLE */
-  .type-toggle { display:flex; border:0.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
-  .type-btn { flex:1; padding:9px; font-size:13px; font-weight:500; border:none; background:var(--bg3); color:var(--text2); cursor:pointer; font-family:inherit; }
-  .type-btn.act-private { background:var(--green); color:#111; }
-  .type-btn.act-group { background:var(--blue); color:#111; }
-
-  /* PLAYER CHIPS */
-  .player-chips { display:flex; flex-wrap:wrap; gap:6px; min-height:10px; }
-  .player-chip { display:inline-flex; align-items:center; gap:4px; padding:5px 10px; border-radius:20px; font-size:13px; background:var(--bg3); border:0.5px solid var(--border); color:var(--text); }
-  .player-chip .rm { cursor:pointer; opacity:0.5; font-size:15px; line-height:1; }
-  .player-chip .rm:active { opacity:1; color:var(--red); }
-
-  /* ATTENDANCE */
-  .att-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:0.5px solid var(--border); }
-  .att-row:last-child { border-bottom:none; }
-  .att-bar { flex:1; height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
-  .att-fill { height:100%; background:var(--blue); border-radius:2px; }
-
-  /* BUILDER ENTRIES */
-  .be-row { display:flex; align-items:center; padding:9px 0; border-bottom:0.5px solid var(--border); gap:8px; }
-  .be-row:last-child { border-bottom:none; }
-  .be-time { font-size:11px; color:var(--text2); width:92px; flex-shrink:0; }
-  .be-name { font-size:14px; font-weight:500; flex:1; min-width:0; }
-  .be-break { font-size:13px; color:var(--text3); font-style:italic; flex:1; }
-
-  /* BUILD FORM */
-  .build-label { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px; }
-  .build-section { margin-bottom:14px; }
-
   /* BOTTOM SHEET MODAL */
-  .bottom-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:200; display:flex; align-items:flex-end; }
-  .bottom-sheet { background:var(--bg2); border-radius:16px 16px 0 0; width:100%; max-width:430px; margin:0 auto; padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; }
-  .sheet-title { font-size:16px; font-weight:600; margin-bottom:14px; }
+  .bottom-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; display: flex; align-items: flex-end; }
+  .bottom-sheet { background: var(--bg2); border-radius: 16px 16px 0 0; width: 100%; max-width: 430px; margin: 0 auto; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
+  .sheet-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
 
   /* BOTTOM NAV */
-  .nav {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 430px;
-    background: rgba(17,17,17,0.92);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border-top: 0.5px solid var(--border);
-    display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-    z-index: 100;
-  }
-  .nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    gap: 3px; background: none; border: none; cursor: pointer;
-    color: var(--text3); padding: 6px 0; transition: color 0.15s;
-    font-family: inherit;
-  }
+  .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: rgba(17,17,17,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 0.5px solid var(--border); display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 100; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; color: var(--text3); padding: 6px 0; font-family: inherit; }
   .nav-btn.active { color: var(--accent); }
   .nav-btn svg { width: 22px; height: 22px; }
-  .nav-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.02em; }
+  .nav-btn span { font-size: 10px; font-weight: 500; }
+
+  /* VIEWING-AS BANNER */
+  #view-banner { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 150; background: var(--blue); color: #111; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 13px; font-weight: 600; box-sizing: border-box; }
+  .app.viewing .header { padding-top: 96px; }
+
+  /* TYPE TOGGLE */
+  .type-toggle { display: flex; border: 0.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .type-btn { flex: 1; padding: 9px; font-size: 13px; font-weight: 500; border: none; background: var(--bg3); color: var(--text2); cursor: pointer; font-family: inherit; }
+  .type-btn.act-private { background: var(--green); color: #111; }
+  .type-btn.act-group { background: var(--blue); color: #111; }
+
+  /* PLAYER CHIPS */
+  .player-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 10px; }
+  .player-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 20px; font-size: 13px; background: var(--bg3); border: 0.5px solid var(--border); color: var(--text); }
+  .player-chip .rm { cursor: pointer; opacity: 0.5; font-size: 15px; line-height: 1; }
+  .player-chip .rm:active { opacity: 1; color: var(--red); }
+
+  /* ATTENDANCE */
+  .att-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+  .att-row:last-child { border-bottom: none; }
+  .att-bar { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .att-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+  /* RATES */
+  .rate-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-row label { flex: 1; font-size: 14px; }
+  .rate-row input { width: 85px; text-align: right; }
+  .rate-suffix { font-size: 13px; color: var(--text2); white-space: nowrap; }
+
+  /* ─── CALENDAR ─── */
+  .cal-toolbar { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 12px; }
+  .cal-toolbar-nav { display: flex; align-items: center; height: 36px; }
+  .cal-nav { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; padding: 2px 6px; line-height: 1; font-family: inherit; flex-shrink: 0; }
+  .cal-nav:active { color: var(--text); }
+  #cal-title { flex: 1; font-size: 16px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-toolbar-controls { display: flex; align-items: center; gap: 8px; }
+  .cal-view-toggle { display: flex; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; overflow: hidden; }
+  .cal-view-btn { padding: 5px 12px; border: none; background: none; color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .cal-view-btn.active { background: var(--accent); color: #111; border-radius: 20px; }
+  .cal-add-btn { background: var(--accent); color: #111; border: none; border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; margin-inline-start: auto; }
+  .cal-add-btn:active { opacity: 0.8; }
+
+  /* Month grid */
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 0 16px 12px; }
+  .month-day-header { background: var(--bg2); text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); padding: 8px 2px; }
+  .month-day { background: var(--bg2); min-height: 72px; padding: 4px; cursor: pointer; position: relative; }
+  .month-day:active { background: var(--bg3); }
+  .month-day.today { background: rgba(255,255,255,0.04); }
+  .month-day.other-month { opacity: 0.35; }
+  .month-day-num { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 2px; }
+  .month-day.today .month-day-num { color: var(--accent); font-weight: 700; }
+  .month-chip { font-size: 10px; font-weight: 600; padding: 3px 6px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .month-chip-private { background: rgba(34,197,94,0.25); color: #4ade80; border-left: 2px solid var(--green); }
+  .month-chip-group { background: rgba(96,165,250,0.25); color: #93c5fd; border-left: 2px solid var(--blue); }
+  .month-chip-cancelled { background: rgba(255,255,255,0.06); color: var(--text3); text-decoration: line-through; }
+  .month-more { font-size: 10px; color: var(--text3); }
+  .month-add-btn { position: absolute; bottom: 3px; left: 3px; background: none; border: none; color: var(--text3); font-size: 16px; cursor: pointer; line-height: 1; padding: 1px 3px; }
+  html[dir="ltr"] .month-add-btn { left: auto; right: 3px; }
+
+  /* Week / Day agenda */
+  .week-day-block { margin: 0 16px 8px; }
+  .week-day-header { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; padding: 4px 0; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .week-day-header.today { color: var(--accent); }
+
+  /* Day time grid */
+  .day-grid { margin: 0 16px 12px; position: relative; }
+  .day-hour-row { display: flex; border-bottom: 0.5px solid var(--border); min-height: 52px; }
+  .day-hour-label { font-size: 11px; color: var(--text3); width: 40px; flex-shrink: 0; padding-top: 4px; text-align: center; }
+  html[dir="ltr"] .day-hour-label { text-align: left; padding-left: 4px; }
+  .day-hour-content { flex: 1; position: relative; }
+
+  /* Session cards (week/day view) */
+  .session-card { background: rgba(96,165,250,0.15); border-inline-start: 3px solid var(--blue); border-top: 0.5px solid rgba(96,165,250,0.3); border-bottom: 0.5px solid rgba(96,165,250,0.3); border-inline-end: none; border-radius: 6px; padding: 8px 10px; margin: 2px 0; cursor: pointer; }
+  .session-card:active { opacity: 0.8; }
+  .session-card.private { background: rgba(34,197,94,0.15); border-inline-start-color: var(--green); border-top-color: rgba(34,197,94,0.3); border-bottom-color: rgba(34,197,94,0.3); }
+  .session-card.cancelled { background: rgba(255,255,255,0.04); border-color: var(--border); opacity: 0.6; }
+  .session-card-name { font-size: 14px; font-weight: 600; }
+  .session-card-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .session-card-cancelled-badge { font-size: 10px; font-weight: 600; color: var(--red); background: var(--red-bg); padding: 2px 6px; border-radius: 10px; display: inline-block; margin-top: 3px; }
+  .session-card-att-btn { font-size: 11px; color: var(--blue); margin-top: 4px; cursor: pointer; display: inline-block; }
+
+  /* Session form fields */
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; display: block; font-weight: 500; }
+  .form-group { margin-bottom: 12px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row > * { flex: 1; }
+
+  /* Chips */
+  .chip-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .chip { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--bg3); border: 0.5px solid var(--border); color: var(--text2); cursor: pointer; font-family: inherit; }
+  .chip.active { background: var(--accent); color: #111; border-color: var(--accent); }
+
+  /* Add player row */
+  .add-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-row input { flex: 1; }
+  .add-row button { padding: 9px 14px; background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .add-row button:active { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -261,276 +191,105 @@
     <div style="width:100%;padding:40px 24px;max-width:400px">
       <div style="text-align:center;margin-bottom:32px">
         <div style="font-size:42px;margin-bottom:10px">🏃</div>
-        <h1 style="font-size:26px;font-weight:600;letter-spacing:-0.5px">Coach Hours</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px" id="auth-subtitle">Sign in to continue</p>
+        <h1 style="font-size:26px;font-weight:600;letter-spacing:-0.5px" id="auth-title">שעות אימון</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px" id="auth-subtitle">התחבר כדי להמשיך</p>
       </div>
       <div id="auth-error" class="error-box" style="margin-bottom:10px"></div>
-      <div id="auth-success" style="display:none;margin-bottom:10px;padding:10px 12px;background:var(--green-bg);border:0.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;color:var(--green)"></div>
+      <div id="auth-success" class="success-box" style="margin-bottom:10px"></div>
       <div id="auth-name-row" style="display:none;margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Full name</label>
-        <input type="text" id="auth-fullname" placeholder="Your full name" style="width:100%">
+        <label class="form-label" id="lbl-fullname">שם מלא</label>
+        <input type="text" id="auth-fullname" placeholder="השם המלא שלך" style="width:100%">
       </div>
       <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Email</label>
-        <input type="email" id="auth-email" placeholder="Email address" style="width:100%">
+        <label class="form-label" id="lbl-email">אימייל</label>
+        <input type="email" id="auth-email" placeholder="כתובת אימייל" style="width:100%" dir="ltr">
       </div>
       <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Password</label>
-        <input type="password" id="auth-password" placeholder="Password" style="width:100%"
+        <label class="form-label" id="lbl-password">סיסמה</label>
+        <input type="password" id="auth-password" placeholder="סיסמה" style="width:100%" dir="ltr"
           onkeydown="if(event.key==='Enter')submitAuth()">
       </div>
-      <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">Sign In</button>
-      <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">Register as new coach</button>
+      <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">התחבר</button>
+      <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">הרשמה כמאמן חדש</button>
+      <button class="btn btn-secondary" id="auth-resend-btn" style="margin-top:8px;font-size:12px;display:none" onclick="resendVerification()">שלח שוב אימייל אימות</button>
     </div>
   </div>
 
-  <!-- ── LOG SCREEN ── -->
-  <div id="screen-log" class="screen">
-    <div class="header">
-      <h1>Coach Hours</h1>
-      <p>Enter your session log</p>
+  <!-- ── CALENDAR SCREEN ── -->
+  <div id="screen-calendar" class="screen">
+    <div class="header" style="padding-bottom:8px">
+      <h1 id="app-header-title">שעות אימון</h1>
     </div>
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="mode-paste" onclick="setLogMode('paste')">Paste log</button>
-      <button class="mode-btn" id="mode-build" onclick="setLogMode('build')">Build day</button>
-    </div>
-    <div id="log-paste-panel" class="card">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px;min-height:18px">
-        <button id="clear-log-btn" onclick="clearLogInput()" style="display:none;background:none;border:none;font-size:12px;color:var(--text3);cursor:pointer;font-family:inherit;padding:0">✕ Clear</button>
+    <div class="cal-toolbar">
+      <div class="cal-toolbar-nav">
+        <button class="cal-nav" onclick="calPrev()">›</button>
+        <span id="cal-title"></span>
+        <button class="cal-nav" onclick="calNext()">‹</button>
       </div>
-      <textarea id="log-input" placeholder="Enter message" oninput="toggleClearBtn()"></textarea>
-      <div id="parse-error" class="error-box"></div>
-      <button class="btn btn-primary" onclick="parseLog()">Calculate →</button>
-    </div>
-    <div id="log-build-panel" style="display:none">
-      <div class="card">
-        <div id="builder-content"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── RESULT SCREEN ── -->
-  <div id="screen-result" class="screen">
-    <div class="header">
-      <h1>Summary</h1>
-      <p id="result-subtitle"></p>
-    </div>
-    <div class="stat-row">
-      <div class="stat"><div class="val" id="stat-hours">-</div><div class="lbl">Hours</div></div>
-      <div class="stat"><div class="val" id="stat-sessions">-</div><div class="lbl">Sessions</div></div>
-      <div class="stat"><div class="val" id="stat-earn">-</div><div class="lbl">Earned ₪</div></div>
-    </div>
-    <div class="card">
-      <div class="card-label">Sessions</div>
-      <div id="session-list"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">Message for your boss</div>
-      <div class="output-box" id="output-msg"></div>
-      <div class="copy-fb" id="copy-fb"></div>
-      <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
-        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Send via WhatsApp
-      </button>
-      <button class="btn btn-secondary" onclick="copyMsg()">Copy message</button>
-      <button class="btn btn-secondary" style="margin-top:6px" onclick="showScreen('log')">← New log</button>
-    </div>
-  </div>
-
-  <!-- ── HISTORY SCREEN ── -->
-  <div id="screen-history" class="screen">
-    <div class="header">
-      <h1>History</h1>
-      <p>All logged days</p>
-    </div>
-    <div class="card">
-      <div id="history-list"><div class="empty">No days logged yet</div></div>
-    </div>
-    <div id="deleted-section" style="display:none">
-      <div class="section-divider" style="color:var(--red);margin-top:4px">Recently Deleted</div>
-      <div class="card">
-        <div id="deleted-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── OVERVIEW SCREEN ── -->
-  <div id="screen-overview" class="screen">
-    <div class="header">
-      <h1>Overview</h1>
-      <p>All-time stats</p>
-    </div>
-    <div class="stat-row">
-      <div class="stat"><div class="val" id="sum-hours">-</div><div class="lbl">Total hours</div></div>
-      <div class="stat"><div class="val" id="sum-days">-</div><div class="lbl">Days</div></div>
-      <div class="stat"><div class="val" id="sum-earn">-</div><div class="lbl">Total ₪</div></div>
-    </div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <button onclick="changeMonth(-1)" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;line-height:1;font-family:inherit">‹</button>
-        <div style="text-align:center">
-          <div id="month-label" style="font-size:16px;font-weight:600;color:var(--text)"></div>
-          <div id="month-earn-label" style="font-size:12px;color:var(--text2);margin-top:2px;min-height:16px"></div>
+      <div class="cal-toolbar-controls">
+        <div class="cal-view-toggle">
+          <button class="cal-view-btn active" id="cvb-month" onclick="setCalView('month')">חודש</button>
+          <button class="cal-view-btn" id="cvb-week" onclick="setCalView('week')">שבוע</button>
+          <button class="cal-view-btn" id="cvb-day" onclick="setCalView('day')">יום</button>
         </div>
-        <button onclick="changeMonth(1)" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;line-height:1;font-family:inherit">›</button>
-      </div>
-      <div id="month-calendar"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">By session type</div>
-      <div id="type-breakdown"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">Effective hourly rates</div>
-      <div id="per-hour-check"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">Monthly breakdown</div>
-      <div id="monthly-breakdown"></div>
-    </div>
-  </div>
-
-  <!-- ── SETTINGS SCREEN ── -->
-  <div id="screen-settings" class="screen">
-    <div class="header">
-      <h1>Settings</h1>
-      <p>Rates & session rules</p>
-    </div>
-
-    <!-- RATES -->
-    <div class="card">
-      <div class="card-label">Global rates</div>
-      <div class="rate-row">
-        <label>Private lesson</label>
-        <input type="number" id="rate-private" value="80" min="0" oninput="saveSettings()">
-        <span class="rate-suffix">₪ / hour</span>
-      </div>
-      <div class="rate-row">
-        <label>Group lesson</label>
-        <input type="number" id="rate-group" value="50" min="0" oninput="saveSettings()">
-        <span class="rate-suffix">₪ / hour</span>
+        <button class="cal-add-btn admin-only" style="display:none" onclick="openSessionModal(null,null,null)" id="cal-add-btn">+ אימון</button>
       </div>
     </div>
-
-    <!-- GROUP KEYWORDS -->
-    <div class="card">
-      <div class="card-label">Group lesson keywords</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Group</p>
-      <div class="keyword-tags" id="tags-group"></div>
-      <div class="add-keyword-row">
-        <input type="text" id="input-group-kw" onkeydown="if(event.key==='Enter') addKeyword('group')">
-        <button onclick="addKeyword('group')">+ Add</button>
-      </div>
-    </div>
-
-    <!-- PRIVATE KEYWORDS -->
-    <div class="card">
-      <div class="card-label">Private lesson keywords</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">If a session name contains any of these words → counted as Private. If neither list matches, it defaults to Private.</p>
-      <div class="keyword-tags" id="tags-private"></div>
-      <div class="add-keyword-row">
-        <input type="text" id="input-private-kw" onkeydown="if(event.key==='Enter') addKeyword('private')">
-        <button onclick="addKeyword('private')">+ Add</button>
-      </div>
-    </div>
-
-    <!-- ACCOUNT -->
-    <div class="section-divider">Account</div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:500" id="account-name">—</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px" id="account-role">—</div>
-        </div>
-        <button onclick="logoutUser()" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit">Sign out</button>
-      </div>
-    </div>
-
-    <!-- CHANGE PASSWORD -->
-    <div class="card">
-      <div class="card-label">Change password</div>
-      <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">New password</label>
-        <input type="password" id="pwd-new" style="width:100%">
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Confirm new password</label>
-        <input type="password" id="pwd-confirm" style="width:100%">
-      </div>
-      <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Update password</button>
-      <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">Password updated</div>
-    </div>
-
-    <!-- EXPORT / IMPORT -->
-    <div class="card">
-      <div class="card-label">Data backup</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Export your data to move it between devices or browsers (e.g. from local to GitHub Pages).</p>
-      <div style="display:flex;gap:8px">
-        <button onclick="exportData()" style="flex:1;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit">Export</button>
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer">
-          Import
-          <input type="file" accept=".json" onchange="importData(this)" style="display:none">
-        </label>
-      </div>
-      <div id="import-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">Data imported — reloading…</div>
-      <div id="import-error" style="display:none;color:var(--red);font-size:13px;margin-top:8px;text-align:center"></div>
-    </div>
-
-    <!-- ADMIN PANEL -->
-    <div id="admin-panel" style="display:none">
-      <div class="section-divider" style="color:var(--accent)">Admin</div>
-      <div class="card">
-        <div class="card-label">Coaches</div>
-        <div id="admin-user-list"><div class="empty">No other coaches registered yet.</div></div>
-        <p style="font-size:12px;color:var(--text2);margin-top:10px">Coaches register themselves from the login screen. Use "View" to access and edit their dashboard.</p>
-      </div>
-      <div class="card">
-        <div class="card-label" style="cursor:pointer" onclick="toggleActivityLog()">Activity log <span id="activity-log-arrow" style="font-size:12px">›</span></div>
-        <div id="activity-log-body" style="display:none;margin-top:8px;font-size:12px;color:var(--text2);max-height:200px;overflow-y:auto" id="activity-log-list"></div>
-      </div>
-    </div>
+    <div id="cal-body"></div>
   </div>
 
   <!-- ── GROUPS SCREEN ── -->
   <div id="screen-groups" class="screen">
     <div class="header">
-      <h1>Groups</h1>
-      <p id="groups-subtitle">Rosters &amp; attendance</p>
+      <h1 id="groups-h1">קבוצות</h1>
+      <p id="groups-subtitle">רשימות ונוכחות</p>
     </div>
-    <div style="padding:0 16px 4px">
-      <button class="btn btn-primary" style="margin-top:0" onclick="openAddGroupModal()">+ New Group</button>
+    <div id="groups-add-btn-row" style="padding:0 16px 4px;display:none">
+      <button class="btn btn-primary" style="margin-top:0" id="groups-add-btn" onclick="openAddGroupModal()">+ קבוצה חדשה</button>
     </div>
     <div id="groups-list"></div>
   </div>
 
+  <!-- ── SETTINGS SCREEN ── -->
+  <div id="screen-settings" class="screen">
+    <div class="header">
+      <h1 id="settings-h1">הגדרות</h1>
+    </div>
+    <div id="settings-body"></div>
+  </div>
+
+  <!-- ── ADMIN SCREEN ── -->
+  <div id="screen-admin" class="screen">
+    <div class="header">
+      <h1 id="admin-h1">ניהול</h1>
+      <p id="admin-subtitle">מאמנים ופעילות</p>
+    </div>
+    <div id="admin-body"></div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <nav class="nav" id="main-nav" style="display:none">
-    <button class="nav-btn active" id="nav-log" onclick="showScreen('log')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <span>Log</span>
-    </button>
-    <button class="nav-btn" id="nav-history" onclick="showScreen('history')">
+    <button class="nav-btn active" id="nav-calendar" onclick="showScreen('calendar')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span>History</span>
-    </button>
-    <button class="nav-btn" id="nav-overview" onclick="showScreen('overview')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span>Overview</span>
+      <span id="nav-lbl-calendar">לוח שנה</span>
     </button>
     <button class="nav-btn" id="nav-groups" onclick="showScreen('groups')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      <span>Groups</span>
+      <span id="nav-lbl-groups">קבוצות</span>
     </button>
     <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      <span>Settings</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span id="nav-lbl-settings">הגדרות</span>
+    </button>
+    <button class="nav-btn admin-only" id="nav-admin" style="display:none" onclick="showScreen('admin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span id="nav-lbl-admin">ניהול</span>
     </button>
   </nav>
 
-  <!-- ── LOADING OVERLAY ── -->
+  <!-- LOADING OVERLAY -->
   <div id="loading-overlay" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center">
-    <div style="font-size:14px;color:var(--text2)">Loading…</div>
+    <div id="loading-text" style="font-size:14px;color:var(--text2)">טוען…</div>
   </div>
 </div>
 
@@ -552,14 +311,238 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 
-let currentUser = null;   // { id, username, role }
-let viewingUserId = null; // admin "view as" override
-let registering = false;  // blocks onAuthStateChanged during registration
+// ─── STATE ────────────────────────────────────────────────
+let currentUser    = null;   // { id, username, role }
+let viewingUserId  = null;   // admin "view-as" override
+let registering    = false;
 
-// Active user ID: admin can "view as" another coach
+let sessions       = [];     // real-time from /sessions/
+let groups         = {};     // { id: { id, name, players } }
+let allCoaches     = [];     // cached for session-assignment dropdown
+let settings       = { ratePrivate: 80, rateGroup: 50 };
+
+let sessionsUnsub  = null;
+let groupsUnsub    = null;
+
+let calView = 'month';
+let calDate = new Date();
+
+// ─── i18n ─────────────────────────────────────────────────
+let lang = localStorage.getItem('ch_lang') || 'he';
+
+const STRINGS = {
+  he: {
+    appTitle: 'שעות אימון', calendar: 'לוח שנה', groups: 'קבוצות',
+    settings: 'הגדרות', admin: 'ניהול', month: 'חודש', week: 'שבוע', day: 'יום',
+    addSession: '+ אימון', save: 'שמור', cancel: 'ביטול', delete: 'מחק',
+    attendance: 'נוכחות', cancelled: 'מבוטל - גשם', confirm: 'אישור',
+    sessionName: 'שם האימון', startTime: 'התחלה', endTime: 'סיום',
+    assignCoach: 'שיבוץ מאמן', group: 'קבוצה', private: 'פרטי',
+    recurring: 'חוזר', recurringNone: 'אין', recurringWeekly: 'שבועי',
+    recurringBiweekly: 'דו-שבועי', recurringMonthly: 'חודשי', until: 'עד תאריך',
+    rainCancel: 'ביטול גשם', rainWhole: 'כל היום', rainFrom: 'מהשעה',
+    uncancel: 'בטל ביטול', editSession: 'עריכת אימון', newSession: 'אימון חדש',
+    deleteSession: 'מחק אימון', signIn: 'התחבר', register: 'הרשמה',
+    signOut: 'התנתק', fullName: 'שם מלא', email: 'אימייל', password: 'סיסמה',
+    newPassword: 'סיסמה חדשה', confirmPassword: 'אשר סיסמה', updatePassword: 'עדכן סיסמה',
+    changePassword: 'שינוי סיסמה', account: 'חשבון', language: 'שפה',
+    rates: 'תעריפים', ratePrivate: 'שיעור פרטי', rateGroup: 'שיעור קבוצתי',
+    perHour: '₪ / שעה', noSessions: 'אין אימונים', noGroups: 'אין קבוצות עדיין',
+    players: 'שחקנים', addPlayer: '+ הוסף', deleteGroup: 'מחק קבוצה',
+    newGroup: 'קבוצה חדשה', groupName: 'שם הקבוצה', coaches: 'מאמנים',
+    noCoaches: 'אין מאמנים נוספים', activityLog: 'יומן פעילות',
+    viewCoach: 'צפייה', makeAdmin: 'הפוך למנהל', revokeAdmin: 'בטל הרשאת מנהל',
+    removeCoach: 'הסר', exitView: '✕ סיום צפייה', viewing: 'צופה בפרופיל',
+    sessionType: 'סוג אימון', selectGroup: 'בחר קבוצה', selectCoach: 'בחר מאמן',
+    today: 'היום', sun: 'א׳', mon: 'ב׳', tue: 'ג׳', wed: 'ד׳', thu: 'ה׳', fri: 'ו׳', sat: 'ש׳',
+    janShort: 'ינו', febShort: 'פבר', marShort: 'מרץ', aprShort: 'אפר',
+    mayShort: 'מאי', junShort: 'יונ', julShort: 'יול', augShort: 'אוג',
+    sepShort: 'ספט', octShort: 'אוק', novShort: 'נוב', decShort: 'דצמ',
+    january: 'ינואר', february: 'פברואר', march: 'מרץ', april: 'אפריל',
+    may: 'מאי', june: 'יוני', july: 'יולי', august: 'אוגוסט',
+    september: 'ספטמבר', october: 'אוקטובר', november: 'נובמבר', december: 'דצמבר',
+    sunday: 'ראשון', monday: 'שני', tuesday: 'שלישי', wednesday: 'רביעי',
+    thursday: 'חמישי', friday: 'שישי', saturday: 'שבת',
+    signInContinue: 'התחבר כדי להמשיך', registerNewCoach: 'הרשמה כמאמן חדש',
+    alreadyHaveAccount: 'כבר יש לך חשבון? התחבר', accountCreated: 'החשבון נוצר! אמת את האימייל לפני הכניסה.',
+    verifyEmailFirst: 'יש לאמת את כתובת האימייל תחילה. בדוק את תיבת הדואר שלך.',
+    resendVerification: 'שלח שוב אימייל אימות', fillAllFields: 'אנא מלא את כל השדות.',
+    passwordTooShort: 'הסיסמה חייבת להיות לפחות 6 תווים.',
+    passwordMismatch: 'הסיסמאות אינן תואמות.', passwordUpdated: 'הסיסמה עודכנה',
+    connectionError: 'שגיאת חיבור. בדוק את האינטרנט ונסה שוב.',
+    attendanceWindow: 'הנוכחות נפתחת לאחר סיום האימון עד 10:00 למחרת.',
+    saveAttendance: 'שמור נוכחות', noPlayers: 'אין שחקנים בקבוצה זו.',
+    matchingGroupNotFound: 'לא נמצאה קבוצה מתאימה לאימון זה.',
+    confirmDelete: 'אישור מחיקה', confirmDeleteMsg: 'פעולה זו אינה הפיכה.',
+    adminCoach: 'מנהל · מאמן', coach: 'מאמן', loading: 'טוען…',
+    date: 'תאריך', playerLabel: 'שחקן / תלמיד', playerPlaceholder: 'בחר או הקלד שם',
+    sessionsCount: 'אימונים', noActivity: 'אין פעילות',
+    verificationSent: 'אימייל אימות נשלח. בדוק את תיבת הדואר שלך.',
+    groupsSubtitle: 'רשימות ונוכחות', adminSubtitle: 'מאמנים ופעילות',
+    recentLoginRequired: 'התנתק והתחבר מחדש ואז נסה שוב.',
+    passwordUpdateError: 'שגיאה בעדכון הסיסמה.',
+    fullnamePlaceholder: 'השם המלא שלך', emailPlaceholder: 'כתובת אימייל',
+    errInvalidEmail: 'כתובת אימייל לא תקינה.', errInvalidCredential: 'אימייל או סיסמה שגויים.',
+    errUserNotFound: 'אין חשבון עם כתובת אימייל זו.', errWrongPassword: 'סיסמה שגויה.',
+    errEmailInUse: 'חשבון עם אימייל זה כבר קיים.', errWeakPassword: 'הסיסמה חייבת להיות לפחות 6 תווים.',
+    errTooManyRequests: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.', errGeneric: 'שגיאה. נסה שוב.',
+  },
+  en: {
+    appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups',
+    settings: 'Settings', admin: 'Admin', month: 'Month', week: 'Week', day: 'Day',
+    addSession: '+ Session', save: 'Save', cancel: 'Cancel', delete: 'Delete',
+    attendance: 'Attendance', cancelled: 'Cancelled - Rain', confirm: 'Confirm',
+    sessionName: 'Session Name', startTime: 'Start', endTime: 'End',
+    assignCoach: 'Assign Coach', group: 'Group', private: 'Private',
+    recurring: 'Recurring', recurringNone: 'None', recurringWeekly: 'Weekly',
+    recurringBiweekly: 'Bi-weekly', recurringMonthly: 'Monthly', until: 'Until',
+    rainCancel: 'Rain Cancel', rainWhole: 'Whole Day', rainFrom: 'From Time',
+    uncancel: 'Uncancel', editSession: 'Edit Session', newSession: 'New Session',
+    deleteSession: 'Delete Session', signIn: 'Sign In', register: 'Register',
+    signOut: 'Sign Out', fullName: 'Full Name', email: 'Email', password: 'Password',
+    newPassword: 'New Password', confirmPassword: 'Confirm Password', updatePassword: 'Update Password',
+    changePassword: 'Change Password', account: 'Account', language: 'Language',
+    rates: 'Rates', ratePrivate: 'Private lesson', rateGroup: 'Group lesson',
+    perHour: '₪ / hour', noSessions: 'No sessions', noGroups: 'No groups yet',
+    players: 'Players', addPlayer: '+ Add', deleteGroup: 'Delete group',
+    newGroup: 'New Group', groupName: 'Group name', coaches: 'Coaches',
+    noCoaches: 'No other coaches registered yet.', activityLog: 'Activity log',
+    viewCoach: 'View', makeAdmin: 'Make admin', revokeAdmin: 'Revoke admin',
+    removeCoach: '✕', exitView: '✕ Exit view', viewing: 'Viewing',
+    sessionType: 'Session Type', selectGroup: 'Select group', selectCoach: 'Select coach',
+    today: 'Today', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
+    janShort: 'Jan', febShort: 'Feb', marShort: 'Mar', aprShort: 'Apr',
+    mayShort: 'May', junShort: 'Jun', julShort: 'Jul', augShort: 'Aug',
+    sepShort: 'Sep', octShort: 'Oct', novShort: 'Nov', decShort: 'Dec',
+    january: 'January', february: 'February', march: 'March', april: 'April',
+    may: 'May', june: 'June', july: 'July', august: 'August',
+    september: 'September', october: 'October', november: 'November', december: 'December',
+    sunday: 'Sunday', monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
+    thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
+    signInContinue: 'Sign in to continue', registerNewCoach: 'Register as new coach',
+    alreadyHaveAccount: 'Already have an account? Sign in', accountCreated: 'Account created! Verify your email before signing in.',
+    verifyEmailFirst: 'Please verify your email first. Check your inbox.',
+    resendVerification: 'Resend verification email', fillAllFields: 'Please fill in all fields.',
+    passwordTooShort: 'Password must be at least 6 characters.',
+    passwordMismatch: 'Passwords do not match.', passwordUpdated: 'Password updated',
+    connectionError: 'Connection error. Check your internet and try again.',
+    attendanceWindow: 'Attendance opens after the session ends until 10:00 AM next day.',
+    saveAttendance: 'Save attendance', noPlayers: 'No players in this group.',
+    matchingGroupNotFound: 'No matching group found for this session.',
+    confirmDelete: 'Confirm Delete', confirmDeleteMsg: 'This action cannot be undone.',
+    adminCoach: 'Admin · Coach', coach: 'Coach', loading: 'Loading…',
+    date: 'Date', playerLabel: 'Player / Student', playerPlaceholder: 'Choose or type name',
+    sessionsCount: 'sessions', noActivity: 'No activity',
+    verificationSent: 'Verification email sent. Check your inbox.',
+    groupsSubtitle: 'Rosters & Attendance', adminSubtitle: 'Coaches & Activity',
+    recentLoginRequired: 'Sign out and back in, then try again.',
+    passwordUpdateError: 'Error updating password.',
+    fullnamePlaceholder: 'Your full name', emailPlaceholder: 'Email address',
+    errInvalidEmail: 'Invalid email address.', errInvalidCredential: 'Incorrect email or password.',
+    errUserNotFound: 'No account with this email.', errWrongPassword: 'Wrong password.',
+    errEmailInUse: 'An account with this email already exists.', errWeakPassword: 'Password must be at least 6 characters.',
+    errTooManyRequests: 'Too many attempts. Try again later.', errGeneric: 'An error occurred. Try again.',
+  }
+};
+
+function t(key) { return (STRINGS[lang] && STRINGS[lang][key]) || STRINGS.en[key] || key; }
+
+function setLang(newLang) {
+  lang = newLang;
+  localStorage.setItem('ch_lang', lang);
+  const html = document.documentElement;
+  html.lang = lang;
+  html.dir = lang === 'he' ? 'rtl' : 'ltr';
+  applyLangStrings();
+  // Re-render active screen
+  const active = document.querySelector('.screen.active');
+  if (active) {
+    const id = active.id.replace('screen-', '');
+    if (id === 'calendar') renderCalendar();
+    else if (id === 'groups') renderGroups();
+    else if (id === 'settings') renderSettings();
+    else if (id === 'admin') renderAdminPanel();
+  }
+}
+
+function applyLangStrings() {
+  const html = document.documentElement;
+  html.lang = lang;
+  html.dir = lang === 'he' ? 'rtl' : 'ltr';
+  document.title = t('appTitle');
+  // Auth
+  const atitle = document.getElementById('auth-title'); if (atitle) atitle.textContent = t('appTitle');
+  const sub = document.getElementById('auth-subtitle');
+  if (sub) sub.textContent = authMode === 'register' ? t('registerNewCoach') : t('signInContinue');
+  const lbl_fn = document.getElementById('lbl-fullname'); if (lbl_fn) lbl_fn.textContent = t('fullName');
+  const lbl_em = document.getElementById('lbl-email'); if (lbl_em) lbl_em.textContent = t('email');
+  const lbl_pw = document.getElementById('lbl-password'); if (lbl_pw) lbl_pw.textContent = t('password');
+  const inp_fn = document.getElementById('auth-fullname'); if (inp_fn) inp_fn.placeholder = t('fullnamePlaceholder');
+  const inp_em = document.getElementById('auth-email'); if (inp_em) inp_em.placeholder = t('emailPlaceholder');
+  const inp_pw = document.getElementById('auth-password'); if (inp_pw) inp_pw.placeholder = t('password');
+  const sbtn = document.getElementById('auth-submit-btn'); if (sbtn) sbtn.textContent = authMode === 'register' ? t('register') : t('signIn');
+  const tbtn = document.getElementById('auth-toggle-btn'); if (tbtn) tbtn.textContent = authMode === 'register' ? t('alreadyHaveAccount') : t('registerNewCoach');
+  const rbtn = document.getElementById('auth-resend-btn'); if (rbtn) rbtn.textContent = t('resendVerification');
+  // Cal view buttons
+  const cvbM = document.getElementById('cvb-month'); if (cvbM) cvbM.textContent = t('month');
+  const cvbW = document.getElementById('cvb-week'); if (cvbW) cvbW.textContent = t('week');
+  const cvbD = document.getElementById('cvb-day'); if (cvbD) cvbD.textContent = t('day');
+  // Nav labels
+  const nlc = document.getElementById('nav-lbl-calendar'); if (nlc) nlc.textContent = t('calendar');
+  const nlg = document.getElementById('nav-lbl-groups'); if (nlg) nlg.textContent = t('groups');
+  const nls = document.getElementById('nav-lbl-settings'); if (nls) nls.textContent = t('settings');
+  const nla = document.getElementById('nav-lbl-admin'); if (nla) nla.textContent = t('admin');
+  // Headers
+  const hdr = document.getElementById('app-header-title'); if (hdr) hdr.textContent = t('appTitle');
+  const gh = document.getElementById('groups-h1'); if (gh) gh.textContent = t('groups');
+  const gs = document.getElementById('groups-subtitle'); if (gs) gs.textContent = t('groupsSubtitle');
+  const sh = document.getElementById('settings-h1'); if (sh) sh.textContent = t('settings');
+  const ah = document.getElementById('admin-h1'); if (ah) ah.textContent = t('admin');
+  const as2 = document.getElementById('admin-subtitle'); if (as2) as2.textContent = t('adminSubtitle');
+  const cadd = document.getElementById('cal-add-btn'); if (cadd) cadd.textContent = t('addSession');
+  const gadd = document.getElementById('groups-add-btn'); if (gadd) gadd.textContent = '+ ' + t('newGroup');
+  const ldng = document.getElementById('loading-text'); if (ldng) ldng.textContent = t('loading');
+  // Cal nav direction: in RTL, ‹ goes forward in time, › goes back
+  const navBtns = document.querySelectorAll('.cal-nav');
+  if (navBtns.length >= 2) {
+    if (lang === 'he') { navBtns[0].textContent = '›'; navBtns[1].textContent = '‹'; }
+    else { navBtns[0].textContent = '‹'; navBtns[1].textContent = '›'; }
+  }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function escQ(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function timeToMins(t) { const [h,m] = t.trim().split(':').map(Number); return h*60+m; }
+function fmtHours(mins) { const h=Math.floor(mins/60),m=mins%60; return m>0?h+':'+String(m).padStart(2,'0'):String(h); }
+function addMins(time, mins) {
+  const [h,m] = time.split(':').map(Number);
+  const t = h*60+m+mins;
+  return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+}
+
+function isAdmin() { return currentUser?.role === 'admin'; }
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
+function requireAuth() { if (!currentUser) { logoutUser(); return false; } return true; }
 
-// Save a data key to Firestore (fire-and-forget)
+// Pad date parts
+function dateISO(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseDate(str) {
+  // str = 'YYYY-MM-DD'
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+
+const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+function monthName(idx) { return t(MONTH_NAMES[idx]); }
+function dayHeader(idx) { return t(DAY_KEYS[idx]); } // 0=sun
+
+// ─── FIRESTORE DATA ───────────────────────────────────────
 function saveUD(key, val) {
   if (!auth.currentUser) return;
   db.collection('users').doc(activeUid()).collection('data').doc(key)
@@ -567,763 +550,643 @@ function saveUD(key, val) {
     .catch(e => console.error('[CoachHours] Firestore save failed:', e));
 }
 
-// ─── STATE ───────────────────────────────────────────────
-let appHistory = [];
-let deletedHistory = [];
-let currentResult = null;
-let confirmingDelete = new Set();
-
-const defaultSettings = {
-  ratePrivate: 80,
-  rateGroup: 50,
-  groupKeywords: [],
-  privateKeywords: []
-};
-let settings = Object.assign({}, defaultSettings);
-
-async function loadUserState() {
+async function loadUserSettings() {
   const ref = db.collection('users').doc(activeUid()).collection('data');
-  const [hist, del, set, rec, grp] = await Promise.all([
-    ref.doc('ch_history').get(), ref.doc('ch_deleted').get(),
-    ref.doc('ch_settings').get(), ref.doc('ch_received').get(),
-    ref.doc('ch_groups').get(),
-  ]);
-  appHistory      = hist.exists ? hist.data().data : [];
-  deletedHistory  = del.exists  ? del.data().data  : [];
-  settings        = Object.assign({}, defaultSettings, set.exists ? set.data().data : {});
-  monthlyReceived = rec.exists  ? rec.data().data  : {};
-  groups          = grp.exists  ? grp.data().data  : {};
-  groupAttendance = {};
-  currentResult   = null;
-  currentMonthYear = null;
-  confirmingDelete = new Set();
+  const [set] = await Promise.all([ref.doc('ch_settings').get()]);
+  settings = Object.assign({ ratePrivate: 80, rateGroup: 50 }, set.exists ? set.data().data : {});
 }
 
-// ─── INIT ─────────────────────────────────────────────────
-function init() {
-  document.getElementById('rate-private').value = settings.ratePrivate;
-  document.getElementById('rate-group').value = settings.rateGroup;
-  renderKeywordTags('group');
-  renderKeywordTags('private');
-}
-
-// ─── SETTINGS ─────────────────────────────────────────────
-function saveSettings() {
-  settings.ratePrivate = parseFloat(document.getElementById('rate-private').value) || 80;
-  settings.rateGroup = parseFloat(document.getElementById('rate-group').value) || 50;
-  saveUD('ch_settings', settings);
-}
-
-function addKeyword(type) {
-  const inputId = type === 'group' ? 'input-group-kw' : 'input-private-kw';
-  const val = document.getElementById(inputId).value.trim();
-  if (!val) return;
-  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
-  if (!settings[key].includes(val)) {
-    settings[key].push(val);
-    saveSettings();
-    renderKeywordTags(type);
-  }
-  document.getElementById(inputId).value = '';
-}
-
-function removeKeyword(type, word) {
-  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
-  settings[key] = settings[key].filter(k => k !== word);
-  saveSettings();
-  renderKeywordTags(type);
-}
-
-function renderKeywordTags(type) {
-  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
-  const containerId = type === 'group' ? 'tags-group' : 'tags-private';
-  const cls = type === 'group' ? 'tag-group' : 'tag-private';
-  const el = document.getElementById(containerId);
-  if (!settings[key].length) { el.innerHTML = ''; return; }
-  el.innerHTML = settings[key].map(w => `
-    <span class="tag ${cls}">
-      ${escH(w)}
-      <span class="tag-remove" onclick="removeKeyword('${type}','${escQ(w)}')">×</span>
-    </span>
-  `).join('');
-}
-
-// ─── SESSION TYPE DETECTION ───────────────────────────────
-function getSessionType(name) {
-  const lower = name.toLowerCase();
-  for (const kw of settings.groupKeywords) {
-    if (lower.includes(kw.toLowerCase())) return 'group';
-  }
-  for (const kw of settings.privateKeywords) {
-    if (lower.includes(kw.toLowerCase())) return 'private';
-  }
-  // Default: if no group keyword matched → private
-  return 'private';
-}
-
-// ─── PARSE ────────────────────────────────────────────────
-function timeToMins(t) {
-  const [h, m] = t.trim().split(':').map(Number);
-  return h * 60 + m;
-}
-
-function fmtHours(mins) {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? h + ':' + String(m).padStart(2, '0') : String(h);
-}
-
-function parseLog() {
-  const raw = document.getElementById('log-input').value.trim();
-  const errEl = document.getElementById('parse-error');
-  errEl.style.display = 'none';
-
-  if (!raw) {
-    errEl.textContent = 'Please enter your session log.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  const lines = raw.split('\n').map(l => l.replace(/\*/g, '').trim()).filter(Boolean);
-  let dateStr = '', bossName = '';
-  const sessions = [];
-  const sessionRe = /^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s*[-–]\s*(.+)$/;
-
-  for (const line of lines) {
-    if (sessionRe.test(line)) {
-      const m = line.match(sessionRe);
-      const start = m[1].trim();
-      const end = m[2].trim();
-      const name = m[3].trim();
-      const durMins = timeToMins(end) - timeToMins(start);
-      if (durMins <= 0) continue;
-      const type = getSessionType(name);
-      const rate = type === 'group' ? settings.rateGroup : settings.ratePrivate;
-      const earned = (durMins / 60) * rate;
-      sessions.push({ start, end, name, durMins, type, earned });
-    } else if (!dateStr && /יום|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{2}\/\d{2}\/\d{4}/i.test(line)) {
-      dateStr = line.replace(/:$/, '').trim();
-    } else if (dateStr && !bossName && !sessionRe.test(line)) {
-      bossName = line.replace(/:$/, '').trim();
-    }
-  }
-
-  if (!sessions.length) {
-    errEl.textContent = 'No sessions found. Make sure format is: HH:MM - HH:MM - name';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  const totalMins = sessions.reduce((a, s) => a + s.durMins, 0);
-  const totalEarned = sessions.reduce((a, s) => a + s.earned, 0);
-
-  // Build output message — preserve original lines exactly, just add סה״כ
-  let msg = '';
-  if (dateStr) msg += '*' + dateStr + ':*\n';
-  if (bossName) msg += '*' + bossName + ':*\n';
-  for (const s of sessions) {
-    msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
-  }
-  msg += 'סה״כ: ' + fmtHours(totalMins) + ' שעות ' + Math.round(totalEarned) + ' ₪ + נסיעות';
-
-  currentResult = { dateStr, bossName, sessions, totalMins, totalEarned, msg, ts: Date.now() };
-
-  // Save / update history
-  const key = (dateStr + bossName).trim();
-  const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === key);
-  if (idx >= 0) {
-    showDayConflictModal(idx, currentResult);
+function subscribeSessions() {
+  if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
+  let q;
+  if (isAdmin()) {
+    q = db.collection('sessions');
   } else {
-    appHistory.unshift(currentResult);
-    saveUD('ch_history', appHistory);
-    renderResult(currentResult);
-    showScreen('result');
+    // Simple where-only query avoids needing a composite index
+    q = db.collection('sessions').where('assignedCoachId','==',currentUser.id);
   }
+  sessionsUnsub = q.onSnapshot(snap => {
+    sessions = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+    if (document.getElementById('screen-calendar').classList.contains('active')) renderCalendar();
+  }, e => console.error('[CoachHours] Sessions listener error:', e));
 }
 
-function showDayConflictModal(existingIdx, newResult) {
-  window._conflictIdx = existingIdx;
-  window._conflictNew = newResult;
-  const ex = appHistory[existingIdx];
+function subscribeGroups() {
+  if (groupsUnsub) { groupsUnsub(); groupsUnsub = null; }
+  groupsUnsub = db.collection('groups').onSnapshot(snap => {
+    groups = {};
+    snap.docs.forEach(d => { groups[d.id] = { id: d.id, ...d.data() }; });
+    if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
+  }, e => console.error('[CoachHours] Groups listener error:', e));
+}
+
+async function loadAllCoaches() {
+  if (!isAdmin()) return;
+  try {
+    const snap = await db.collection('users').get();
+    allCoaches = snap.docs
+      .filter(d => !d.data().removed)
+      .map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.error('[CoachHours] loadAllCoaches error:', e); }
+}
+
+// Sessions CRUD
+async function createSession(data) {
+  if (!requireAuth() || !isAdmin()) return;
+  try {
+    await db.collection('sessions').add({ ...data, createdBy: currentUser.id, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    logActivity('CREATE_SESSION', data.name);
+  } catch(e) { console.error('[CoachHours] createSession error:', e); }
+}
+
+async function updateSession(id, patch) {
+  try {
+    await db.collection('sessions').doc(id).update(patch);
+  } catch(e) { console.error('[CoachHours] updateSession error:', e); }
+}
+
+async function deleteSessionDoc(id) {
+  if (!requireAuth() || !isAdmin()) return;
+  try {
+    await db.collection('sessions').doc(id).delete();
+    logActivity('DELETE_SESSION', id);
+  } catch(e) { console.error('[CoachHours] deleteSession error:', e); }
+}
+
+async function createRecurringSessions(base, freq, until) {
+  const untilDate = parseDate(until);
+  const dates = [];
+  let cur = parseDate(base.date);
+  const freqDays = freq === 'weekly' ? 7 : freq === 'biweekly' ? 14 : 30;
+  while (cur <= untilDate) {
+    dates.push(dateISO(cur));
+    if (freq === 'monthly') { cur = new Date(cur.getFullYear(), cur.getMonth()+1, cur.getDate()); }
+    else { cur = new Date(cur.getTime() + freqDays*24*60*60*1000); }
+  }
+  const parentId = 'r' + Date.now();
+  const batch = db.batch();
+  dates.forEach(d => {
+    const ref = db.collection('sessions').doc();
+    batch.set(ref, { ...base, date: d, recurring: { freq, until, parentId }, createdBy: currentUser.id, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  await batch.commit();
+  logActivity('CREATE_RECURRING', base.name + ' x' + dates.length);
+}
+
+// Groups CRUD (admin only)
+async function saveGroup(id, data) {
+  if (!requireAuth() || !isAdmin()) return;
+  await db.collection('groups').doc(id).set(data);
+}
+
+async function deleteGroup(id) {
+  if (!requireAuth() || !isAdmin()) return;
+  await db.collection('groups').doc(id).delete();
+}
+
+// ─── CALENDAR ─────────────────────────────────────────────
+function getCalendarSessions() {
+  if (viewingUserId) return sessions.filter(s => s.assignedCoachId === viewingUserId);
+  return sessions;
+}
+
+function sessionsForDate(dateStr) {
+  return getCalendarSessions().filter(s => s.date === dateStr);
+}
+
+function setCalView(view) {
+  calView = view;
+  ['month','week','day'].forEach(v => {
+    document.getElementById('cvb-'+v)?.classList.toggle('active', v === view);
+  });
+  renderCalendar();
+}
+
+function calPrev() {
+  if (calView === 'month') { calDate = new Date(calDate.getFullYear(), calDate.getMonth()-1, 1); }
+  else if (calView === 'week') { calDate = new Date(calDate.getTime() - 7*24*60*60*1000); }
+  else { calDate = new Date(calDate.getTime() - 24*60*60*1000); }
+  renderCalendar();
+}
+function calNext() {
+  if (calView === 'month') { calDate = new Date(calDate.getFullYear(), calDate.getMonth()+1, 1); }
+  else if (calView === 'week') { calDate = new Date(calDate.getTime() + 7*24*60*60*1000); }
+  else { calDate = new Date(calDate.getTime() + 24*60*60*1000); }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (calView === 'month') renderMonthView();
+  else if (calView === 'week') renderWeekView();
+  else renderDayView();
+}
+
+function renderMonthView() {
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  if (isAdmin()) document.getElementById('cal-add-btn').style.display = '';
+  document.getElementById('cal-title').textContent = monthName(month) + ' ' + year;
+
+  const today = dateISO(new Date());
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+  // Start week on Sunday (0)
+  let startDow = firstDay.getDay(); // 0=Sun
+
+  const days = [];
+  // Previous month padding
+  for (let i = 0; i < startDow; i++) {
+    const d = new Date(year, month, 1-startDow+i);
+    days.push({ date: dateISO(d), otherMonth: true });
+  }
+  // Current month
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    days.push({ date: dateISO(new Date(year, month, d)), otherMonth: false });
+  }
+  // Next month padding (fill to 6 weeks = 42 cells)
+  while (days.length % 7 !== 0) {
+    const d = new Date(year, month+1, days.length - lastDay.getDate() - startDow + 1);
+    days.push({ date: dateISO(d), otherMonth: true });
+  }
+
+  const dayHeaders = DAY_KEYS.map(k => `<div class="month-day-header">${t(k)}</div>`).join('');
+
+  const cells = days.map(({ date, otherMonth }) => {
+    const dayNum = parseInt(date.split('-')[2]);
+    const daysSessions = sessionsForDate(date);
+    const isToday = date === today;
+    const chips = daysSessions.slice(0,3).map(s => {
+      const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+      const cls = isCancelled ? 'month-chip-cancelled' : (s.type === 'group' ? 'month-chip-group' : 'month-chip-private');
+      return `<div class="month-chip ${cls}">${escH(s.name)}</div>`;
+    }).join('');
+    const more = daysSessions.length > 3 ? `<div class="month-more">+${daysSessions.length-3}</div>` : '';
+    const addBtn = isAdmin() ? `<button class="month-add-btn" onclick="event.stopPropagation();openSessionModal('${date}',null,null)">+</button>` : '';
+    return `<div class="month-day${otherMonth?' other-month':''}${isToday?' today':''}" onclick="goToDay('${date}')">
+      <div class="month-day-num">${dayNum}</div>
+      ${chips}${more}${addBtn}
+    </div>`;
+  }).join('');
+
+  document.getElementById('cal-body').innerHTML = `
+    <div class="month-grid">
+      ${dayHeaders}
+      ${cells}
+    </div>
+  `;
+}
+
+function goToDay(dateStr) {
+  calDate = parseDate(dateStr);
+  setCalView('day');
+}
+
+function renderWeekView() {
+  if (isAdmin()) document.getElementById('cal-add-btn').style.display = '';
+  // Get Monday of the week containing calDate
+  const dow = calDate.getDay(); // 0=Sun
+  const monday = new Date(calDate.getTime() - ((dow + 6) % 7) * 24*60*60*1000); // start from Monday
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday.getTime() + i*24*60*60*1000);
+    days.push(d);
+  }
+  const startStr = days[0].getDate() + ' ' + t(MONTH_NAMES[days[0].getMonth()].replace('Short',''));
+  const endStr   = days[6].getDate() + ' ' + monthName(days[6].getMonth()) + ' ' + days[6].getFullYear();
+  document.getElementById('cal-title').textContent = startStr + ' – ' + endStr;
+
+  const today = dateISO(new Date());
+  let html = '';
+  days.forEach(d => {
+    const dateStr = dateISO(d);
+    const dayLabel = t(DAY_KEYS[d.getDay()]) + ' ' + d.getDate() + '/' + (d.getMonth()+1);
+    const isToday = dateStr === today;
+    const daySessions = sessionsForDate(dateStr);
+    const addBtn = isAdmin() ? `<button onclick="openSessionModal('${dateStr}',null,null)" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">+</button>` : '';
+    html += `<div class="week-day-block">
+      <div class="week-day-header${isToday?' today':''}">
+        <span>${dayLabel}</span>${addBtn}
+      </div>`;
+    if (!daySessions.length) {
+      html += `<div style="font-size:11px;color:var(--text3);padding:4px 0 6px">${t('noSessions')}</div>`;
+    } else {
+      daySessions.forEach(s => { html += sessionCardHtml(s); });
+    }
+    html += '</div>';
+  });
+  document.getElementById('cal-body').innerHTML = html;
+}
+
+function renderDayView() {
+  document.getElementById('cal-add-btn').style.display = 'none'; // day view has its own add button
+  const dateStr = dateISO(calDate);
+  const dow = calDate.getDay();
+  const dayLabel = t(DAY_KEYS[dow]) + ', ' + calDate.getDate() + ' ' + monthName(calDate.getMonth()) + ' ' + calDate.getFullYear();
+  document.getElementById('cal-title').textContent = '';
+
+  const daySessions = sessionsForDate(dateStr);
+  const addBtn = isAdmin() ? `<button onclick="openSessionModal('${dateStr}',null,null)" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit">+ ${t('addSession').replace('+ ','')}</button>` : '';
+
+  let html = `<div style="padding:0 16px 12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:15px;font-weight:600">${dayLabel}</span>
+    ${addBtn}
+  </div>`;
+
+  if (!daySessions.length) {
+    html += `<div class="card"><div class="empty">${t('noSessions')}</div></div>`;
+  } else {
+    // Sort by startTime
+    const sorted = [...daySessions].sort((a,b) => a.startTime.localeCompare(b.startTime));
+    html += '<div style="padding:0 16px">';
+    sorted.forEach(s => { html += sessionCardHtml(s, true); });
+    html += '</div>';
+  }
+  document.getElementById('cal-body').innerHTML = html;
+}
+
+function sessionCardHtml(s) {
+  const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+  const typeClass = s.type === 'group' ? 'group' : 'private';
+  const cancelClass = isCancelled ? ' cancelled' : '';
+  const coachName = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
+  const groupName = s.groupId && groups[s.groupId] ? groups[s.groupId].name : '';
+  const playerName = s.assignedPlayerName || '';
+
+  // Type badge
+  const typeBadge = `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-inline-start:6px;${
+    s.type==='group'
+      ? 'background:rgba(96,165,250,0.2);color:var(--blue)'
+      : 'background:rgba(34,197,94,0.2);color:var(--green)'
+  }">${t(s.type)}</span>`;
+
+  // Info rows
+  let infoRows = `<div class="session-card-meta" style="margin-top:5px">⏱ ${s.startTime} – ${s.endTime}</div>`;
+  if (coachName) infoRows += `<div class="session-card-meta">👤 ${escH(coachName)}</div>`;
+  if (groupName) infoRows += `<div class="session-card-meta">👥 ${escH(groupName)}</div>`;
+  if (playerName) infoRows += `<div class="session-card-meta">🎯 ${escH(playerName)}</div>`;
+
+  let cancelBadge = '';
+  if (isCancelled) {
+    const reason = s.cancelled.whole ? t('rainWhole') : `${t('rainFrom')} ${s.cancelled.from}`;
+    cancelBadge = `<div class="session-card-cancelled-badge">🌧 ${t('cancelled')} — ${reason}</div>`;
+  }
+
+  let attBtn = '';
+  if (s.type === 'group' && !isCancelled && isAttendanceOpen(s)) {
+    const present = s.attendance?.present?.length ?? '?';
+    const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
+    attBtn = `<div class="session-card-att-btn" onclick="event.stopPropagation();openAttendanceModal('${s.id}')">✅ ${t('attendance')} ${present}/${total}</div>`;
+  } else if (s.type === 'group' && !isCancelled && s.attendance) {
+    const present = s.attendance.present?.length ?? 0;
+    const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
+    attBtn = `<div style="font-size:11px;color:var(--text3);margin-top:4px">✅ ${present}/${total}</div>`;
+  }
+
+  const clickHandler = isAdmin() ? `onclick="openSessionModal('${s.date}','${s.startTime}','${escQ(s.id)}')"` : '';
+
+  return `<div class="session-card ${typeClass}${cancelClass}" ${clickHandler} style="margin-bottom:8px">
+    <div style="display:flex;align-items:center">
+      <div class="session-card-name" style="flex:1">${escH(s.name)}</div>${typeBadge}
+    </div>
+    ${infoRows}
+    ${cancelBadge}
+    ${attBtn}
+  </div>`;
+}
+
+// ─── ATTENDANCE ────────────────────────────────────────────
+function isAttendanceOpen(session) {
+  const now = new Date();
+  const [endH, endM] = session.endTime.split(':').map(Number);
+  const sessionEnd = parseDate(session.date);
+  sessionEnd.setHours(endH, endM, 0, 0);
+  const nextDay10 = parseDate(session.date);
+  nextDay10.setDate(nextDay10.getDate() + 1);
+  nextDay10.setHours(10, 0, 0, 0);
+  return now >= sessionEnd && now <= nextDay10;
+}
+
+function openAttendanceModal(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  const g = s.groupId ? groups[s.groupId] : null;
+
+  if (!g) {
+    createModal(`<div class="sheet-title">${t('attendance')}</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">${t('matchingGroupNotFound')}</p>
+      <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>`);
+    return;
+  }
+
+  if (!isAttendanceOpen(s)) {
+    createModal(`<div class="sheet-title">${t('attendance')}</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">${t('attendanceWindow')}</p>
+      <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>`);
+    return;
+  }
+
+  const current = s.attendance?.present || [];
+  const savedAt = s.attendance?.savedAt || null;
+  const rows = g.players.map(name => `
+    <label style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="att-${escId(name)}" ${current.includes(name)?'checked':''}
+        style="width:18px;height:18px;accent-color:var(--blue)">
+      <span style="font-size:15px">${escH(name)}</span>
+    </label>`).join('');
+  const noPlayers = !g.players.length ? `<p style="color:var(--text2);font-size:13px;padding:12px 0">${t('noPlayers')}</p>` : '';
+
   createModal(`
-    <div class="sheet-title">Day already logged</div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
-      <strong>${ex.dateStr || 'This day'}</strong> already has ${ex.sessions.length} session${ex.sessions.length !== 1 ? 's' : ''} logged (${Math.round(ex.totalEarned)}₪).
-    </p>
-    <button class="btn btn-primary" style="margin-top:0;margin-bottom:8px" onclick="extendDay();closeModal()">+ Extend (add new sessions)</button>
-    <button class="btn btn-secondary" style="margin-bottom:8px" onclick="replaceDay();closeModal()">Replace</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <div class="sheet-title">${escH(g.name)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${s.date} · ${s.startTime}${savedAt?' · '+savedAt:''}</div>
+    ${rows}${noPlayers}
+    <button class="btn btn-primary" style="margin-top:14px" onclick="saveAttendance('${sessionId}','${g.players.map(escQ).join(',')}')">
+      ${t('saveAttendance')}
+    </button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
   `);
 }
 
-function extendDay() {
-  const idx = window._conflictIdx;
-  const newResult = window._conflictNew;
-  if (idx === undefined || !newResult) return;
-  const existing = appHistory[idx];
-  const existingStarts = new Set(existing.sessions.map(s => s.start));
-  const toAdd = newResult.sessions.filter(s => !existingStarts.has(s.start));
-  existing.sessions = [...existing.sessions, ...toAdd].sort((a, b) => timeToMins(a.start) - timeToMins(b.start));
-  existing.totalMins = existing.sessions.reduce((a, s) => a + s.durMins, 0);
-  existing.totalEarned = existing.sessions.reduce((a, s) => a + s.earned, 0);
-  let msg = '';
-  if (existing.dateStr) msg += '*' + existing.dateStr + ':*\n';
-  if (existing.bossName) msg += '*' + existing.bossName + ':*\n';
-  for (const s of existing.sessions) msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
-  msg += 'סה״כ: ' + fmtHours(existing.totalMins) + ' שעות ' + Math.round(existing.totalEarned) + ' ₪ + נסיעות';
-  existing.msg = msg;
-  saveUD('ch_history', appHistory);
-  currentResult = existing;
-  renderResult(existing);
-  showScreen('result');
-}
-
-function replaceDay() {
-  const idx = window._conflictIdx;
-  const newResult = window._conflictNew;
-  if (idx === undefined || !newResult) return;
-  appHistory[idx] = newResult;
-  saveUD('ch_history', appHistory);
-  currentResult = newResult;
-  renderResult(newResult);
-  showScreen('result');
-}
-
-function clearLogInput() {
-  document.getElementById('log-input').value = '';
-  document.getElementById('parse-error').style.display = 'none';
-  toggleClearBtn();
-}
-
-function toggleClearBtn() {
-  const btn = document.getElementById('clear-log-btn');
-  if (btn) btn.style.display = document.getElementById('log-input').value ? '' : 'none';
-}
-
-// ─── RENDER RESULT ────────────────────────────────────────
-function renderResult(r) {
-  document.getElementById('result-subtitle').textContent =
-    (r.dateStr || '') + (r.bossName ? ' · ' + r.bossName : '');
-  document.getElementById('stat-hours').textContent = fmtHours(r.totalMins);
-  document.getElementById('stat-sessions').textContent = r.sessions.length;
-  document.getElementById('stat-earn').textContent = Math.round(r.totalEarned) + '₪';
-
-  document.getElementById('session-list').innerHTML = r.sessions.map((s, i) => `
-    <div class="session-row" style="align-items:flex-start;gap:8px">
-      <div style="flex:1;min-width:0">
-        <div class="session-time">${s.start} – ${s.end} (${s.durMins}min)</div>
-        <input
-          value="${s.name.replace(/"/g, '&quot;')}"
-          onblur="saveSessionName(${i}, this)"
-          onkeydown="if(event.key==='Enter'){this.blur()}"
-          style="background:none;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:14px;font-weight:500;width:100%;padding:2px 0;margin-top:2px;font-family:inherit;outline:none"
-        >
-        ${sessionAttHtml(s, r, i)}
-      </div>
-      <div class="session-right" style="flex-shrink:0">
-        <span class="badge ${s.type === 'group' ? 'badge-group' : 'badge-private'}"
-          onclick="toggleSessionType(${i})"
-          style="cursor:pointer;user-select:none">
-          ${s.type === 'group' ? 'Group' : 'Private'} ⇄
-        </span>
-        <div class="session-earn">${Math.round(s.earned)}₪</div>
-      </div>
-    </div>
-  `).join('');
-
-  document.getElementById('output-msg').textContent = r.msg;
-  document.getElementById('copy-fb').textContent = '';
-}
-
-function addNameToKeywords(name, type) {
-  const key = type === 'group' ? 'groupKeywords' : 'privateKeywords';
-  const opposite = type === 'group' ? 'privateKeywords' : 'groupKeywords';
-  if (!settings[key].includes(name)) settings[key].push(name);
-  settings[opposite] = settings[opposite].filter(k => k !== name);
-  saveUD('ch_settings', settings);
-  renderKeywordTags('group');
-  renderKeywordTags('private');
-}
-
-function saveCurrentResult() {
-  currentResult.totalEarned = currentResult.sessions.reduce((a, s) => a + s.earned, 0);
-  let msg = '';
-  if (currentResult.dateStr) msg += '*' + currentResult.dateStr + ':*\n';
-  if (currentResult.bossName) msg += '*' + currentResult.bossName + ':*\n';
-  for (const s of currentResult.sessions) {
-    msg += s.start + ' - ' + s.end + ' - ' + s.name + '\n';
-  }
-  msg += 'סה״כ: ' + fmtHours(currentResult.totalMins) + ' שעות ' + Math.round(currentResult.totalEarned) + ' ₪ + נסיעות';
-  currentResult.msg = msg;
-  const hKey = (currentResult.dateStr + currentResult.bossName).trim();
-  const idx = appHistory.findIndex(h => ((h.dateStr || '') + (h.bossName || '')).trim() === hKey);
-  if (idx >= 0) appHistory[idx] = currentResult;
-  saveUD('ch_history', appHistory);
-  logActivity('SAVE_RESULT', currentResult.dateStr || 'unnamed');
-}
-
-function saveSessionName(i, inputEl) {
-  const newName = inputEl.value.trim();
-  if (!newName) { inputEl.value = currentResult.sessions[i].name; return; }
-  if (newName === currentResult.sessions[i].name) return;
-  currentResult.sessions[i].name = newName;
-  saveCurrentResult();
-  document.getElementById('output-msg').textContent = currentResult.msg;
-  document.getElementById('stat-earn').textContent = Math.round(currentResult.totalEarned) + '₪';
-}
-
-function toggleSessionType(i) {
-  const s = currentResult.sessions[i];
-  s.type = s.type === 'group' ? 'private' : 'group';
-  s.earned = (s.durMins / 60) * (s.type === 'group' ? settings.rateGroup : settings.ratePrivate);
-  saveCurrentResult();
-  renderResult(currentResult);
-}
-
-// ─── ACTIONS ──────────────────────────────────────────────
-function sendWhatsApp() {
-  if (!currentResult) return;
-  window.open('https://wa.me/?text=' + encodeURIComponent(currentResult.msg), '_blank');
-}
-
-function copyMsg() {
-  const msg = document.getElementById('output-msg').textContent;
-  const fb = document.getElementById('copy-fb');
-  navigator.clipboard.writeText(msg).then(() => {
-    fb.textContent = '✓ Copied to clipboard';
-    setTimeout(() => fb.textContent = '', 2500);
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = msg; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    fb.textContent = '✓ Copied';
-    setTimeout(() => fb.textContent = '', 2500);
-  });
-}
-
-// ─── HISTORY ──────────────────────────────────────────────
-function renderHistory() {
-  const el = document.getElementById('history-list');
-  if (!appHistory.length) { el.innerHTML = '<div class="empty">No days logged yet</div>'; }
-  else {
-    el.innerHTML = appHistory.map((h, i) => `
-      <div class="history-item" style="display:flex;align-items:center;gap:10px">
-        <div style="flex:1" onclick="viewHistory(${i})">
-          <div class="hi-date">${escH(h.dateStr || 'Unnamed')}${h.bossName ? ' · ' + escH(h.bossName) : ''}</div>
-          <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
-        </div>
-        <button class="btn-icon" onclick="deleteHistory(${i})" style="font-size:16px;padding:6px 10px;color:var(--text3)">🗑</button>
-      </div>
-    `).join('');
-  }
-  renderDeleted();
-}
-
-function viewHistory(i) {
-  currentResult = appHistory[i];
-  renderResult(currentResult);
-  showScreen('result');
-}
-
-function deleteHistory(i) {
-  const [item] = appHistory.splice(i, 1);
-  deletedHistory.unshift(item);
-  saveUD('ch_history', appHistory);
-  saveUD('ch_deleted', deletedHistory);
-  renderHistory();
-}
-
-function restoreHistory(i) {
-  const [item] = deletedHistory.splice(i, 1);
-  appHistory.unshift(item);
-  saveUD('ch_history', appHistory);
-  saveUD('ch_deleted', deletedHistory);
-  confirmingDelete.delete('d' + i);
-  renderHistory();
-}
-
-function permanentDelete(i) {
-  const key = 'd' + i;
-  if (!confirmingDelete.has(key)) {
-    confirmingDelete.add(key);
-    renderDeleted();
-    return;
-  }
-  confirmingDelete.delete(key);
-  deletedHistory.splice(i, 1);
-  saveUD('ch_deleted', deletedHistory);
-  renderDeleted();
-}
-
-function renderDeleted() {
-  const section = document.getElementById('deleted-section');
-  if (!deletedHistory.length) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  document.getElementById('deleted-list').innerHTML = deletedHistory.map((h, i) => {
-    const key = 'd' + i;
-    const confirming = confirmingDelete.has(key);
-    return `
-      <div class="history-item" style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1;opacity:0.6">
-          <div class="hi-date">${escH(h.dateStr || 'Unnamed')}${h.bossName ? ' · ' + escH(h.bossName) : ''}</div>
-          <div class="hi-sub">${h.sessions.length} sessions · ${fmtHours(h.totalMins)}h · ${Math.round(h.totalEarned)}₪</div>
-        </div>
-        <button onclick="restoreHistory(${i})" style="background:var(--green-bg);color:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">Undo</button>
-        <button onclick="permanentDelete(${i})" style="background:${confirming ? 'var(--red)' : 'var(--red-bg)'};color:${confirming ? '#fff' : 'var(--red)'};border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">${confirming ? 'Sure?' : '✕ Delete'}</button>
-      </div>
-    `;
-  }).join('');
-}
-
-// ─── MONTH CALENDAR ───────────────────────────────────────
-let currentMonthYear = null;
-let monthlyReceived = {};
-
-function monthKey(year, month) {
-  return String(month).padStart(2, '0') + '/' + year;
-}
-
-function saveMonthReceived(year, month, val) {
-  const k = monthKey(year, month);
-  if (val === '' || val === null) delete monthlyReceived[k];
-  else monthlyReceived[k] = parseFloat(val);
-  saveUD('ch_received', monthlyReceived);
-  renderMonthCalendar();
-}
-
-async function handleSalaryPDF(event, year, month) {
-  const file = event.target.files[0];
-  event.target.value = '';
-  if (!file) return;
-
-  if (!window.pdfjsLib) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-
-  const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(x => x.str).join(' ') + '\n';
-  }
-
-  // Try common Israeli payslip patterns
-  const patterns = [
-    /נטו\s+לתשלום[\s:]+([0-9,]+)/,
-    /לתשלום[\s:]+([0-9,]+)/,
-    /סה"כ\s+נטו[\s:]+([0-9,]+)/,
-    /net\s+pay[\s:]+([0-9,]+)/i,
-  ];
-  let found = null;
-  for (const p of patterns) {
-    const m = text.match(p);
-    if (m) { found = parseFloat(m[1].replace(/,/g, '')); break; }
-  }
-
-  showPDFModal(text, year, month, found);
-}
-
-function showPDFModal(text, year, month) {
-  const existing = document.getElementById('pdf-modal');
-  if (existing) existing.remove();
-  const modal = document.createElement('div');
-  modal.id = 'pdf-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:flex-end;padding-bottom:env(safe-area-inset-bottom)';
-  const received = monthlyReceived[monthKey(year, month)];
-  modal.innerHTML = `
-    <div style="background:var(--bg2);border-radius:16px 16px 0 0;width:100%;max-width:430px;margin:0 auto;padding:20px">
-      <div style="font-size:15px;font-weight:600;margin-bottom:4px">PDF — Enter Net Salary</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Check the extracted text and enter the net amount you received:</div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;font-size:11px;color:var(--text2);max-height:220px;overflow-y:auto;white-space:pre-wrap;direction:rtl;text-align:right;line-height:1.6;margin-bottom:12px">${text.replace(/</g,'&lt;').substring(0, 3000)}</div>
-      <input type="number" id="pdf-amount-input" placeholder="Net amount ₪" value="${received !== undefined ? received : ''}"
-        style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px">
-      <button onclick="confirmPDFAmount(${year},${month})"
-        style="width:100%;padding:13px;background:var(--accent);color:#111;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">Save</button>
-      <button onclick="document.getElementById('pdf-modal').remove()"
-        style="width:100%;padding:13px;background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;font-size:15px;cursor:pointer;font-family:inherit">Cancel</button>
-    </div>`;
-  document.body.appendChild(modal);
-}
-
-function confirmPDFAmount(year, month) {
-  const val = document.getElementById('pdf-amount-input').value;
-  document.getElementById('pdf-modal').remove();
-  if (val) saveMonthReceived(year, month, parseFloat(val));
-}
-
-// Returns { month, year } of the work month a calendar date belongs to.
-// Work month starts on the 10th: day >= 10 → same month; day < 10 → previous month.
-function dateToWorkMonth(day, month, year) {
-  if (day >= 10) return { month, year };
-  const m = month - 1 < 1 ? 12 : month - 1;
-  const y = month - 1 < 1 ? year - 1 : year;
-  return { month: m, year: y };
-}
-
-function changeMonth(delta) {
-  currentMonthYear.month += delta;
-  if (currentMonthYear.month > 12) { currentMonthYear.month = 1; currentMonthYear.year++; }
-  if (currentMonthYear.month < 1)  { currentMonthYear.month = 12; currentMonthYear.year--; }
-  renderMonthCalendar();
-}
-
-function renderMonthCalendar() {
-  const { year, month } = currentMonthYear;
-
-  // Work month: 10th of month/year  →  9th of nextMonth/nextYear
-  const nextMonth = month === 12 ? 1  : month + 1;
-  const nextYear  = month === 12 ? year + 1 : year;
-
-  // Map "mo-day" → earned for fast lookup
-  const workDayMap = {};
-  let monthEarned = 0, monthMins = 0;
-
-  appHistory.forEach(h => {
-    const m = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (m) {
-      const d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
-      const wm = dateToWorkMonth(d, mo, y);
-      if (wm.month === month && wm.year === year) {
-        workDayMap[`${mo}-${d}`] = (workDayMap[`${mo}-${d}`] || 0) + h.totalEarned;
-        monthEarned += h.totalEarned;
-        monthMins += h.totalMins;
-      }
-    }
-  });
-
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('month-label').textContent = monthNames[month - 1] + ' ' + year;
-  const workDayCount = Object.keys(workDayMap).length;
-  document.getElementById('month-earn-label').textContent = workDayCount
-    ? Math.round(monthEarned) + '₪  ·  ' + fmtHours(monthMins) + 'h  ·  ' + workDayCount + ' days'
-    : 'No sessions logged';
-
-  // Build the day list: 10..end-of-month, then 1..9 of next month
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const days = [];
-  for (let d = 10; d <= daysInMonth; d++) days.push({ d, mo: month, y: year });
-  for (let d = 1;  d <= 9;           d++) days.push({ d, mo: nextMonth, y: nextYear });
-
-  // Offset so grid starts on the correct weekday
-  const startDow = new Date(year, month - 1, 10).getDay();
-
-  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;margin-top:10px">';
-  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(lbl => {
-    html += `<div style="font-size:10px;color:var(--text3);font-weight:600;padding:4px 0">${lbl}</div>`;
-  });
-  for (let i = 0; i < startDow; i++) html += '<div></div>';
-  days.forEach(({ d, mo, y }) => {
-    const hasWork = !!workDayMap[`${mo}-${d}`];
-    const isOverflow = mo === nextMonth; // days 1-9 of next month
-    html += `<div style="padding:6px 2px;border-radius:6px;font-size:13px;` +
-      `background:${hasWork ? 'var(--green-bg)' : 'transparent'};` +
-      `color:${hasWork ? 'var(--green)' : isOverflow ? 'var(--text3)' : 'var(--text2)'};` +
-      `font-weight:${hasWork ? '600' : '400'}"` +
-      `${hasWork ? ` title="${Math.round(workDayMap[`${mo}-${d}`])}₪"` : ''}>${d}</div>`;
-  });
-  html += `</div><div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:right">` +
-    `${shortNames[month-1]} 10 – ${shortNames[nextMonth-1]} 9</div>`;
-
-  // Salary comparison
-  const k = monthKey(year, month);
-  const received = monthlyReceived[k];
-  const calc = Math.round(monthEarned);
-  const hasCalc = monthEarned > 0;
-  const hasReceived = received !== undefined && received !== null;
-
-  let diffHtml = '';
-  if (hasCalc && hasReceived) {
-    const diff = Math.round(received - calc);
-    const color = diff >= 0 ? 'var(--green)' : 'var(--red)';
-    const sign = diff >= 0 ? '+' : '';
-    diffHtml = `<div style="display:flex;justify-content:space-between;align-items:center;border-top:0.5px solid var(--border);margin-top:10px;padding-top:10px">
-      <span style="font-size:12px;color:var(--text2)">Difference</span>
-      <span style="font-size:15px;font-weight:700;color:${color}">${sign}${diff}₪</span>
-    </div>`;
-  }
-
-  html += `<div style="border-top:0.5px solid var(--border);margin-top:14px;padding-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--text2)">Calculated</span>
-      <span style="font-size:14px;font-weight:600">${hasCalc ? calc + '₪' : '—'}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--text2)">Received</span>
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="number" id="received-input" value="${hasReceived ? received : ''}" placeholder="—"
-          style="width:100px;text-align:right;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:14px;color:var(--text);font-family:inherit"
-          onchange="saveMonthReceived(${year},${month},this.value)">
-        <label style="cursor:pointer;padding:5px 8px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;font-size:12px;color:var(--text2);white-space:nowrap" title="Upload salary PDF">
-          📎 PDF
-          <input type="file" accept=".pdf" style="display:none" onchange="handleSalaryPDF(event,${year},${month})">
-        </label>
-      </div>
-    </div>
-    ${diffHtml}
-  </div>`;
-
-  document.getElementById('month-calendar').innerHTML = html;
-}
-
-// ─── OVERVIEW ─────────────────────────────────────────────
-function renderOverview() {
+async function saveAttendance(sessionId, playersCsv) {
+  const players = playersCsv ? playersCsv.split(',') : [];
+  const present = players.filter(name => document.getElementById('att-'+escId(name))?.checked);
   const now = new Date();
-  if (!currentMonthYear) {
-    // Default to today's work month
-    const today = now.getDate();
-    currentMonthYear = dateToWorkMonth(today, now.getMonth() + 1, now.getFullYear());
-    // Override with most recent history item's work month
-    for (const h of appHistory) {
-      const m = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if (m) {
-        currentMonthYear = dateToWorkMonth(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
-        break;
-      }
+  const savedAt = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  await updateSession(sessionId, { attendance: { present, savedAt } });
+  closeModal();
+  logActivity('SAVE_ATTENDANCE', sessionId);
+}
+
+// ─── SESSION MODAL (Admin) ─────────────────────────────────
+// Modal state
+let _modalSession = null; // null = new, object = editing
+
+function openSessionModal(date, time, sessionId) {
+  if (!isAdmin()) return;
+  _modalSession = sessionId ? sessions.find(s => s.id === sessionId) : null;
+  const s = _modalSession;
+  // Reset modal state vars to match current session (or defaults for new)
+  _sessionType = s?.type || 'private';
+  _recurringFreq = 'none';
+  _rainMode = s?.cancelled ? (s.cancelled.whole ? 'whole' : s.cancelled.from ? 'from' : 'none') : 'none';
+
+  const defaultDate = date || dateISO(calDate);
+  const defaultStart = time || '09:00';
+  const defaultEnd   = time ? addMins(time, 60) : '10:00';
+
+  const coachOptions = allCoaches.map(c =>
+    `<option value="${c.id}" ${s?.assignedCoachId===c.id?'selected':''}>${escH(c.username)}</option>`
+  ).join('');
+
+  const groupOptions = Object.values(groups).map(g =>
+    `<option value="${g.id}" ${s?.groupId===g.id?'selected':''}>${escH(g.name)}</option>`
+  ).join('');
+
+  const recurringFreq = s?.recurring?.freq || 'none';
+  const recurringUntil = s?.recurring?.until || '';
+
+  let rainSection = '';
+  if (s) {
+    const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+    rainSection = `<div class="form-group">
+      <label class="form-label">${t('rainCancel')}</label>
+      <div class="chip-group">
+        <button class="chip${isCancelled?'':' active'}" id="rain-none" onclick="setRainCancel('none')">${t('uncancel')}</button>
+        <button class="chip${s.cancelled?.whole?' active':''}" id="rain-whole" onclick="setRainCancel('whole')">${t('rainWhole')}</button>
+        <button class="chip${s.cancelled?.from?' active':''}" id="rain-from" onclick="setRainCancel('from')">${t('rainFrom')}</button>
+      </div>
+      <div id="rain-from-row" style="margin-top:8px;display:${s.cancelled?.from?'':'none'}">
+        <input type="time" id="rain-from-time" value="${s.cancelled?.from||''}">
+      </div>
+    </div>`;
+  }
+
+  // Build all-players datalist for private sessions
+  const allPlayersList = getAllPlayers().map(p => `<option value="${escH(p)}">`).join('');
+
+  const deleteBtn = s ? `<button class="btn btn-danger" style="margin-top:4px" onclick="confirmDeleteSession('${s.id}')">${t('deleteSession')}</button>` : '';
+
+  createModal(`
+    <div class="sheet-title">${s ? t('editSession') : t('newSession')}</div>
+
+    <div class="form-group">
+      <label class="form-label">${t('date')}</label>
+      <input type="date" id="sm-date" value="${s?s.date:defaultDate}"
+        style="font-size:16px;font-weight:600;color:var(--accent)">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">${t('sessionType')}</label>
+      <div class="type-toggle">
+        <button class="type-btn${_sessionType==='private'?' act-private':''}" id="sm-type-private" onclick="setSessionType('private')">${t('private')}</button>
+        <button class="type-btn${_sessionType==='group'?' act-group':''}" id="sm-type-group" onclick="setSessionType('group')">${t('group')}</button>
+      </div>
+    </div>
+
+    <div class="form-group" id="sm-group-row" style="display:${_sessionType==='group'?'':'none'}">
+      <label class="form-label">${t('selectGroup')}</label>
+      <select id="sm-group" onchange="onGroupChange(this.value)">
+        <option value="">${t('selectGroup')}</option>${groupOptions}
+      </select>
+    </div>
+
+    <div class="form-group" id="sm-player-row" style="display:${_sessionType==='private'?'':'none'}">
+      <label class="form-label">${t('playerLabel')}</label>
+      <input type="text" id="sm-player" list="sm-players-list" value="${escH(s?.assignedPlayerName||'')}" placeholder="${t('playerPlaceholder')}">
+      <datalist id="sm-players-list">${allPlayersList}</datalist>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">${t('sessionName')}</label>
+      <input type="text" id="sm-name" value="${s?escH(s.name):''}" placeholder="${t('sessionName')}">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('startTime')}</label>
+        <input type="time" id="sm-start" value="${s?s.startTime:defaultStart}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('endTime')}</label>
+        <input type="time" id="sm-end" value="${s?s.endTime:defaultEnd}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">${t('assignCoach')}</label>
+      <select id="sm-coach"><option value="">${t('selectCoach')}</option>${coachOptions}</select>
+    </div>
+
+    ${!s ? `<div class="form-group">
+      <label class="form-label">${t('recurring')}</label>
+      <div class="chip-group">
+        <button class="chip active" id="rec-none" onclick="setRecurring('none')">${t('recurringNone')}</button>
+        <button class="chip" id="rec-weekly" onclick="setRecurring('weekly')">${t('recurringWeekly')}</button>
+        <button class="chip" id="rec-biweekly" onclick="setRecurring('biweekly')">${t('recurringBiweekly')}</button>
+        <button class="chip" id="rec-monthly" onclick="setRecurring('monthly')">${t('recurringMonthly')}</button>
+      </div>
+      <div id="rec-until-row" style="display:none;margin-top:8px">
+        <label class="form-label">${t('until')}</label>
+        <input type="date" id="sm-until" value="">
+      </div>
+    </div>` : ''}
+    ${rainSection}
+    <button class="btn btn-primary" style="margin-top:4px" onclick="saveSessionModal()">${t('save')}</button>
+    ${deleteBtn}
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  `);
+}
+
+function getAllPlayers() {
+  const seen = new Set();
+  Object.values(groups).forEach(g => g.players.forEach(p => seen.add(p)));
+  return [...seen].sort();
+}
+
+function onGroupChange(groupId) {
+  const g = groups[groupId];
+  if (!g) return;
+  const nameEl = document.getElementById('sm-name');
+  if (nameEl) nameEl.value = g.name;
+}
+
+let _sessionType = 'private';
+let _recurringFreq = 'none';
+let _rainMode = 'none';
+
+function setSessionType(type) {
+  _sessionType = type;
+  document.getElementById('sm-type-private')?.classList.toggle('act-private', type==='private');
+  document.getElementById('sm-type-group')?.classList.toggle('act-group', type==='group');
+  document.getElementById('sm-group-row').style.display  = type==='group'   ? '' : 'none';
+  document.getElementById('sm-player-row').style.display = type==='private' ? '' : 'none';
+}
+
+function setRecurring(freq) {
+  _recurringFreq = freq;
+  ['none','weekly','biweekly','monthly'].forEach(f => {
+    document.getElementById('rec-'+f)?.classList.toggle('active', f===freq);
+  });
+  const row = document.getElementById('rec-until-row');
+  if (row) row.style.display = freq !== 'none' ? '' : 'none';
+}
+
+function setRainCancel(mode) {
+  _rainMode = mode;
+  const fromRow = document.getElementById('rain-from-row');
+  if (fromRow) fromRow.style.display = mode==='from' ? '' : 'none';
+  ['none','whole','from'].forEach(m => {
+    document.getElementById('rain-'+m)?.classList.toggle('active', m===mode);
+  });
+}
+
+async function saveSessionModal() {
+  const name  = document.getElementById('sm-name')?.value.trim();
+  const start = document.getElementById('sm-start')?.value;
+  const end   = document.getElementById('sm-end')?.value;
+  const date  = document.getElementById('sm-date')?.value;
+  const coach  = document.getElementById('sm-coach')?.value || null;
+  const grp    = document.getElementById('sm-group')?.value || null;
+  const player = document.getElementById('sm-player')?.value.trim() || null;
+  const type   = document.getElementById('sm-type-group')?.classList.contains('act-group') ? 'group' : 'private';
+
+  if (!name || !start || !end || !date) return;
+
+  const base = {
+    name, startTime: start, endTime: end, date,
+    type, assignedCoachId: coach || null,
+    groupId: type==='group' ? grp : null,
+    assignedPlayerName: type==='private' ? player : null,
+    cancelled: false, attendance: null, recurring: null
+  };
+
+  if (_modalSession) {
+    // Editing existing
+    const patch = { name, startTime: start, endTime: end, date, type, assignedCoachId: coach||null,
+      groupId: type==='group'?grp:null, assignedPlayerName: type==='private'?player:null };
+    // Handle rain cancel
+    if (_rainMode === 'none') patch.cancelled = false;
+    else if (_rainMode === 'whole') patch.cancelled = { whole: true, from: null, reason: 'rain' };
+    else if (_rainMode === 'from') {
+      const fromTime = document.getElementById('rain-from-time')?.value || start;
+      patch.cancelled = { whole: false, from: fromTime, reason: 'rain' };
+    }
+    await updateSession(_modalSession.id, patch);
+    logActivity('EDIT_SESSION', name);
+  } else {
+    // New session
+    const until = document.getElementById('sm-until')?.value;
+    if (_recurringFreq !== 'none' && until) {
+      await createRecurringSessions(base, _recurringFreq, until);
+    } else {
+      await createSession(base);
     }
   }
-  renderMonthCalendar();
+  closeModal();
+}
 
-  const totalMins = appHistory.reduce((a, h) => a + h.totalMins, 0);
-  const totalEarned = appHistory.reduce((a, h) => a + h.totalEarned, 0);
-  document.getElementById('sum-hours').textContent = fmtHours(totalMins);
-  document.getElementById('sum-days').textContent = appHistory.length;
-  document.getElementById('sum-earn').textContent = Math.round(totalEarned) + '₪';
-
-  let pMins = 0, gMins = 0, pEarned = 0, gEarned = 0;
-  appHistory.forEach(h => h.sessions.forEach(s => {
-    if (s.type === 'group') { gMins += s.durMins; gEarned += s.earned; }
-    else { pMins += s.durMins; pEarned += s.earned; }
-  }));
-
-  document.getElementById('type-breakdown').innerHTML = `
-    <div class="breakdown-row">
-      <span class="breakdown-label">Private lessons</span>
-      <div style="text-align:right"><div class="breakdown-val">${Math.round(pEarned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(pMins)}h</div></div>
-    </div>
-    <div class="breakdown-row">
-      <span class="breakdown-label">Group lessons</span>
-      <div style="text-align:right"><div class="breakdown-val">${Math.round(gEarned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(gMins)}h</div></div>
-    </div>`;
-
-  const avgRate = totalMins > 0 ? totalEarned / (totalMins / 60) : 0;
-  const pRate = pMins > 0 ? pEarned / (pMins / 60) : 0;
-  const gRate = gMins > 0 ? gEarned / (gMins / 60) : 0;
-  document.getElementById('per-hour-check').innerHTML = `
-    <div class="breakdown-row"><span class="breakdown-label">Overall average</span><span class="breakdown-val">${Math.round(avgRate)}₪/h</span></div>
-    <div class="breakdown-row"><span class="breakdown-label">Private effective rate</span><span class="breakdown-val">${Math.round(pRate)}₪/h</span></div>
-    <div class="breakdown-row"><span class="breakdown-label">Group effective rate</span><span class="breakdown-val">${Math.round(gRate)}₪/h</span></div>`;
-
-  const months = {};
-  appHistory.forEach(h => {
-    const match = (h.dateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    let key = 'Unknown';
-    if (match) {
-      const wm = dateToWorkMonth(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
-      key = String(wm.month).padStart(2, '0') + '/' + wm.year;
-    }
-    if (!months[key]) months[key] = { mins: 0, earned: 0, days: 0 };
-    months[key].mins += h.totalMins;
-    months[key].earned += h.totalEarned;
-    months[key].days++;
+function confirmDeleteSession(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  showConfirmModal(t('confirmDeleteMsg'), async () => {
+    closeModal();
+    await deleteSessionDoc(sessionId);
   });
-  const mKeys = Object.keys(months).sort().reverse();
-  document.getElementById('monthly-breakdown').innerHTML = mKeys.length
-    ? mKeys.map(k => `
-      <div class="breakdown-row">
-        <div><div class="breakdown-label">${k}</div><div style="font-size:12px;color:var(--text2)">${months[k].days} days</div></div>
-        <div style="text-align:right"><div class="breakdown-val">${Math.round(months[k].earned)}₪</div><div style="font-size:12px;color:var(--text2)">${fmtHours(months[k].mins)}h</div></div>
-      </div>`).join('')
-    : '<div class="empty">No data yet</div>';
 }
 
-// ─── NAV ──────────────────────────────────────────────────
-function showScreen(name) {
-  if (!currentUser && name !== 'auth') return; // must be logged in
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const nb = document.getElementById('nav-' + name);
-  if (nb) nb.classList.add('active');
-  if (name === 'history')  renderHistory();
-  if (name === 'overview') renderOverview();
-  if (name === 'groups')   renderGroups();
-  if (name === 'settings') renderAdminPanel();
-  window.scrollTo(0, 0);
-}
-
-// ─── GROUPS STATE ─────────────────────────────────────────
-// { [id]: { id, name, players: string[] } }
-let groups = {};
-// { [groupId]: { 'DD/MM/YYYY': [playerName, ...] } }
-let groupAttendance = {};
-
-function saveGroups() { saveUD('ch_groups', groups); }
-function saveGroupAttendance() {} // attendance stored on session objects; no separate doc needed
-function getGroup(id) { return groups[id]; }
-// Handles both old format (array) and new format ({ present, savedAt })
-function attPlayers(entry) { if (!entry) return []; return Array.isArray(entry) ? entry : (entry.present || []); }
-
-
+// ─── GROUPS ───────────────────────────────────────────────
 let expandedGroupIds = new Set();
 
-// ─── GROUPS UI ────────────────────────────────────────────
 function renderGroups() {
-  const wm = currentMonthYear || dateToWorkMonth(new Date().getDate(), new Date().getMonth()+1, new Date().getFullYear());
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('groups-subtitle').textContent = monthNames[wm.month-1] + ' ' + wm.year + ' · Rosters & attendance';
+  const addRow = document.getElementById('groups-add-btn-row');
+  if (addRow) addRow.style.display = isAdmin() ? '' : 'none';
 
-  const el = document.getElementById('groups-list');
   const gArr = Object.values(groups);
-  if (!gArr.length) {
-    el.innerHTML = '<div class="empty" style="padding:24px 16px">No groups yet. Create your first group!</div>';
-    return;
-  }
+  const el = document.getElementById('groups-list');
+  if (!gArr.length) { el.innerHTML = `<div class="empty">${t('noGroups')}</div>`; return; }
 
   el.innerHTML = gArr.map(g => {
     const expanded = expandedGroupIds.has(g.id);
-    const stats = getGroupMonthStats(g.id, wm.month, wm.year);
+    const sessionCount = getCalendarSessions().filter(s => s.groupId === g.id).length;
     let inner = '';
-
     if (expanded) {
       const chips = g.players.map(name =>
-        `<span class="player-chip">${escH(name)}<span class="rm" onclick="removePlayer('${g.id}','${escQ(name)}')">×</span></span>`
-      ).join('') || '<span style="font-size:13px;color:var(--text3)">No players yet</span>';
+        `<span class="player-chip">${escH(name)}${isAdmin()?`<span class="rm" onclick="removePlayer('${g.id}','${escQ(name)}')">×</span>`:''}
+        </span>`
+      ).join('') || `<span style="font-size:13px;color:var(--text3)">${t('noPlayers')}</span>`;
 
+      const addPlayerRow = isAdmin() ? `<div class="add-row">
+        <input type="text" id="add-pl-${g.id}" placeholder="${t('players')}">
+        <button onclick="addPlayer('${g.id}',document.getElementById('add-pl-${g.id}').value);document.getElementById('add-pl-${g.id}').value=''">${t('addPlayer')}</button>
+      </div>` : '';
+
+      const deleteRow = isAdmin() ? `<button onclick="confirmDeleteGroupUI('${g.id}')" style="width:100%;margin-top:14px;padding:9px;background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit">${t('deleteGroup')}</button>` : '';
+
+      // Attendance stats
       let attHtml = '';
-      if (g.players.length && stats.totalSessions > 0) {
-        attHtml = `<div style="margin-top:14px">
-          <div class="build-label" style="margin-bottom:8px">Attendance this month (${stats.totalSessions} sessions)</div>
-          ${g.players.map(name => {
-            const c = stats.counts[name] || 0;
-            const pct = stats.totalSessions > 0 ? (c / stats.totalSessions) * 100 : 0;
-            return `<div class="att-row">
-              <span style="font-size:13px;min-width:90px;flex-shrink:0">${escH(name)}</span>
-              <div class="att-bar"><div class="att-fill" style="width:${pct}%"></div></div>
-              <span style="font-size:12px;color:var(--text2);min-width:38px;text-align:right">${c}/${stats.totalSessions}</span>
-            </div>`;
-          }).join('')}
-        </div>`;
+      if (g.players.length) {
+        const gsessions = getCalendarSessions().filter(s => s.groupId === g.id && s.attendance);
+        if (gsessions.length) {
+          const counts = {};
+          gsessions.forEach(s => (s.attendance.present||[]).forEach(n => { counts[n]=(counts[n]||0)+1; }));
+          attHtml = `<div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:8px">${t('attendance')} (${gsessions.length})</div>
+            ${g.players.map(name => {
+              const c = counts[name]||0;
+              const pct = gsessions.length ? (c/gsessions.length)*100 : 0;
+              return `<div class="att-row">
+                <span style="font-size:13px;min-width:90px;flex-shrink:0">${escH(name)}</span>
+                <div class="att-bar"><div class="att-fill" style="width:${pct}%"></div></div>
+                <span style="font-size:12px;color:var(--text2);min-width:38px;text-align:${lang==='he'?'left':'right'}">${c}/${gsessions.length}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        }
       }
 
       inner = `<div style="border-top:0.5px solid var(--border);margin-top:12px;padding-top:12px">
-        <div class="build-label" style="margin-bottom:8px">Players</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:8px">${t('players')}</div>
         <div class="player-chips" style="margin-bottom:10px">${chips}</div>
-        <div class="add-keyword-row">
-          <input type="text" id="add-pl-${g.id}" placeholder="Player name"
-            onkeydown="if(event.key==='Enter'){addPlayer('${g.id}',this.value);this.value=''}">
-          <button onclick="addPlayer('${g.id}',document.getElementById('add-pl-${g.id}').value);document.getElementById('add-pl-${g.id}').value=''">+ Add</button>
-        </div>
-        ${attHtml}
-        <button onclick="confirmDeleteGroup('${g.id}')" style="width:100%;margin-top:14px;padding:9px;background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit">Delete group</button>
+        ${addPlayerRow}${attHtml}${deleteRow}
       </div>`;
     }
 
@@ -1331,636 +1194,193 @@ function renderGroups() {
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleGroupExpand('${g.id}')">
         <div>
           <div style="font-size:15px;font-weight:600">${escH(g.name)}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length} players${stats.totalSessions > 0 ? ' · ' + stats.totalSessions + ' sessions this month' : ''}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length} · ${sessionCount} ${t('sessionsCount')}</div>
         </div>
         <span style="font-size:22px;color:var(--text3);display:inline-block;transform:rotate(${expanded?'90':'0'}deg)">›</span>
-      </div>
-      ${inner}
+      </div>${inner}
     </div>`;
   }).join('');
 }
 
 function toggleGroupExpand(id) {
-  if (expandedGroupIds.has(id)) expandedGroupIds.delete(id);
-  else expandedGroupIds.add(id);
+  if (expandedGroupIds.has(id)) expandedGroupIds.delete(id); else expandedGroupIds.add(id);
   renderGroups();
 }
 
-function getGroupMonthStats(groupId, month, year) {
-  const counts = {};
-  let totalSessions = 0;
-  appHistory.forEach(h => {
-    const datePart = (h.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
-    if (!datePart) return;
-    const dm = datePart.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (!dm) return;
-    const wm = dateToWorkMonth(parseInt(dm[1]), parseInt(dm[2]), parseInt(dm[3]));
-    if (wm.month !== month || wm.year !== year) return;
-    (h.sessions || []).forEach(s => {
-      if (s.groupId !== groupId || !s.attendance) return;
-      totalSessions++;
-      (s.attendance.present || []).forEach(name => { counts[name] = (counts[name] || 0) + 1; });
-    });
-  });
-  return { totalSessions, counts };
-}
-
 function openAddGroupModal() {
-  const usedNames = new Set(Object.values(groups).map(g => g.name));
-  const available = settings.groupKeywords.filter(k => !usedNames.has(k));
-  const kwChips = available.length ? `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Pick from keywords:</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-      ${available.map(k => `<button onclick="document.getElementById('new-group-input').value='${escQ(k)}'"
-        style="padding:5px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);cursor:pointer;font-family:inherit">${escH(k)}</button>`).join('')}
-    </div>` : '';
+  if (!isAdmin()) return;
   createModal(`
-    <div class="sheet-title">New Group</div>
-    ${kwChips}
-    <input type="text" id="new-group-input" placeholder="Group name"
+    <div class="sheet-title">${t('newGroup')}</div>
+    <input type="text" id="new-group-input" placeholder="${t('groupName')}"
       style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px"
       onkeydown="if(event.key==='Enter')document.getElementById('new-group-ok').click()">
-    <button id="new-group-ok" class="btn btn-primary" style="margin-top:0"
-      onclick="window._addGroupCb()">Confirm</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button id="new-group-ok" class="btn btn-primary" style="margin-top:0" onclick="window._addGroupCb()">${t('confirm')}</button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
   `);
-  window._addGroupCb = () => {
+  window._addGroupCb = async () => {
     const v = document.getElementById('new-group-input')?.value.trim();
     closeModal();
     if (!v) return;
     const id = 'g' + Date.now();
-    groups[id] = { id, name: v, players: [] };
-    saveGroups();
-    addNameToKeywords(v, 'group');
-    saveSettings();
+    await saveGroup(id, { id, name: v, players: [] });
     expandedGroupIds.add(id);
-    renderGroups();
   };
   setTimeout(() => document.getElementById('new-group-input')?.focus(), 80);
 }
 
-function addPlayer(groupId, name) {
+async function addPlayer(groupId, name) {
+  if (!isAdmin()) return;
   const n = name.trim();
   if (!n) return;
-  const g = getGroup(groupId);
+  const g = groups[groupId];
   if (!g || g.players.includes(n)) return;
-  g.players.push(n);
-  saveGroups();
-  renderGroups();
+  const updated = [...g.players, n];
+  await saveGroup(groupId, { ...g, players: updated });
 }
 
-function removePlayer(groupId, name) {
-  const g = getGroup(groupId);
+async function removePlayer(groupId, name) {
+  if (!isAdmin()) return;
+  const g = groups[groupId];
   if (!g) return;
-  g.players = g.players.filter(p => p !== name);
-  saveGroups();
-  renderGroups();
+  await saveGroup(groupId, { ...g, players: g.players.filter(p => p !== name) });
 }
 
-function confirmDeleteGroup(id) {
-  const g = getGroup(id);
+function confirmDeleteGroupUI(id) {
+  const g = groups[id];
   if (!g) return;
-  showConfirmModal(`Delete "${g.name}" and all its attendance data?`, () => {
-    delete groups[id];
-    delete groupAttendance[id];
+  showConfirmModal(`${t('deleteGroup')}: "${escH(g.name)}"?`, async () => {
     expandedGroupIds.delete(id);
-    saveGroups();
-    saveGroupAttendance();
-    renderGroups();
+    await deleteGroup(id);
+    closeModal();
   });
 }
 
-function escQ(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
-function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+// ─── SETTINGS ─────────────────────────────────────────────
+function renderSettings() {
+  const ratesSection = isAdmin() ? `
+    <div class="section-divider">${t('rates')}</div>
+    <div class="card">
+      <div class="rate-row">
+        <label>${t('ratePrivate')}</label>
+        <input type="number" id="rate-private" value="${settings.ratePrivate}" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">${t('perHour')}</span>
+      </div>
+      <div class="rate-row">
+        <label>${t('rateGroup')}</label>
+        <input type="number" id="rate-group" value="${settings.rateGroup}" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">${t('perHour')}</span>
+      </div>
+    </div>` : '';
 
-// ─── MODAL HELPERS ────────────────────────────────────────
-function createModal(html) {
-  document.getElementById('app-modal')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'app-modal';
-  overlay.className = 'bottom-overlay';
-  overlay.innerHTML = `<div class="bottom-sheet">${html}</div>`;
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
-  document.body.appendChild(overlay);
-  return overlay;
-}
-function closeModal() { document.getElementById('app-modal')?.remove(); }
+  const accountRole = isAdmin() ? t('adminCoach') : t('coach');
 
-function showInputModal(title, placeholder, callback) {
-  const m = createModal(`
-    <div class="sheet-title">${title}</div>
-    <input type="text" id="modal-input" placeholder="${placeholder}"
-      style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px"
-      onkeydown="if(event.key==='Enter')document.getElementById('modal-ok').click()">
-    <button id="modal-ok" class="btn btn-primary" style="margin-top:0"
-      onclick="const v=document.getElementById('modal-input').value;closeModal();window._modalCb&&window._modalCb(v)">Confirm</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  `);
-  window._modalCb = callback;
-  setTimeout(() => document.getElementById('modal-input')?.focus(), 80);
-}
-
-function showConfirmModal(message, callback) {
-  createModal(`
-    <div class="sheet-title">Confirm</div>
-    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">${message}</p>
-    <button class="btn" style="background:var(--red);color:#fff;margin-top:0;margin-bottom:6px"
-      onclick="closeModal();window._modalCb&&window._modalCb()">Delete</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  `);
-  window._modalCb = callback;
-}
-
-// ─── ATTENDANCE ───────────────────────────────────────────
-let _attPending = null;
-
-function openAttendanceSheet(sessionIdx) {
-  const s = currentResult?.sessions[sessionIdx];
-  if (!s || s.type !== 'group') return;
-  const gArr = Object.values(groups);
-  const datePart = (currentResult.dateStr || '').match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
-  const dateKey = datePart + (s.start ? '_' + s.start : '');
-
-  let group = s.groupId ? getGroup(s.groupId) : null;
-
-  if (!group) {
-    // Auto-match by session name
-    const nameLower = (s.name || '').toLowerCase();
-    group = gArr.find(g => g.name.toLowerCase() === nameLower)
-      || gArr.find(g => nameLower.includes(g.name.toLowerCase()) || g.name.toLowerCase().includes(nameLower));
-    if (group) s.groupId = group.id;
-  }
-
-  if (!group) {
-    createModal(`
-      <div class="sheet-title">Attendance</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">No matching group found. Make sure a group exists with the same name as this session.</p>
-      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
-    `);
-    return;
-  }
-  showAttChecklist(group, sessionIdx, dateKey);
-}
-
-function selectGroupForAtt(groupId) {
-  closeModal();
-  if (!_attPending) return;
-  const s = currentResult?.sessions[_attPending.sessionIdx];
-  if (s) s.groupId = groupId;
-  const { sessionIdx, dateKey } = _attPending;
-  _attPending = null;
-  showAttChecklist(getGroup(groupId), sessionIdx, dateKey);
-}
-
-function showAttChecklist(g, sessionIdx, dateKey) {
-  const s = currentResult?.sessions[sessionIdx];
-  const current = s?.attendance?.present || [];
-  const savedAt = s?.attendance?.savedAt || null;
-  const histTs = currentResult?.ts || 0;
-  const sessionStart = s?.start || '';
-  createModal(`
-    <div class="sheet-title">${g.name}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${dateKey.replace('_',' · ') || 'Unknown date'}${savedAt ? ' · Saved ' + savedAt : ''}</div>
-    ${g.players.map(name => `
-      <label style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
-        <input type="checkbox" id="att-${escId(name)}" ${current.includes(name) ? 'checked' : ''}
-          style="width:18px;height:18px;accent-color:var(--blue)">
-        <span style="font-size:15px">${name}</span>
-      </label>`).join('')}
-    ${!g.players.length ? '<p style="color:var(--text2);font-size:13px;padding:12px 0">No players in this group.</p>' : ''}
-    <button class="btn btn-primary" style="margin-top:14px"
-      onclick="saveAttFromModal(${histTs},'${sessionStart}','${g.players.map(escQ).join(',')}')">Save attendance</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  `);
-}
-
-function saveAttFromModal(histTs, sessionStart, playersCsv) {
-  const h = appHistory.find(h => h.ts === histTs);
-  if (!h) return;
-  const s = h.sessions.find(s => s.start === sessionStart);
-  if (!s) return;
-  const present = playersCsv ? playersCsv.split(',').filter(name => document.getElementById('att-' + escId(name))?.checked) : [];
-  const now = new Date();
-  const savedAt = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  s.attendance = { present, savedAt };
-  saveUD('ch_history', appHistory);
-  closeModal();
-  if (currentResult?.ts === histTs) renderResult(currentResult);
-  if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
-}
-
-function sessionAttHtml(s, r, i) {
-  if (s.type !== 'group') return '';
-  let info = '';
-  if (s.groupId && groups[s.groupId]) {
-    const g = groups[s.groupId];
-    const present = (s.attendance?.present || []).length;
-    info = `: ${present}/${g.players.length} · ${g.name}`;
-  }
-  return `<div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer;user-select:none" onclick="openAttendanceSheet(${i})">👥 Attendance${info}</div>`;
-}
-
-// ─── LOG MODE ─────────────────────────────────────────────
-let logMode = 'paste';
-function setLogMode(mode) {
-  logMode = mode;
-  document.getElementById('log-paste-panel').style.display = mode === 'paste' ? '' : 'none';
-  document.getElementById('log-build-panel').style.display = mode === 'build' ? '' : 'none';
-  document.getElementById('mode-paste').classList.toggle('active', mode === 'paste');
-  document.getElementById('mode-build').classList.toggle('active', mode === 'build');
-  if (mode === 'build') renderBuilder();
-}
-
-// ─── DAY BUILDER ─────────────────────────────────────────
-let builder = {
-  date: '', entries: [], nextStart: '09:00', form: null,
-  dur: 60, customDur: '', sessionType: 'private',
-  sessionName: '', breakDur: 15, customBreakDur: ''
-};
-
-function addMins(time, mins) {
-  const [h, m] = time.split(':').map(Number);
-  const t = h * 60 + m + mins;
-  return String(Math.floor(t/60)%24).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
-}
-
-function renderBuilder() {
-  const el = document.getElementById('builder-content');
-  if (!el) return;
-  if (!builder.date) {
-    const t = new Date();
-    builder.date = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-  }
-
-  let html = `<div class="build-section">
-    <div class="build-label">Date</div>
-    <input type="date" value="${builder.date}" oninput="builder.date=this.value"
-      style="background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;color:var(--text);font-family:inherit;width:100%">
-  </div>`;
-
-  if (builder.entries.length) {
-    html += '<div class="build-section"><div class="build-label">Schedule</div>';
-    builder.entries.forEach((e, i) => {
-      if (e.type === 'session') {
-        const bc = e.sessionType === 'group' ? 'badge-group' : 'badge-private';
-        const bt = e.sessionType === 'group' ? 'Group' : 'Private';
-        const grpNote = e.groupId && groups[e.groupId] ? ' · ' + groups[e.groupId].name : '';
-        html += `<div class="be-row">
-          <span class="be-time">${e.start}–${e.end}</span>
-          <span class="be-name">${e.name || '—'}${grpNote}</span>
-          <span class="badge ${bc}">${bt}</span>
-          <button class="btn-icon" onclick="removeBuilderEntry(${i})" style="font-size:13px;padding:2px 6px;color:var(--text3)">✕</button>
-        </div>`;
-      } else {
-        html += `<div class="be-row">
-          <span class="be-time">${e.start}–${e.end}</span>
-          <span class="be-break">Break · ${e.durMins}min</span>
-          <button class="btn-icon" onclick="removeBuilderEntry(${i})" style="font-size:13px;padding:2px 6px;color:var(--text3)">✕</button>
-        </div>`;
-      }
-    });
-    html += '</div>';
-  }
-
-  if (!builder.form) {
-    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <span style="font-size:12px;color:var(--text2);white-space:nowrap">Next at</span>
-      <input type="time" value="${builder.nextStart}" oninput="builder.nextStart=this.value"
-        style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;color:var(--text);font-family:inherit;flex:1">
+  document.getElementById('settings-body').innerHTML = `
+    ${ratesSection}
+    <div class="section-divider">${t('language')}</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:14px">${t('language')}</span>
+        <div class="type-toggle" style="width:auto">
+          <button class="type-btn${lang==='he'?' act-group':''}" style="padding:8px 16px;font-size:13px" onclick="setLang('he')">עברית</button>
+          <button class="type-btn${lang==='en'?' act-private':''}" style="padding:8px 16px;font-size:13px" onclick="setLang('en')">English</button>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="margin-top:0;flex:1" onclick="openBuilderForm('session')">+ Session</button>
-      <button class="btn btn-secondary" style="margin-top:0;flex:1" onclick="openBuilderForm('break')">+ Break</button>
-    </div>`;
-    if (builder.entries.some(e => e.type === 'session')) {
-      html += `<button class="btn btn-primary" style="background:var(--green);color:#111;margin-top:8px" onclick="generateFromBuilder()">Generate &amp; Save →</button>`;
-    }
-  } else if (builder.form === 'session') {
-    html += renderBuilderSessionForm();
-  } else {
-    html += renderBuilderBreakForm();
-  }
-
-  el.innerHTML = html;
-}
-
-function renderBuilderSessionForm() {
-  const allKw = builder.sessionType === 'group' ? settings.groupKeywords : settings.privateKeywords;
-  const gArr = Object.values(groups);
-  return `<div style="border-top:0.5px solid var(--border);margin-bottom:12px;padding-top:14px">
-    <div class="build-label">New session</div>
-  </div>
-  <div class="build-section">
-    <div class="build-label">Duration</div>
-    <div class="chips">
-      ${[{v:45,l:'45m'},{v:60,l:'1h'},{v:90,l:'1.5h'}].map(d =>
-        `<button class="chip-btn ${builder.dur===d.v?'active':''}" onclick="setBuilderDur(${d.v})">${d.l}</button>`
-      ).join('')}
-      <button class="chip-btn ${builder.dur===0?'active':''}" onclick="setBuilderDur(0)">Custom</button>
+    <div class="section-divider">${t('account')}</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:500">${escH(currentUser?.username||'')}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${escH(currentUser?.email||'')} · ${accountRole}</div>
+        </div>
+        <button onclick="logoutUser()" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit">${t('signOut')}</button>
+      </div>
     </div>
-    ${builder.dur===0 ? `<input type="number" placeholder="Minutes" value="${builder.customDur}" oninput="builder.customDur=this.value" min="1" max="300"
-      style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px;color:var(--text);font-family:inherit;width:130px;margin-top:4px">` : ''}
-  </div>
-  <div class="build-section">
-    <div class="build-label">Type</div>
-    <div class="type-toggle">
-      <button class="type-btn ${builder.sessionType==='private'?'act-private':''}" onclick="setBuilderType('private')">Private</button>
-      <button class="type-btn ${builder.sessionType==='group'?'act-group':''}" onclick="setBuilderType('group')">Group</button>
+    <div class="section-divider">${t('changePassword')}</div>
+    <div class="card">
+      <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
+      <div style="margin-bottom:10px">
+        <label class="form-label">${t('newPassword')}</label>
+        <input type="password" id="pwd-new" style="width:100%" dir="ltr">
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="form-label">${t('confirmPassword')}</label>
+        <input type="password" id="pwd-confirm" style="width:100%" dir="ltr">
+      </div>
+      <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">${t('updatePassword')}</button>
+      <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">${t('passwordUpdated')}</div>
     </div>
-  </div>
-  <div class="build-section">
-    <div class="build-label">Session name</div>
-    ${allKw.length ? `<select onchange="handleBuilderNameSelect(this.value)"
-      style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--text);font-family:inherit;margin-bottom:8px">
-      <option value="">— Select keyword —</option>
-      ${allKw.map(k => `<option value="${k}" ${builder.sessionName===k?'selected':''}>${k}</option>`).join('')}
-    </select>` : ''}
-    <input type="text" id="builder-name-input" placeholder="Session name" value="${builder.sessionName}"
-      oninput="builder.sessionName=this.value"
-      style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--text);font-family:inherit;width:100%">
-  </div>
-  <div style="display:flex;gap:8px;margin-top:4px">
-    <button class="btn btn-primary" style="margin-top:0;flex:1" onclick="confirmBuilderSession()">Add</button>
-    <button class="btn btn-secondary" style="margin-top:0;width:80px" onclick="cancelBuilderForm()">Cancel</button>
-  </div>`;
+  `;
 }
 
-function renderBuilderBreakForm() {
-  return `<div style="border-top:0.5px solid var(--border);margin-bottom:12px;padding-top:14px">
-    <div class="build-label">Add break</div>
-  </div>
-  <div class="build-section">
-    <div class="build-label">Duration</div>
-    <div class="chips">
-      ${[15,30,45].map(d =>
-        `<button class="chip-btn ${builder.breakDur===d?'active':''}" onclick="setBuilderBreakDur(${d})">${d}m</button>`
-      ).join('')}
-      <button class="chip-btn ${builder.breakDur===0?'active':''}" onclick="setBuilderBreakDur(0)">Custom</button>
-    </div>
-    ${builder.breakDur===0 ? `<input type="number" placeholder="Minutes" value="${builder.customBreakDur}" oninput="builder.customBreakDur=this.value" min="1" max="120"
-      style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px;color:var(--text);font-family:inherit;width:130px;margin-top:4px">` : ''}
-  </div>
-  <div style="display:flex;gap:8px;margin-top:4px">
-    <button class="btn btn-primary" style="margin-top:0;flex:1" onclick="confirmBuilderBreak()">Add break</button>
-    <button class="btn btn-secondary" style="margin-top:0;width:80px" onclick="cancelBuilderForm()">Cancel</button>
-  </div>`;
-}
-
-function openBuilderForm(type) {
-  builder.form = type;
-  builder.sessionName = '';
-  renderBuilder();
-}
-function cancelBuilderForm() { builder.form = null; renderBuilder(); }
-function setBuilderDur(d) { builder.dur = d; renderBuilder(); }
-function setBuilderType(t) { builder.sessionType = t; renderBuilder(); }
-function setBuilderBreakDur(d) { builder.breakDur = d; renderBuilder(); }
-
-function handleBuilderNameSelect(val) {
-  if (val) builder.sessionName = val;
-  renderBuilder();
-}
-
-function confirmBuilderSession() {
-  const durMins = builder.dur === 0 ? (parseInt(builder.customDur) || 60) : builder.dur;
-  const name = (document.getElementById('builder-name-input')?.value || builder.sessionName).trim() || 'Session';
-  const start = builder.nextStart;
-  const end = addMins(start, durMins);
-  builder.entries.push({ type:'session', start, end, durMins, name, sessionType:builder.sessionType });
-  builder.nextStart = end;
-  builder.form = null;
-  renderBuilder();
-}
-
-function confirmBuilderBreak() {
-  const durMins = builder.breakDur === 0 ? (parseInt(builder.customBreakDur) || 15) : builder.breakDur;
-  const start = builder.nextStart;
-  const end = addMins(start, durMins);
-  builder.entries.push({ type:'break', start, end, durMins });
-  builder.nextStart = end;
-  builder.form = null;
-  renderBuilder();
-}
-
-function removeBuilderEntry(i) {
-  builder.entries.splice(i, 1);
-  if (builder.entries.length) builder.nextStart = builder.entries[builder.entries.length-1].end;
-  renderBuilder();
-}
-
-function generateFromBuilder() {
-  const sessions = builder.entries.filter(e => e.type === 'session');
-  if (!sessions.length) return;
-
-  let dateStr = '';
-  if (builder.date) {
-    const [y,m,d] = builder.date.split('-');
-    dateStr = `${d}/${m}/${y}`;
-  }
-
-  // Build auto-link map: match group session names to group names
-  const groupLinks = {};
-  const gArr2 = Object.values(groups);
-  sessions.forEach((e, i) => {
-    if (e.sessionType !== 'group') return;
-    const nameLower = e.name.toLowerCase();
-    const matched = gArr2.find(g => g.name.toLowerCase() === nameLower)
-      || gArr2.find(g => nameLower.includes(g.name.toLowerCase()) || g.name.toLowerCase().includes(nameLower));
-    if (matched) groupLinks[i] = matched.id;
-  });
-
-  let logText = dateStr ? dateStr + '\n' : '';
-  logText += sessions.map(e => `${e.start} - ${e.end} - ${e.name}`).join('\n');
-
-  document.getElementById('log-input').value = logText;
-  setLogMode('paste');
-  parseLog();
-
-  // Stamp groupIds onto the parsed sessions
-  if (currentResult && Object.keys(groupLinks).length) {
-    Object.entries(groupLinks).forEach(([i, gId]) => {
-      if (currentResult.sessions[i]) currentResult.sessions[i].groupId = gId;
-    });
-    renderResult(currentResult);
-  }
-
-  // Reset builder
-  builder.entries = []; builder.nextStart = '09:00';
-  builder.date = ''; builder.form = null;
-}
-
-// ─── AUTH FUNCTIONS ───────────────────────────────────────
-let authMode = 'login';
-
-function requireAuth() { if (!currentUser) { logoutUser(); return false; } return true; }
-
-function toggleAuthMode() {
-  authMode = authMode === 'login' ? 'register' : 'login';
-  const isReg = authMode === 'register';
-  document.getElementById('auth-subtitle').textContent = isReg ? 'Create a new coach account' : 'Sign in to continue';
-  document.getElementById('auth-name-row').style.display = isReg ? '' : 'none';
-  document.getElementById('auth-submit-btn').textContent = isReg ? 'Register' : 'Sign In';
-  document.getElementById('auth-toggle-btn').textContent = isReg ? 'Already have an account? Sign in' : 'Register as new coach';
-  document.getElementById('auth-error').style.display = 'none';
-}
-
-async function submitAuth() {
-  const email    = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const errEl    = document.getElementById('auth-error');
-  errEl.style.display = 'none';
-  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  const btn = document.getElementById('auth-submit-btn');
-  btn.disabled = true;
-  try {
-    if (authMode === 'login') {
-      await auth.signInWithEmailAndPassword(email, password);
-    } else {
-      const name = document.getElementById('auth-fullname').value.trim();
-      if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; btn.disabled = false; return; }
-      registering = true;
-      const cred = await auth.createUserWithEmailAndPassword(email, password);
-      // Check if this is the first user by reading the meta/firstUser doc (no collection query needed)
-      const metaDoc = await db.collection('meta').doc('firstUser').get();
-      const role = !metaDoc.exists ? 'admin' : 'coach';
-      await db.collection('users').doc(cred.user.uid).set({ username: name, email, role, createdAt: Date.now() });
-      if (!metaDoc.exists) await db.collection('meta').doc('firstUser').set({ uid: cred.user.uid });
-      registering = false;
-      // Sign out and return to login — onAuthStateChanged will not auto-enter the app
-      await auth.signOut();
-      document.getElementById('auth-email').value = '';
-      document.getElementById('auth-password').value = '';
-      document.getElementById('auth-fullname').value = '';
-      document.getElementById('auth-name-row').style.display = 'none';
-      authMode = 'login';
-      document.getElementById('auth-submit-btn').textContent = 'Sign In';
-      document.getElementById('auth-toggle-btn').textContent = 'Register as new coach';
-      document.getElementById('auth-error').style.display = 'none';
-      const successEl = document.getElementById('auth-success');
-      successEl.textContent = 'Account created! Sign in to continue.';
-      successEl.style.display = 'block';
-      btn.disabled = false;
-      return;
-    }
-  } catch(e) {
-    registering = false;
-    errEl.textContent = firebaseAuthError(e.code); errEl.style.display = 'block';
-  }
-  btn.disabled = false;
-}
-
-function firebaseAuthError(code) {
-  return {
-    'auth/invalid-email': 'Invalid email address.',
-    'auth/invalid-credential': 'Incorrect email or password.',
-    'auth/user-not-found': 'No account with that email.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/email-already-in-use': 'An account with that email already exists.',
-    'auth/weak-password': 'Password must be at least 6 characters.',
-    'auth/too-many-requests': 'Too many attempts. Try again later.',
-  }[code] || 'Something went wrong. Try again.';
+function saveSettings() {
+  if (!isAdmin()) return;
+  settings.ratePrivate = parseFloat(document.getElementById('rate-private')?.value) || 80;
+  settings.rateGroup   = parseFloat(document.getElementById('rate-group')?.value)   || 50;
+  saveUD('ch_settings', settings);
 }
 
 async function changePassword() {
   if (!requireAuth()) return;
-  const newPwd = document.getElementById('pwd-new').value;
-  const confPwd = document.getElementById('pwd-confirm').value;
-  const errEl = document.getElementById('change-pwd-error');
-  const okEl  = document.getElementById('change-pwd-ok');
-  errEl.style.display = 'none'; okEl.style.display = 'none';
-  if (newPwd.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  if (newPwd !== confPwd) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  const newPwd  = document.getElementById('pwd-new')?.value;
+  const confPwd = document.getElementById('pwd-confirm')?.value;
+  const errEl   = document.getElementById('change-pwd-error');
+  const okEl    = document.getElementById('change-pwd-ok');
+  if (errEl) errEl.style.display = 'none';
+  if (okEl) okEl.style.display = 'none';
+  if (!newPwd || newPwd.length < 6) { if (errEl) { errEl.textContent = t('passwordTooShort'); errEl.style.display = 'block'; } return; }
+  if (newPwd !== confPwd) { if (errEl) { errEl.textContent = t('passwordMismatch'); errEl.style.display = 'block'; } return; }
   try {
     await auth.currentUser.updatePassword(newPwd);
-    document.getElementById('pwd-new').value = '';
-    document.getElementById('pwd-confirm').value = '';
-    okEl.style.display = 'block';
+    if (document.getElementById('pwd-new')) document.getElementById('pwd-new').value = '';
+    if (document.getElementById('pwd-confirm')) document.getElementById('pwd-confirm').value = '';
+    if (okEl) okEl.style.display = 'block';
     logActivity('CHANGE_PASSWORD', currentUser?.username);
   } catch(e) {
-    errEl.textContent = e.code === 'auth/requires-recent-login'
-      ? 'Sign out and back in first, then try again.'
-      : 'Failed to update password.';
-    errEl.style.display = 'block';
-  }
-}
-
-async function exportData() {
-  if (!requireAuth()) return;
-  try {
-    const snap = await db.collection('users').doc(currentUser.id).collection('data').get();
-    const out = {};
-    snap.docs.forEach(d => { out[d.id] = d.data().data; });
-    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'coachhours-backup-' + new Date().toISOString().slice(0,10) + '.json';
-    a.click(); URL.revokeObjectURL(a.href);
-    logActivity('EXPORT_DATA', currentUser?.username);
-  } catch(e) {
-    console.error('[CoachHours] Export failed:', e);
-  }
-}
-
-function importData(input) {
-  const file = input.files[0]; if (!file) return;
-  const errEl = document.getElementById('import-error');
-  const okEl  = document.getElementById('import-ok');
-  errEl.style.display = 'none';
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid format');
-      const ref = db.collection('users').doc(currentUser.id).collection('data');
-      await Promise.all(
-        Object.entries(data).filter(([k]) => k.startsWith('ch_')).map(([k, v]) => ref.doc(k).set({ data: v }))
-      );
-      okEl.style.display = 'block';
-      setTimeout(() => location.reload(), 1200);
-    } catch {
-      errEl.textContent = 'Invalid backup file.'; errEl.style.display = 'block';
+    if (errEl) {
+      errEl.textContent = e.code === 'auth/requires-recent-login' ? t('recentLoginRequired') : t('passwordUpdateError');
+      errEl.style.display = 'block';
     }
-  };
-  reader.readAsText(file);
+  }
 }
 
-function logoutUser() {
-  logActivity('LOGOUT', currentUser?.username);
-  auth.signOut(); // onAuthStateChanged fires → shows auth screen
+// ─── ADMIN PANEL ──────────────────────────────────────────
+let activityLog = [];
+function logActivity(action, detail) {
+  const entry = { t: new Date().toLocaleTimeString(), action, detail: detail||'' };
+  activityLog.unshift(entry);
+  if (activityLog.length > 100) activityLog.length = 100;
+  console.log(`[CoachHours] ${entry.t} — ${action}${detail?': '+detail:''}`);
 }
 
-// ─── ADMIN FUNCTIONS ──────────────────────────────────────
 async function renderAdminPanel() {
-  if (!currentUser) return;
-  document.getElementById('account-name').textContent = currentUser.username;
-  document.getElementById('account-role').textContent = currentUser.role === 'admin' ? 'Admin · Coach' : 'Coach';
-  const panel = document.getElementById('admin-panel');
-  if (!panel) return;
-  if (currentUser.role !== 'admin') { panel.style.display = 'none'; return; }
-  panel.style.display = '';
+  if (!currentUser || !isAdmin()) return;
+  let html = `<div class="section-divider">${t('coaches')}</div><div class="card"><div id="admin-user-list"></div></div>`;
+  html += `<div class="section-divider">${t('activityLog')}</div><div class="card">
+    <div style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text2)" onclick="toggleActivityLog()">
+      ${t('activityLog')} <span id="activity-log-arrow">›</span>
+    </div>
+    <div id="activity-log-body" style="display:none;margin-top:8px;font-size:12px;color:var(--text2);max-height:200px;overflow-y:auto"></div>
+  </div>`;
+  document.getElementById('admin-body').innerHTML = html;
   try {
     const snap = await db.collection('users').get();
     const others = snap.docs.filter(d => d.id !== currentUser.id && !d.data().removed);
     const el = document.getElementById('admin-user-list');
-    if (!others.length) { el.innerHTML = '<div class="empty">No other coaches registered yet.</div>'; return; }
+    if (!others.length) { el.innerHTML = `<div class="empty">${t('noCoaches')}</div>`; return; }
     el.innerHTML = others.map(d => {
       const u = d.data();
-      return `
-      <div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      return `<div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:0.5px solid var(--border)">
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(u.username)}</div>
+          <div style="font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(u.username)}</div>
           <div style="font-size:11px;color:var(--text3)">${escH(u.role)}</div>
         </div>
-        <button onclick="adminView('${d.id}')" style="background:var(--blue-bg);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">View</button>
-        <button onclick="adminToggleRole('${d.id}')" style="background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">${u.role==='admin'?'Revoke admin':'Make admin'}</button>
-        <button onclick="adminRemove('${d.id}')" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
+        <button onclick="adminView('${d.id}')" style="background:var(--blue-bg);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">${t('viewCoach')}</button>
+        <button onclick="adminToggleRole('${d.id}')" style="background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">${u.role==='admin'?t('revokeAdmin'):t('makeAdmin')}</button>
+        <button onclick="adminRemove('${d.id}')" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">${t('removeCoach')}</button>
       </div>`;
     }).join('');
-  } catch(e) {
-    console.error('[CoachHours] Admin panel error:', e);
-  }
+  } catch(e) { console.error('[CoachHours] Admin panel error:', e); }
 }
 
 function toggleActivityLog() {
@@ -1970,39 +1390,30 @@ function toggleActivityLog() {
   const open = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
   if (arrow) arrow.textContent = open ? '↓' : '›';
-  if (open) {
-    body.innerHTML = activityLog.length
-      ? activityLog.map(e => `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(e.t)} <strong>${escH(e.action)}</strong>${e.detail ? ' · ' + escH(e.detail) : ''}</div>`).join('')
-      : '<div style="padding:8px 0">No activity yet this session.</div>';
-  }
+  if (open) body.innerHTML = activityLog.length
+    ? activityLog.map(e => `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(e.t)} <strong>${escH(e.action)}</strong>${e.detail?' · '+escH(e.detail):''}</div>`).join('')
+    : `<div style="padding:8px 0">${t('noActivity')}</div>`;
 }
 
 async function adminView(userId) {
   if (!requireAuth()) return;
   logActivity('ADMIN_VIEW', userId);
   viewingUserId = userId;
-  await loadUserState();
   const snap = await db.collection('users').doc(userId).get();
   const u = snap.exists ? snap.data() : null;
   const app = document.querySelector('.app');
   app?.classList.add('viewing');
-  let banner = document.getElementById('admin-view-banner');
-  if (!banner) { banner = document.createElement('div'); banner.id = 'admin-view-banner'; app?.prepend(banner); }
-  banner.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:150;background:var(--blue);color:#111;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:13px;font-weight:600;box-sizing:border-box';
-  banner.innerHTML = `<span>Viewing: ${escH(u?.username||'Unknown')}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">✕ Exit</button>`;
-  init();
-  currentMonthYear = null;
-  showScreen('log');
+  let banner = document.getElementById('view-banner');
+  if (!banner) { banner = document.createElement('div'); banner.id = 'view-banner'; app?.prepend(banner); }
+  banner.innerHTML = `<span>${t('viewing')}: ${escH(u?.username||'')}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">${t('exitView')}</button>`;
+  showScreen('calendar');
 }
 
 async function adminExitView() {
   viewingUserId = null;
-  document.getElementById('admin-view-banner')?.remove();
+  document.getElementById('view-banner')?.remove();
   document.querySelector('.app')?.classList.remove('viewing');
-  await loadUserState();
-  init();
-  currentMonthYear = null;
-  showScreen('settings');
+  showScreen('admin');
 }
 
 async function adminToggleRole(userId) {
@@ -2013,67 +1424,205 @@ async function adminToggleRole(userId) {
     await db.collection('users').doc(userId).update({ role: newRole });
     logActivity('ADMIN_ROLE', `${doc.data().username} → ${newRole}`);
     renderAdminPanel();
-  } catch(e) {
-    console.error('[CoachHours] Toggle role failed:', e);
-  }
+  } catch(e) { console.error('[CoachHours] Toggle role failed:', e); }
 }
 
 function adminRemove(userId) {
   db.collection('users').doc(userId).get().then(doc => {
     if (!doc.exists) return;
     const u = doc.data();
-    showConfirmModal(`Remove "${escH(u.username)}"? Their data is preserved but they won't be able to sign in.`, async () => {
+    showConfirmModal(`${t('removeCoach')}: "${escH(u.username)}"?`, async () => {
       logActivity('ADMIN_REMOVE', u.username);
       await db.collection('users').doc(userId).update({ removed: true });
+      closeModal();
       renderAdminPanel();
     });
   });
 }
 
-// ─── ACTIVITY LOGGING ─────────────────────────────────────
-let activityLog = [];
-function logActivity(action, detail) {
-  const entry = { t: new Date().toLocaleTimeString(), action, detail: detail || '' };
-  activityLog.unshift(entry);
-  if (activityLog.length > 100) activityLog.length = 100;
-  console.log(`[CoachHours] ${entry.t} — ${action}${detail ? ': ' + detail : ''}`);
+// ─── AUTH ─────────────────────────────────────────────────
+let authMode = 'login';
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const isReg = authMode === 'register';
+  document.getElementById('auth-subtitle').textContent = isReg ? t('registerNewCoach') : t('signInContinue');
+  document.getElementById('auth-name-row').style.display = isReg ? '' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isReg ? t('register') : t('signIn');
+  document.getElementById('auth-toggle-btn').textContent = isReg ? t('alreadyHaveAccount') : t('registerNewCoach');
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-success').style.display = 'none';
+  document.getElementById('auth-resend-btn').style.display = 'none';
 }
 
-// ─── GLOBAL ERROR HANDLING ────────────────────────────────
-window.onerror = (msg, src, line) => { console.error('[CoachHours Error]', msg, 'at', src + ':' + line); return false; };
-window.onunhandledrejection = e => console.error('[CoachHours Promise]', e.reason);
+async function submitAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl    = document.getElementById('auth-error');
+  const sucEl    = document.getElementById('auth-success');
+  errEl.style.display = 'none';
+  sucEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = t('fillAllFields'); errEl.style.display = 'block'; return; }
+  if (password.length < 6) { errEl.textContent = t('passwordTooShort'); errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+  try {
+    if (authMode === 'login') {
+      const cred = await auth.signInWithEmailAndPassword(email, password);
+      if (!cred.user.emailVerified) {
+        await auth.signOut();
+        errEl.textContent = t('verifyEmailFirst');
+        errEl.style.display = 'block';
+        document.getElementById('auth-resend-btn').style.display = '';
+        btn.disabled = false;
+        return;
+      }
+      // onAuthStateChanged handles the rest
+    } else {
+      const name = document.getElementById('auth-fullname').value.trim();
+      if (!name) { errEl.textContent = t('fillAllFields'); errEl.style.display = 'block'; btn.disabled = false; return; }
+      registering = true;
+      const newCred = await auth.createUserWithEmailAndPassword(email, password);
+      const metaDoc = await db.collection('meta').doc('firstUser').get();
+      const role = !metaDoc.exists ? 'admin' : 'coach';
+      await db.collection('users').doc(newCred.user.uid).set({ username: name, email, role, createdAt: Date.now() });
+      if (!metaDoc.exists) await db.collection('meta').doc('firstUser').set({ uid: newCred.user.uid });
+      await newCred.user.sendEmailVerification();
+      registering = false;
+      await auth.signOut();
+      // Reset form
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+      document.getElementById('auth-fullname').value = '';
+      document.getElementById('auth-name-row').style.display = 'none';
+      authMode = 'login';
+      document.getElementById('auth-submit-btn').textContent = t('signIn');
+      document.getElementById('auth-toggle-btn').textContent = t('registerNewCoach');
+      sucEl.textContent = t('accountCreated');
+      sucEl.style.display = 'block';
+    }
+  } catch(e) {
+    registering = false;
+    errEl.textContent = firebaseAuthError(e.code);
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+}
+
+async function resendVerification() {
+  try {
+    // Need to be signed in to resend — sign in briefly just to send verification
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) return;
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    await cred.user.sendEmailVerification();
+    await auth.signOut();
+    const sucEl = document.getElementById('auth-success');
+    sucEl.textContent = t('verificationSent');
+    sucEl.style.display = 'block';
+  } catch(e) { console.error('[CoachHours] resendVerification error:', e); }
+}
+
+function firebaseAuthError(code) {
+  return ({
+    'auth/invalid-email': t('errInvalidEmail'),
+    'auth/invalid-credential': t('errInvalidCredential'),
+    'auth/user-not-found': t('errUserNotFound'),
+    'auth/wrong-password': t('errWrongPassword'),
+    'auth/email-already-in-use': t('errEmailInUse'),
+    'auth/weak-password': t('errWeakPassword'),
+    'auth/too-many-requests': t('errTooManyRequests'),
+  })[code] || t('errGeneric');
+}
+
+function logoutUser() {
+  logActivity('LOGOUT', currentUser?.username);
+  if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
+  if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
+  auth.signOut();
+}
+
+// ─── MODAL HELPERS ────────────────────────────────────────
+function createModal(html) {
+  document.getElementById('app-modal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'app-modal';
+  overlay.className = 'bottom-overlay';
+  overlay.innerHTML = `<div class="bottom-sheet">${html}</div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.body.appendChild(overlay);
+}
+function closeModal() { document.getElementById('app-modal')?.remove(); }
+
+function showConfirmModal(message, callback) {
+  createModal(`
+    <div class="sheet-title">${t('confirmDelete')}</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">${escH(message)}</p>
+    <button class="btn" style="background:var(--red);color:#fff;margin-top:0;margin-bottom:6px"
+      onclick="window._modalCb&&window._modalCb()">${t('confirm')}</button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  `);
+  window._modalCb = callback;
+}
+
+// ─── SCREEN NAV ───────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-'+name)?.classList.add('active');
+  if (name === 'calendar') renderCalendar();
+  else if (name === 'groups') renderGroups();
+  else if (name === 'settings') renderSettings();
+  else if (name === 'admin') renderAdminPanel();
+}
 
 // ─── STARTUP ──────────────────────────────────────────────
+window.onerror = (msg, src, line) => { console.error('[CoachHours Error]', msg, 'at', src+':'+line); return false; };
+window.onunhandledrejection = e => console.error('[CoachHours Promise]', e.reason);
+
 auth.onAuthStateChanged(async (fbUser) => {
   if (registering) return;
   if (fbUser) {
     try {
-      // Retry once if Firestore network isn't ready yet
+      // Email must be verified
+      if (!fbUser.emailVerified) {
+        document.getElementById('loading-overlay').style.display = 'none';
+        return;
+      }
       let profileDoc;
-      try {
-        profileDoc = await db.collection('users').doc(fbUser.uid).get();
-      } catch(netErr) {
+      try { profileDoc = await db.collection('users').doc(fbUser.uid).get(); }
+      catch(netErr) {
         if (netErr.code !== 'unavailable') throw netErr;
         await new Promise(r => setTimeout(r, 2000));
         profileDoc = await db.collection('users').doc(fbUser.uid).get();
       }
       if (!profileDoc.exists || profileDoc.data().removed) { await auth.signOut(); return; }
       const p = profileDoc.data();
-      currentUser = { id: fbUser.uid, username: p.username, role: p.role };
+      currentUser = { id: fbUser.uid, username: p.username, email: p.email || fbUser.email, role: p.role };
       viewingUserId = null;
-      await loadUserState();
+
+      // Load data in parallel
+      await Promise.all([loadUserSettings(), loadAllCoaches()]);
+      subscribeSessions();
+      subscribeGroups();
+
+      // Apply UI
       document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('main-nav').style.display = '';
-      init();
-      showScreen('log');
+      // Show admin nav button
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = isAdmin() ? '' : 'none';
+      });
+      applyLangStrings();
+      showScreen('calendar');
       logActivity('SESSION_RESUME', currentUser.username);
     } catch(e) {
       console.error('[CoachHours] Auth state error:', e);
       document.getElementById('loading-overlay').style.display = 'none';
       if (e.code === 'unavailable' || e.message?.includes('offline')) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('screen-auth').classList.add('active');
-        document.getElementById('auth-error').textContent = 'Connection error. Check your internet and try again.';
+        document.getElementById('auth-error').textContent = t('connectionError');
         document.getElementById('auth-error').style.display = 'block';
       } else {
         await auth.signOut();
@@ -2081,16 +1630,21 @@ auth.onAuthStateChanged(async (fbUser) => {
     }
   } else {
     currentUser = null;
+    if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
+    if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-nav').style.display = 'none';
-    document.getElementById('admin-view-banner')?.remove();
+    document.getElementById('view-banner')?.remove();
     document.querySelector('.app')?.classList.remove('viewing');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-auth').classList.add('active');
+    applyLangStrings();
   }
 });
 
-// Service Worker
+// Apply lang on page load (before auth resolves)
+applyLangStrings();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
