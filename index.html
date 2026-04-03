@@ -129,7 +129,7 @@
   /* Month grid */
   .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 0 16px 12px; }
   .month-day-header { background: var(--bg2); text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); padding: 8px 2px; }
-  .month-day { background: var(--bg2); min-height: 72px; padding: 4px; cursor: pointer; position: relative; }
+  .month-day { background: var(--bg2); height: 90px; overflow: hidden; padding: 4px; cursor: pointer; position: relative; }
   .month-day:active { background: var(--bg3); }
   .month-day.today { background: rgba(255,255,255,0.04); }
   .month-day.other-month { opacity: 0.35; }
@@ -241,13 +241,28 @@
   <!-- ── GROUPS SCREEN ── -->
   <div id="screen-groups" class="screen">
     <div class="header">
-      <h1 id="groups-h1">קבוצות</h1>
-      <p id="groups-subtitle">רשימות ונוכחות</p>
+      <h1 id="groups-h1">שחקנים</h1>
+      <p id="groups-subtitle">קבוצות ושחקנים פרטיים</p>
     </div>
+    <div class="section-divider" id="groups-section-divider">קבוצות</div>
     <div id="groups-add-btn-row" style="padding:0 16px 4px;display:none">
       <button class="btn btn-primary" style="margin-top:0" id="groups-add-btn" onclick="openAddGroupModal()">+ קבוצה חדשה</button>
     </div>
     <div id="groups-list"></div>
+    <div class="section-divider" id="individual-players-divider" style="margin-top:8px">שחקנים פרטיים</div>
+    <div id="individual-players-add-row" style="padding:0 16px 4px;display:none">
+      <button class="btn btn-secondary" style="margin-top:0" id="individual-add-btn" onclick="openAddIndividualPlayerModal()">+ שחקן חדש</button>
+    </div>
+    <div id="individual-players-list"></div>
+  </div>
+
+  <!-- ── SUMMARY SCREEN ── -->
+  <div id="screen-summary" class="screen">
+    <div class="header">
+      <h1 id="summary-h1">סיכום</h1>
+      <p id="summary-subtitle">שעות והכנסה</p>
+    </div>
+    <div id="summary-body"></div>
   </div>
 
   <!-- ── SETTINGS SCREEN ── -->
@@ -275,7 +290,11 @@
     </button>
     <button class="nav-btn" id="nav-groups" onclick="showScreen('groups')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      <span id="nav-lbl-groups">קבוצות</span>
+      <span id="nav-lbl-groups">שחקנים</span>
+    </button>
+    <button class="nav-btn" id="nav-summary" onclick="showScreen('summary')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span id="nav-lbl-summary">סיכום</span>
     </button>
     <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -318,11 +337,13 @@ let registering    = false;
 
 let sessions       = [];     // real-time from /sessions/
 let groups         = {};     // { id: { id, name, players } }
+let players        = {};     // { id: { id, name } } — individual private players
 let allCoaches     = [];     // cached for session-assignment dropdown
 let settings       = { ratePrivate: 80, rateGroup: 50 };
 
 let sessionsUnsub  = null;
 let groupsUnsub    = null;
+let playersUnsub   = null;
 
 let calView = 'month';
 let calDate = new Date();
@@ -332,7 +353,7 @@ let lang = localStorage.getItem('ch_lang') || 'he';
 
 const STRINGS = {
   he: {
-    appTitle: 'שעות אימון', calendar: 'לוח שנה', groups: 'קבוצות',
+    appTitle: 'שעות אימון', calendar: 'לוח שנה', groups: 'קבוצות', playersTab: 'שחקנים', groupsSection: 'קבוצות',
     settings: 'הגדרות', admin: 'ניהול', month: 'חודש', week: 'שבוע', day: 'יום',
     addSession: '+ אימון', save: 'שמור', cancel: 'ביטול', delete: 'מחק',
     attendance: 'נוכחות', cancelled: 'מבוטל - גשם', confirm: 'אישור',
@@ -340,8 +361,8 @@ const STRINGS = {
     assignCoach: 'שיבוץ מאמן', group: 'קבוצה', private: 'פרטי',
     recurring: 'חוזר', recurringNone: 'אין', recurringWeekly: 'שבועי',
     recurringBiweekly: 'דו-שבועי', recurringMonthly: 'חודשי', until: 'עד תאריך',
-    rainCancel: 'ביטול גשם', rainWhole: 'כל היום', rainFrom: 'מהשעה',
-    uncancel: 'בטל ביטול', editSession: 'עריכת אימון', newSession: 'אימון חדש',
+    rainCancel: 'ביטול', rainWhole: 'גשם - כל היום', rainFrom: 'גשם - מהשעה',
+    cancelGeneral: 'ביטול כללי', uncancel: 'פעיל', editSession: 'עריכת אימון', newSession: 'אימון חדש',
     deleteSession: 'מחק אימון', signIn: 'התחבר', register: 'הרשמה',
     signOut: 'התנתק', fullName: 'שם מלא', email: 'אימייל', password: 'סיסמה',
     newPassword: 'סיסמה חדשה', confirmPassword: 'אשר סיסמה', updatePassword: 'עדכן סיסמה',
@@ -378,7 +399,7 @@ const STRINGS = {
     date: 'תאריך', playerLabel: 'שחקן / תלמיד', playerPlaceholder: 'בחר או הקלד שם',
     sessionsCount: 'אימונים', noActivity: 'אין פעילות',
     verificationSent: 'אימייל אימות נשלח. בדוק את תיבת הדואר שלך.',
-    groupsSubtitle: 'רשימות ונוכחות', adminSubtitle: 'מאמנים ופעילות',
+    groupsSubtitle: 'רשימות ונוכחות', playersTabSubtitle: 'קבוצות ושחקנים פרטיים', adminSubtitle: 'מאמנים ופעילות',
     recentLoginRequired: 'התנתק והתחבר מחדש ואז נסה שוב.',
     passwordUpdateError: 'שגיאה בעדכון הסיסמה.',
     fullnamePlaceholder: 'השם המלא שלך', emailPlaceholder: 'כתובת אימייל',
@@ -386,9 +407,22 @@ const STRINGS = {
     errUserNotFound: 'אין חשבון עם כתובת אימייל זו.', errWrongPassword: 'סיסמה שגויה.',
     errEmailInUse: 'חשבון עם אימייל זה כבר קיים.', errWeakPassword: 'הסיסמה חייבת להיות לפחות 6 תווים.',
     errTooManyRequests: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.', errGeneric: 'שגיאה. נסה שוב.',
+    errEndBeforeStart: 'שעת הסיום חייבת להיות אחרי שעת ההתחלה.',
+    notes: 'הערות', summary: 'סיכום', monthlySummary: 'סיכום חודשי',
+    totalHours: 'סה״כ שעות', totalEarnings: 'הכנסה משוערת',
+    privateSessions: 'שיעורים פרטיים', groupSessions: 'שיעורים קבוצתיים',
+    hr: ' שע׳', hrs: ' שע׳', min: ' דק׳', duration: 'משך',
+    individualPlayers: 'שחקנים פרטיים', addIndividualPlayer: '+ שחקן חדש',
+    noIndividualPlayers: 'אין שחקנים פרטיים עדיין',
+    scheduleGroupSession: '📅 תזמן אימון קבוצתי',
+    typeConfirmToDelete: 'הקלד "confirm" לאישור המחיקה',
+    editPlayers: 'עריכה', donePlayers: 'סיום',
+    nextSessionFrom: '+ אימון מהשעה',
+    cancelledSessions: 'מבוטלים', partialSessions: 'חלקיים',
+    summarySubtitle: 'שעות והכנסה',
   },
   en: {
-    appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups',
+    appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups', playersTab: 'Players', groupsSection: 'Groups',
     settings: 'Settings', admin: 'Admin', month: 'Month', week: 'Week', day: 'Day',
     addSession: '+ Session', save: 'Save', cancel: 'Cancel', delete: 'Delete',
     attendance: 'Attendance', cancelled: 'Cancelled - Rain', confirm: 'Confirm',
@@ -396,8 +430,8 @@ const STRINGS = {
     assignCoach: 'Assign Coach', group: 'Group', private: 'Private',
     recurring: 'Recurring', recurringNone: 'None', recurringWeekly: 'Weekly',
     recurringBiweekly: 'Bi-weekly', recurringMonthly: 'Monthly', until: 'Until',
-    rainCancel: 'Rain Cancel', rainWhole: 'Whole Day', rainFrom: 'From Time',
-    uncancel: 'Uncancel', editSession: 'Edit Session', newSession: 'New Session',
+    rainCancel: 'Cancellation', rainWhole: 'Rain – Whole Day', rainFrom: 'Rain – From Time',
+    cancelGeneral: 'General Cancel', uncancel: 'Active', editSession: 'Edit Session', newSession: 'New Session',
     deleteSession: 'Delete Session', signIn: 'Sign In', register: 'Register',
     signOut: 'Sign Out', fullName: 'Full Name', email: 'Email', password: 'Password',
     newPassword: 'New Password', confirmPassword: 'Confirm Password', updatePassword: 'Update Password',
@@ -434,7 +468,7 @@ const STRINGS = {
     date: 'Date', playerLabel: 'Player / Student', playerPlaceholder: 'Choose or type name',
     sessionsCount: 'sessions', noActivity: 'No activity',
     verificationSent: 'Verification email sent. Check your inbox.',
-    groupsSubtitle: 'Rosters & Attendance', adminSubtitle: 'Coaches & Activity',
+    groupsSubtitle: 'Rosters & Attendance', playersTabSubtitle: 'Groups & Individual Players', adminSubtitle: 'Coaches & Activity',
     recentLoginRequired: 'Sign out and back in, then try again.',
     passwordUpdateError: 'Error updating password.',
     fullnamePlaceholder: 'Your full name', emailPlaceholder: 'Email address',
@@ -442,6 +476,19 @@ const STRINGS = {
     errUserNotFound: 'No account with this email.', errWrongPassword: 'Wrong password.',
     errEmailInUse: 'An account with this email already exists.', errWeakPassword: 'Password must be at least 6 characters.',
     errTooManyRequests: 'Too many attempts. Try again later.', errGeneric: 'An error occurred. Try again.',
+    errEndBeforeStart: 'End time must be after start time.',
+    notes: 'Notes', summary: 'Summary', monthlySummary: 'Monthly Summary',
+    totalHours: 'Total Hours', totalEarnings: 'Estimated Earnings',
+    privateSessions: 'Private Sessions', groupSessions: 'Group Sessions',
+    hr: 'hr', hrs: 'hr', min: 'min', duration: 'Duration',
+    individualPlayers: 'Individual Players', addIndividualPlayer: '+ New player',
+    noIndividualPlayers: 'No individual players yet',
+    scheduleGroupSession: '📅 Schedule group session',
+    typeConfirmToDelete: 'Type "confirm" to confirm deletion',
+    editPlayers: 'Edit', donePlayers: 'Done',
+    nextSessionFrom: '+ Session from',
+    cancelledSessions: 'Cancelled', partialSessions: 'Partial',
+    summarySubtitle: 'Hours & Earnings',
   }
 };
 
@@ -460,6 +507,7 @@ function setLang(newLang) {
     const id = active.id.replace('screen-', '');
     if (id === 'calendar') renderCalendar();
     else if (id === 'groups') renderGroups();
+    else if (id === 'summary') renderSummary();
     else if (id === 'settings') renderSettings();
     else if (id === 'admin') renderAdminPanel();
   }
@@ -489,18 +537,24 @@ function applyLangStrings() {
   const cvbD = document.getElementById('cvb-day'); if (cvbD) cvbD.textContent = t('day');
   // Nav labels
   const nlc = document.getElementById('nav-lbl-calendar'); if (nlc) nlc.textContent = t('calendar');
-  const nlg = document.getElementById('nav-lbl-groups'); if (nlg) nlg.textContent = t('groups');
+  const nlg = document.getElementById('nav-lbl-groups'); if (nlg) nlg.textContent = t('playersTab');
+  const nlsum = document.getElementById('nav-lbl-summary'); if (nlsum) nlsum.textContent = t('summary');
   const nls = document.getElementById('nav-lbl-settings'); if (nls) nls.textContent = t('settings');
   const nla = document.getElementById('nav-lbl-admin'); if (nla) nla.textContent = t('admin');
   // Headers
   const hdr = document.getElementById('app-header-title'); if (hdr) hdr.textContent = t('appTitle');
-  const gh = document.getElementById('groups-h1'); if (gh) gh.textContent = t('groups');
-  const gs = document.getElementById('groups-subtitle'); if (gs) gs.textContent = t('groupsSubtitle');
+  const gh = document.getElementById('groups-h1'); if (gh) gh.textContent = t('playersTab');
+  const gsd = document.getElementById('groups-section-divider'); if (gsd) gsd.textContent = t('groupsSection');
+  const gs = document.getElementById('groups-subtitle'); if (gs) gs.textContent = t('playersTabSubtitle');
+  const sumh = document.getElementById('summary-h1'); if (sumh) sumh.textContent = t('summary');
+  const sums = document.getElementById('summary-subtitle'); if (sums) sums.textContent = t('summarySubtitle');
   const sh = document.getElementById('settings-h1'); if (sh) sh.textContent = t('settings');
   const ah = document.getElementById('admin-h1'); if (ah) ah.textContent = t('admin');
   const as2 = document.getElementById('admin-subtitle'); if (as2) as2.textContent = t('adminSubtitle');
   const cadd = document.getElementById('cal-add-btn'); if (cadd) cadd.textContent = t('addSession');
   const gadd = document.getElementById('groups-add-btn'); if (gadd) gadd.textContent = '+ ' + t('newGroup');
+  const iadd = document.getElementById('individual-add-btn'); if (iadd) iadd.textContent = t('addIndividualPlayer');
+  const ipd = document.getElementById('individual-players-divider'); if (ipd) ipd.textContent = t('individualPlayers');
   const ldng = document.getElementById('loading-text'); if (ldng) ldng.textContent = t('loading');
   // Cal nav direction: in RTL, ‹ goes forward in time, › goes back
   const navBtns = document.querySelectorAll('.cal-nav');
@@ -516,7 +570,13 @@ function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&l
 function escId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 function timeToMins(t) { const [h,m] = t.trim().split(':').map(Number); return h*60+m; }
-function fmtHours(mins) { const h=Math.floor(mins/60),m=mins%60; return m>0?h+':'+String(m).padStart(2,'0'):String(h); }
+function fmtHours(mins) {
+  const h = Math.floor(mins/60), m = Math.round(mins%60);
+  if (h === 0) return m + t('min');
+  if (m === 0) return h + t('hr');
+  return h + t('hr') + ' ' + m + t('min');
+}
+function fmtHoursDecimal(hours) { return fmtHours(Math.round(hours * 60)); }
 function addMins(time, mins) {
   const [h,m] = time.split(':').map(Number);
   const t = h*60+m+mins;
@@ -580,6 +640,27 @@ function subscribeGroups() {
     snap.docs.forEach(d => { groups[d.id] = { id: d.id, ...d.data() }; });
     if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
   }, e => console.error('[CoachHours] Groups listener error:', e));
+}
+
+function subscribePlayers() {
+  if (playersUnsub) { playersUnsub(); playersUnsub = null; }
+  playersUnsub = db.collection('players').onSnapshot(snap => {
+    players = {};
+    snap.docs.forEach(d => { players[d.id] = { id: d.id, ...d.data() }; });
+    if (document.getElementById('screen-groups').classList.contains('active')) renderGroups();
+  }, e => console.error('[CoachHours] Players listener error:', e));
+}
+
+async function saveIndividualPlayer(id, data) {
+  if (!requireAuth() || !isAdmin()) return;
+  try { await db.collection('players').doc(id).set(data); }
+  catch(e) { console.error('[CoachHours] saveIndividualPlayer error:', e); }
+}
+
+async function deleteIndividualPlayer(id) {
+  if (!requireAuth() || !isAdmin()) return;
+  try { await db.collection('players').doc(id).delete(); logActivity('DELETE_PLAYER', id); }
+  catch(e) { console.error('[CoachHours] deleteIndividualPlayer error:', e); }
 }
 
 async function loadAllCoaches() {
@@ -716,12 +797,12 @@ function renderMonthView() {
     const dayNum = parseInt(date.split('-')[2]);
     const daysSessions = sessionsForDate(date);
     const isToday = date === today;
-    const chips = daysSessions.slice(0,3).map(s => {
-      const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+    const chips = daysSessions.slice(0,2).map(s => {
+      const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from || s.cancelled.general);
       const cls = isCancelled ? 'month-chip-cancelled' : (s.type === 'group' ? 'month-chip-group' : 'month-chip-private');
       return `<div class="month-chip ${cls}">${escH(s.name)}</div>`;
     }).join('');
-    const more = daysSessions.length > 3 ? `<div class="month-more">+${daysSessions.length-3}</div>` : '';
+    const more = daysSessions.length > 2 ? `<div class="month-more">+${daysSessions.length-2}</div>` : '';
     const addBtn = isAdmin() ? `<button class="month-add-btn" onclick="event.stopPropagation();openSessionModal('${date}',null,null)">+</button>` : '';
     return `<div class="month-day${otherMonth?' other-month':''}${isToday?' today':''}" onclick="goToDay('${date}')">
       <div class="month-day-num">${dayNum}</div>
@@ -806,7 +887,7 @@ function renderDayView() {
 }
 
 function sessionCardHtml(s) {
-  const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+  const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from || s.cancelled.general);
   const typeClass = s.type === 'group' ? 'group' : 'private';
   const cancelClass = isCancelled ? ' cancelled' : '';
   const coachName = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
@@ -825,11 +906,15 @@ function sessionCardHtml(s) {
   if (coachName) infoRows += `<div class="session-card-meta">👤 ${escH(coachName)}</div>`;
   if (groupName) infoRows += `<div class="session-card-meta">👥 ${escH(groupName)}</div>`;
   if (playerName) infoRows += `<div class="session-card-meta">🎯 ${escH(playerName)}</div>`;
+  if (s.notes) infoRows += `<div class="session-card-meta" style="font-style:italic;color:var(--text3)">📝 ${escH(s.notes)}</div>`;
 
   let cancelBadge = '';
   if (isCancelled) {
-    const reason = s.cancelled.whole ? t('rainWhole') : `${t('rainFrom')} ${s.cancelled.from}`;
-    cancelBadge = `<div class="session-card-cancelled-badge">🌧 ${t('cancelled')} — ${reason}</div>`;
+    let reason, icon;
+    if (s.cancelled.general) { reason = t('cancelGeneral'); icon = '🚫'; }
+    else if (s.cancelled.whole) { reason = t('rainWhole'); icon = '🌧'; }
+    else { reason = `${t('rainFrom')} ${s.cancelled.from}`; icon = '🌧'; }
+    cancelBadge = `<div class="session-card-cancelled-badge">${icon} ${t('cancelled')} — ${reason}</div>`;
   }
 
   let attBtn = '';
@@ -844,6 +929,8 @@ function sessionCardHtml(s) {
   }
 
   const clickHandler = isAdmin() ? `onclick="openSessionModal('${s.date}','${s.startTime}','${escQ(s.id)}')"` : '';
+  const slotTaken = sessions.some(x => x.date === s.date && x.id !== s.id && x.startTime === s.endTime);
+  const nextBtn = (isAdmin() && !slotTaken) ? `<button style="margin-top:6px;padding:4px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit" onclick="event.stopPropagation();openSessionModal('${escQ(s.date)}','${escQ(s.endTime)}',null)">${t('nextSessionFrom')} ${s.endTime}</button>` : '';
 
   return `<div class="session-card ${typeClass}${cancelClass}" ${clickHandler} style="margin-bottom:8px">
     <div style="display:flex;align-items:center">
@@ -852,6 +939,7 @@ function sessionCardHtml(s) {
     ${infoRows}
     ${cancelBadge}
     ${attBtn}
+    ${nextBtn}
   </div>`;
 }
 
@@ -921,14 +1009,15 @@ async function saveAttendance(sessionId, playersCsv) {
 // Modal state
 let _modalSession = null; // null = new, object = editing
 
-function openSessionModal(date, time, sessionId) {
+function openSessionModal(date, time, sessionId, presetGroupId) {
   if (!isAdmin()) return;
   _modalSession = sessionId ? sessions.find(s => s.id === sessionId) : null;
   const s = _modalSession;
   // Reset modal state vars to match current session (or defaults for new)
-  _sessionType = s?.type || 'private';
+  _sessionType = s?.type || (presetGroupId ? 'group' : 'private');
   _recurringFreq = 'none';
-  _rainMode = s?.cancelled ? (s.cancelled.whole ? 'whole' : s.cancelled.from ? 'from' : 'none') : 'none';
+  _activeDuration = 60;
+  _rainMode = s?.cancelled ? (s.cancelled.general ? 'general' : s.cancelled.whole ? 'whole' : s.cancelled.from ? 'from' : 'none') : 'none';
 
   const defaultDate = date || dateISO(calDate);
   const defaultStart = time || '09:00';
@@ -939,7 +1028,7 @@ function openSessionModal(date, time, sessionId) {
   ).join('');
 
   const groupOptions = Object.values(groups).map(g =>
-    `<option value="${g.id}" ${s?.groupId===g.id?'selected':''}>${escH(g.name)}</option>`
+    `<option value="${g.id}" ${(s?.groupId===g.id || (!s && presetGroupId===g.id))?'selected':''}>${escH(g.name)}</option>`
   ).join('');
 
   const recurringFreq = s?.recurring?.freq || 'none';
@@ -947,15 +1036,19 @@ function openSessionModal(date, time, sessionId) {
 
   let rainSection = '';
   if (s) {
-    const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from);
+    const isGeneral = s.cancelled?.general;
+    const isWhole   = s.cancelled?.whole;
+    const isFrom    = s.cancelled?.from;
+    const isActive  = !isGeneral && !isWhole && !isFrom;
     rainSection = `<div class="form-group">
       <label class="form-label">${t('rainCancel')}</label>
       <div class="chip-group">
-        <button class="chip${isCancelled?'':' active'}" id="rain-none" onclick="setRainCancel('none')">${t('uncancel')}</button>
-        <button class="chip${s.cancelled?.whole?' active':''}" id="rain-whole" onclick="setRainCancel('whole')">${t('rainWhole')}</button>
-        <button class="chip${s.cancelled?.from?' active':''}" id="rain-from" onclick="setRainCancel('from')">${t('rainFrom')}</button>
+        <button class="chip${isActive?' active':''}" id="rain-none" onclick="setRainCancel('none')">${t('uncancel')}</button>
+        <button class="chip${isGeneral?' active':''}" id="rain-general" onclick="setRainCancel('general')">${t('cancelGeneral')}</button>
+        <button class="chip${isWhole?' active':''}" id="rain-whole" onclick="setRainCancel('whole')">${t('rainWhole')}</button>
+        <button class="chip${isFrom?' active':''}" id="rain-from" onclick="setRainCancel('from')">${t('rainFrom')}</button>
       </div>
-      <div id="rain-from-row" style="margin-top:8px;display:${s.cancelled?.from?'':'none'}">
+      <div id="rain-from-row" style="margin-top:8px;display:${isFrom?'':'none'}">
         <input type="time" id="rain-from-time" value="${s.cancelled?.from||''}">
       </div>
     </div>`;
@@ -1001,16 +1094,31 @@ function openSessionModal(date, time, sessionId) {
       <input type="text" id="sm-name" value="${s?escH(s.name):''}" placeholder="${t('sessionName')}">
     </div>
 
+    <div class="form-group">
+      <label class="form-label">${t('notes')}</label>
+      <textarea id="sm-notes" placeholder="${t('notes')}" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;color:var(--text);font-family:inherit;resize:vertical;min-height:56px">${s?escH(s.notes||''):''}</textarea>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">${t('startTime')}</label>
-        <input type="time" id="sm-start" value="${s?s.startTime:defaultStart}">
+        <input type="time" id="sm-start" value="${s?s.startTime:defaultStart}" oninput="updateEndByDuration()">
       </div>
       <div class="form-group">
         <label class="form-label">${t('endTime')}</label>
-        <input type="time" id="sm-end" value="${s?s.endTime:defaultEnd}">
+        <input type="time" id="sm-end" value="${s?s.endTime:defaultEnd}" oninput="document.getElementById('sm-time-error').style.display='none'">
       </div>
     </div>
+    <div id="sm-time-error" class="error-box" style="margin-bottom:8px"></div>
+
+    ${!s ? `<div class="form-group">
+      <label class="form-label">${t('duration')}</label>
+      <div class="chip-group" id="duration-chips">
+        <button class="chip" id="dur-45" onclick="setDuration(45)">45${t('min')}</button>
+        <button class="chip active" id="dur-60" onclick="setDuration(60)">1${t('hr')}</button>
+        <button class="chip" id="dur-90" onclick="setDuration(90)">1${t('hr')} 30${t('min')}</button>
+      </div>
+    </div>` : ''}
 
     <div class="form-group">
       <label class="form-label">${t('assignCoach')}</label>
@@ -1040,6 +1148,7 @@ function openSessionModal(date, time, sessionId) {
 function getAllPlayers() {
   const seen = new Set();
   Object.values(groups).forEach(g => g.players.forEach(p => seen.add(p)));
+  Object.values(players).forEach(p => seen.add(p.name));
   return [...seen].sort();
 }
 
@@ -1075,9 +1184,24 @@ function setRainCancel(mode) {
   _rainMode = mode;
   const fromRow = document.getElementById('rain-from-row');
   if (fromRow) fromRow.style.display = mode==='from' ? '' : 'none';
-  ['none','whole','from'].forEach(m => {
+  ['none','general','whole','from'].forEach(m => {
     document.getElementById('rain-'+m)?.classList.toggle('active', m===mode);
   });
+}
+
+let _activeDuration = 60;
+function setDuration(mins) {
+  _activeDuration = mins;
+  [45,60,90].forEach(d => document.getElementById('dur-'+d)?.classList.toggle('active', d===mins));
+  const start = document.getElementById('sm-start')?.value;
+  if (start) document.getElementById('sm-end').value = addMins(start, mins);
+}
+
+function updateEndByDuration() {
+  const start = document.getElementById('sm-start')?.value;
+  if (start && document.getElementById('dur-60')) {
+    document.getElementById('sm-end').value = addMins(start, _activeDuration);
+  }
 }
 
 async function saveSessionModal() {
@@ -1089,11 +1213,19 @@ async function saveSessionModal() {
   const grp    = document.getElementById('sm-group')?.value || null;
   const player = document.getElementById('sm-player')?.value.trim() || null;
   const type   = document.getElementById('sm-type-group')?.classList.contains('act-group') ? 'group' : 'private';
+  const notes  = document.getElementById('sm-notes')?.value.trim() || '';
 
   if (!name || !start || !end || !date) return;
 
+  const timeErrEl = document.getElementById('sm-time-error');
+  if (timeToMins(end) <= timeToMins(start)) {
+    if (timeErrEl) { timeErrEl.textContent = t('errEndBeforeStart'); timeErrEl.style.display = 'block'; }
+    return;
+  }
+  if (timeErrEl) timeErrEl.style.display = 'none';
+
   const base = {
-    name, startTime: start, endTime: end, date,
+    name, startTime: start, endTime: end, date, notes,
     type, assignedCoachId: coach || null,
     groupId: type==='group' ? grp : null,
     assignedPlayerName: type==='private' ? player : null,
@@ -1102,10 +1234,11 @@ async function saveSessionModal() {
 
   if (_modalSession) {
     // Editing existing
-    const patch = { name, startTime: start, endTime: end, date, type, assignedCoachId: coach||null,
+    const patch = { name, startTime: start, endTime: end, date, notes, type, assignedCoachId: coach||null,
       groupId: type==='group'?grp:null, assignedPlayerName: type==='private'?player:null };
-    // Handle rain cancel
+    // Handle cancellation
     if (_rainMode === 'none') patch.cancelled = false;
+    else if (_rainMode === 'general') patch.cancelled = { general: true, whole: false, from: null };
     else if (_rainMode === 'whole') patch.cancelled = { whole: true, from: null, reason: 'rain' };
     else if (_rainMode === 'from') {
       const fromTime = document.getElementById('rain-from-time')?.value || start;
@@ -1135,6 +1268,7 @@ function confirmDeleteSession(sessionId) {
 
 // ─── GROUPS ───────────────────────────────────────────────
 let expandedGroupIds = new Set();
+let expandedGroupEditMode = new Set();
 
 function renderGroups() {
   const addRow = document.getElementById('groups-add-btn-row');
@@ -1142,24 +1276,29 @@ function renderGroups() {
 
   const gArr = Object.values(groups);
   const el = document.getElementById('groups-list');
-  if (!gArr.length) { el.innerHTML = `<div class="empty">${t('noGroups')}</div>`; return; }
+  if (!gArr.length) { el.innerHTML = `<div class="empty">${t('noGroups')}</div>`; renderIndividualPlayers(); return; }
 
   el.innerHTML = gArr.map(g => {
     const expanded = expandedGroupIds.has(g.id);
     const sessionCount = getCalendarSessions().filter(s => s.groupId === g.id).length;
     let inner = '';
     if (expanded) {
+      const editMode = expandedGroupEditMode.has(g.id);
       const chips = g.players.map(name =>
-        `<span class="player-chip">${escH(name)}${isAdmin()?`<span class="rm" onclick="removePlayer('${g.id}','${escQ(name)}')">×</span>`:''}
+        `<span class="player-chip">${escH(name)}${(isAdmin()&&editMode)?`<span class="rm" onclick="confirmRemovePlayer('${g.id}','${escQ(name)}')">×</span>`:''}
         </span>`
       ).join('') || `<span style="font-size:13px;color:var(--text3)">${t('noPlayers')}</span>`;
 
-      const addPlayerRow = isAdmin() ? `<div class="add-row">
+      const editToggleBtn = isAdmin() ? `<button onclick="toggleGroupEditMode('${g.id}')" style="padding:4px 12px;font-size:12px;background:${editMode?'var(--orange-bg)':'var(--bg3)'};color:${editMode?'var(--orange)':'var(--text2)'};border:0.5px solid ${editMode?'var(--orange)':'var(--border)'};border-radius:20px;cursor:pointer;font-family:inherit;margin-bottom:8px">${editMode?t('donePlayers'):t('editPlayers')}</button>` : '';
+
+      const addPlayerRow = (isAdmin()&&editMode) ? `<div class="add-row">
         <input type="text" id="add-pl-${g.id}" placeholder="${t('players')}">
         <button onclick="addPlayer('${g.id}',document.getElementById('add-pl-${g.id}').value);document.getElementById('add-pl-${g.id}').value=''">${t('addPlayer')}</button>
       </div>` : '';
 
-      const deleteRow = isAdmin() ? `<button onclick="confirmDeleteGroupUI('${g.id}')" style="width:100%;margin-top:14px;padding:9px;background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit">${t('deleteGroup')}</button>` : '';
+      const scheduleBtn = isAdmin() ? `<button onclick="openSessionModal(null,null,null,'${g.id}')" style="width:100%;margin-top:10px;padding:9px;background:var(--blue-bg);color:var(--blue);border:0.5px solid var(--blue);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit">${t('scheduleGroupSession')}</button>` : '';
+
+      const deleteRow = (isAdmin()&&editMode) ? `<button onclick="confirmDeleteGroupUI('${g.id}')" style="width:100%;margin-top:8px;padding:9px;background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit">${t('deleteGroup')}</button>` : '';
 
       // Attendance stats
       let attHtml = '';
@@ -1184,9 +1323,12 @@ function renderGroups() {
       }
 
       inner = `<div style="border-top:0.5px solid var(--border);margin-top:12px;padding-top:12px">
-        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:8px">${t('players')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase">${t('players')}</div>
+          ${editToggleBtn}
+        </div>
         <div class="player-chips" style="margin-bottom:10px">${chips}</div>
-        ${addPlayerRow}${attHtml}${deleteRow}
+        ${addPlayerRow}${attHtml}${scheduleBtn}${deleteRow}
       </div>`;
     }
 
@@ -1200,10 +1342,18 @@ function renderGroups() {
       </div>${inner}
     </div>`;
   }).join('');
+
+  renderIndividualPlayers();
 }
 
 function toggleGroupExpand(id) {
-  if (expandedGroupIds.has(id)) expandedGroupIds.delete(id); else expandedGroupIds.add(id);
+  if (expandedGroupIds.has(id)) { expandedGroupIds.delete(id); expandedGroupEditMode.delete(id); }
+  else expandedGroupIds.add(id);
+  renderGroups();
+}
+
+function toggleGroupEditMode(id) {
+  if (expandedGroupEditMode.has(id)) expandedGroupEditMode.delete(id); else expandedGroupEditMode.add(id);
   renderGroups();
 }
 
@@ -1245,13 +1395,208 @@ async function removePlayer(groupId, name) {
   await saveGroup(groupId, { ...g, players: g.players.filter(p => p !== name) });
 }
 
+function confirmRemovePlayer(groupId, name) {
+  if (!isAdmin()) return;
+  showTypeConfirmModal(`${t('delete')}: "${escH(name)}"?`, async () => {
+    closeModal();
+    await removePlayer(groupId, name);
+  });
+}
+
 function confirmDeleteGroupUI(id) {
   const g = groups[id];
   if (!g) return;
-  showConfirmModal(`${t('deleteGroup')}: "${escH(g.name)}"?`, async () => {
+  showTypeConfirmModal(`${t('deleteGroup')}: "${escH(g.name)}"?`, async () => {
     expandedGroupIds.delete(id);
+    expandedGroupEditMode.delete(id);
     await deleteGroup(id);
     closeModal();
+  });
+}
+
+// ─── SUMMARY ──────────────────────────────────────────────
+let summaryDate = new Date();
+
+function sessionHours(s) {
+  if (s.cancelled?.whole || s.cancelled?.general) return 0;
+  if (s.cancelled?.from) {
+    const played = timeToMins(s.cancelled.from) - timeToMins(s.startTime);
+    return Math.max(0, played) / 60;
+  }
+  return (timeToMins(s.endTime) - timeToMins(s.startTime)) / 60;
+}
+
+function renderSummary() {
+  const year = summaryDate.getFullYear();
+  const month = summaryDate.getMonth();
+  const monthStr = String(month+1).padStart(2,'0');
+  const prefix = `${year}-${monthStr}`;
+
+  document.getElementById('summary-h1').textContent = t('summary');
+  document.getElementById('summary-subtitle').textContent = t('summarySubtitle');
+
+  // Filter sessions for this month visible to the current user
+  const monthSessions = getCalendarSessions().filter(s => s.date.startsWith(prefix));
+
+  // Salary calc
+  let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
+  let cancelledWhole = 0, partialCount = 0;
+  monthSessions.forEach(s => {
+    const h = sessionHours(s);
+    if (s.cancelled?.whole || s.cancelled?.general) { cancelledWhole++; return; }
+    if (s.cancelled?.from) partialCount++;
+    if (s.type === 'private') { privateHours += h; privateCount++; }
+    else { groupHours += h; groupCount++; }
+  });
+
+  const rate = (type) => type === 'private' ? (settings.ratePrivate||0) : (settings.rateGroup||0);
+  const privateEarnings = privateHours * rate('private');
+  const groupEarnings   = groupHours   * rate('group');
+  const totalEarnings   = privateEarnings + groupEarnings;
+  const totalHours      = privateHours + groupHours;
+
+  const navPrev = lang === 'he' ? '›' : '‹';
+  const navNext = lang === 'he' ? '‹' : '›';
+  const nav = `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px">
+    <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;font-family:inherit">${navPrev}</button>
+    <div style="font-size:16px;font-weight:600">${monthName(month)} ${year}</div>
+    <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;font-family:inherit">${navNext}</button>
+  </div>`;
+
+  const statsCard = `<div class="card">
+    <div class="breakdown-row">
+      <span class="breakdown-label">${t('privateSessions')}</span>
+      <span class="breakdown-val">${privateCount} · ${fmtHoursDecimal(privateHours)}</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="breakdown-label">${t('groupSessions')}</span>
+      <span class="breakdown-val">${groupCount} · ${fmtHoursDecimal(groupHours)}</span>
+    </div>
+    ${partialCount ? `<div class="breakdown-row">
+      <span class="breakdown-label" style="color:var(--orange)">🌧 ${t('partialSessions')}</span>
+      <span class="breakdown-val" style="color:var(--orange)">${partialCount}</span>
+    </div>` : ''}
+    ${cancelledWhole ? `<div class="breakdown-row">
+      <span class="breakdown-label" style="color:var(--text3)">🌧 ${t('cancelledSessions')}</span>
+      <span class="breakdown-val" style="color:var(--text3)">${cancelledWhole}</span>
+    </div>` : ''}
+    <div class="breakdown-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:12px">
+      <span class="breakdown-label" style="font-weight:600">${t('totalHours')}</span>
+      <span class="breakdown-val" style="font-weight:700">${fmtHoursDecimal(totalHours)}</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="breakdown-label" style="font-weight:600">${t('totalEarnings')}</span>
+      <span class="breakdown-val" style="font-weight:700;color:var(--green)">₪${totalEarnings.toFixed(0)}</span>
+    </div>
+  </div>`;
+
+  // Session list grouped by day
+  const sortedSessions = [...monthSessions].sort((a,b) => a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
+
+  // Group by date
+  const byDay = [];
+  sortedSessions.forEach(s => {
+    const last = byDay[byDay.length - 1];
+    if (last && last.date === s.date) last.sessions.push(s);
+    else byDay.push({ date: s.date, sessions: [s] });
+  });
+
+  const dayBlocks = byDay.map(({ date, sessions: daySessions }) => {
+    const [y, mo, d] = date.split('-').map(Number);
+    const dow = new Date(y, mo-1, d).getDay();
+    const dayLabel = `${t(DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo-1])}`;
+
+    const rows = daySessions.map((s, i) => {
+      const h = sessionHours(s);
+      const isCancelled = s.cancelled?.whole;
+      const isPartial = !!s.cancelled?.from;
+      const coachName = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
+      const earnings = (h * rate(s.type)).toFixed(0);
+      const isLast = i === daySessions.length - 1;
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${isLast?'':'border-bottom:0.5px solid var(--border);'}${isCancelled?'opacity:0.4;':''}">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(s.name)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.startTime}${isPartial?' – '+s.cancelled.from+' 🌧':' – '+s.endTime}${coachName?' · '+escH(coachName):''}</div>
+        </div>
+        <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
+          <div style="font-size:13px;font-weight:500;color:${isCancelled?'var(--text3)':isPartial?'var(--orange)':'var(--text)'}">${fmtHoursDecimal(h)}</div>
+          ${!isCancelled?`<div style="font-size:11px;color:var(--text2)">₪${earnings}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px">${escH(dayLabel)}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  const listCard = byDay.length ? dayBlocks : `<div class="empty">${t('noSessions')}</div>`;
+
+  document.getElementById('summary-body').innerHTML = nav + `<div class="section-divider">${t('monthlySummary')}</div>` + statsCard + listCard;
+}
+
+function summaryPrev() {
+  summaryDate = new Date(summaryDate.getFullYear(), summaryDate.getMonth()-1, 1);
+  renderSummary();
+}
+function summaryNext() {
+  summaryDate = new Date(summaryDate.getFullYear(), summaryDate.getMonth()+1, 1);
+  renderSummary();
+}
+
+// ─── INDIVIDUAL PLAYERS ──────────────────────────────────
+function renderIndividualPlayers() {
+  const addRow = document.getElementById('individual-players-add-row');
+  if (addRow) addRow.style.display = isAdmin() ? '' : 'none';
+
+  const el = document.getElementById('individual-players-list');
+  if (!el) return;
+  const pArr = Object.values(players).sort((a,b) => a.name.localeCompare(b.name));
+
+  if (!pArr.length) {
+    el.innerHTML = `<div class="empty">${t('noIndividualPlayers')}</div>`;
+    return;
+  }
+
+  el.innerHTML = pArr.map(p => {
+    const sessionCount = getCalendarSessions().filter(s => s.type === 'private' && s.assignedPlayerName === p.name).length;
+    return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+      <div>
+        <div style="font-size:15px;font-weight:500">${escH(p.name)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${sessionCount} ${t('sessionsCount')}</div>
+      </div>
+      ${isAdmin() ? `<button onclick="confirmDeleteIndividualPlayer('${p.id}','${escQ(p.name)}')" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1" title="${t('delete')}">×</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function openAddIndividualPlayerModal() {
+  if (!isAdmin()) return;
+  createModal(`
+    <div class="sheet-title">${t('addIndividualPlayer')}</div>
+    <input type="text" id="new-player-input" placeholder="${t('playerPlaceholder')}"
+      style="width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:16px;color:var(--text);font-family:inherit;margin-bottom:10px"
+      onkeydown="if(event.key==='Enter')document.getElementById('new-player-ok').click()">
+    <button id="new-player-ok" class="btn btn-primary" style="margin-top:0" onclick="window._addPlayerCb()">${t('confirm')}</button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  `);
+  window._addPlayerCb = async () => {
+    const v = document.getElementById('new-player-input')?.value.trim();
+    closeModal();
+    if (!v) return;
+    const id = 'p' + Date.now();
+    await saveIndividualPlayer(id, { id, name: v, createdAt: Date.now() });
+    logActivity('ADD_PLAYER', v);
+  };
+  setTimeout(() => document.getElementById('new-player-input')?.focus(), 80);
+}
+
+function confirmDeleteIndividualPlayer(id, name) {
+  if (!isAdmin()) return;
+  showTypeConfirmModal(`${t('delete')}: "${escH(name)}"?`, async () => {
+    closeModal();
+    await deleteIndividualPlayer(id);
   });
 }
 
@@ -1540,6 +1885,7 @@ function logoutUser() {
   logActivity('LOGOUT', currentUser?.username);
   if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
   if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
+  if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
   auth.signOut();
 }
 
@@ -1566,6 +1912,21 @@ function showConfirmModal(message, callback) {
   window._modalCb = callback;
 }
 
+function showTypeConfirmModal(message, callback) {
+  createModal(`
+    <div class="sheet-title">${t('confirmDelete')}</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:12px">${escH(message)}</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:8px">${t('typeConfirmToDelete')}</p>
+    <input type="text" id="type-confirm-input" placeholder="confirm" style="margin-bottom:12px"
+      oninput="document.getElementById('type-confirm-btn').disabled=this.value.toLowerCase()!=='confirm'">
+    <button id="type-confirm-btn" class="btn" style="background:var(--red);color:#fff;margin-top:0;margin-bottom:6px" disabled
+      onclick="window._modalCb&&window._modalCb()">${t('confirm')}</button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  `);
+  window._modalCb = callback;
+  setTimeout(() => document.getElementById('type-confirm-input')?.focus(), 80);
+}
+
 // ─── SCREEN NAV ───────────────────────────────────────────
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1574,6 +1935,7 @@ function showScreen(name) {
   document.getElementById('nav-'+name)?.classList.add('active');
   if (name === 'calendar') renderCalendar();
   else if (name === 'groups') renderGroups();
+  else if (name === 'summary') renderSummary();
   else if (name === 'settings') renderSettings();
   else if (name === 'admin') renderAdminPanel();
 }
@@ -1607,6 +1969,7 @@ auth.onAuthStateChanged(async (fbUser) => {
       await Promise.all([loadUserSettings(), loadAllCoaches()]);
       subscribeSessions();
       subscribeGroups();
+      subscribePlayers();
 
       // Apply UI
       document.getElementById('loading-overlay').style.display = 'none';
@@ -1632,6 +1995,7 @@ auth.onAuthStateChanged(async (fbUser) => {
     currentUser = null;
     if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
     if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
+    if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-nav').style.display = 'none';
     document.getElementById('view-banner')?.remove();
