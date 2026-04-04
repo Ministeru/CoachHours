@@ -23,11 +23,12 @@
     --radius: 12px; --radius-sm: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { scrollbar-gutter: stable; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; }
   .app { max-width: 430px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; position: relative; }
 
   /* SCREENS */
-  .screen { display: none; flex: 1; flex-direction: column; padding-bottom: 88px; overflow-y: auto; }
+  .screen { display: none; flex: 1; flex-direction: column; padding-bottom: 88px; }
   .screen.active { display: flex; }
 
   /* HEADER */
@@ -115,10 +116,10 @@
 
   /* ─── CALENDAR ─── */
   .cal-toolbar { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 12px; }
-  .cal-toolbar-nav { display: flex; align-items: center; height: 36px; }
-  .cal-nav { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; padding: 2px 6px; line-height: 1; font-family: inherit; flex-shrink: 0; }
+  .cal-toolbar-nav { display: flex; align-items: center; height: 48px; }
+  .cal-nav { background: none; border: none; color: var(--text2); font-size: 26px; cursor: pointer; padding: 8px 12px; line-height: 1; font-family: inherit; flex-shrink: 0; }
   .cal-nav:active { color: var(--text); }
-  #cal-title { flex: 1; font-size: 16px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #cal-title { font-size: 16px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 220px; flex-shrink: 0; }
   .cal-toolbar-controls { display: flex; align-items: center; gap: 8px; }
   .cal-view-toggle { display: flex; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; overflow: hidden; }
   .cal-view-btn { padding: 5px 12px; border: none; background: none; color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
@@ -126,10 +127,11 @@
   .cal-add-btn { background: var(--accent); color: #111; border: none; border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; margin-inline-start: auto; }
   .cal-add-btn:active { opacity: 0.8; }
 
+
   /* Month grid */
-  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 0 16px 12px; }
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto; grid-auto-rows: 1fr; height: calc(100dvh - 220px); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 0 16px 16px; }
   .month-day-header { background: var(--bg2); text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); padding: 8px 2px; }
-  .month-day { background: var(--bg2); height: 90px; overflow: hidden; padding: 4px; cursor: pointer; position: relative; }
+  .month-day { background: var(--bg2); min-height: 0; overflow: hidden; padding: 4px; cursor: pointer; position: relative; }
   .month-day:active { background: var(--bg3); }
   .month-day.today { background: rgba(255,255,255,0.04); }
   .month-day.other-month { opacity: 0.35; }
@@ -181,6 +183,85 @@
   .add-row input { flex: 1; }
   .add-row button { padding: 9px 14px; background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
   .add-row button:active { opacity: 0.7; }
+
+  /* ─── SIDEBAR NAV ─── */
+  .sidebar-nav {
+    display: none;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-inline-end: 0.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 20px 20px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .sidebar-logo-icon { font-size: 22px; line-height: 1; }
+  .sidebar-logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  .sidebar-items { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 8px; }
+  .sidebar-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: start;
+    transition: background 0.12s, color 0.12s;
+  }
+  .sidebar-nav-btn:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-nav-btn.active { background: var(--bg3); color: var(--accent); }
+  .sidebar-nav-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 0.5px solid var(--border);
+  }
+  .sidebar-username {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ─── DESKTOP LAYOUT (≥880px) ─── */
+  @media (min-width: 880px) {
+    .app { max-width: 100%; flex-direction: row; }
+    .month-grid { height: calc(100dvh - 180px); }
+    html[dir="rtl"] .app { flex-direction: row-reverse; }
+    html[dir="ltr"] .app { flex-direction: row; }
+
+    .sidebar-nav { display: flex !important; }
+
+    .nav { display: none !important; }
+
+    .screen { flex: 1; min-width: 0; padding-bottom: 24px; overflow-y: auto; }
+    .screen .header { padding-top: 32px; }
+    .app.viewing .screen .header { padding-top: 72px; }
+    /* Override global viewing header offset (was offset for fixed banner) */
+    .app.viewing .header { padding-top: 32px; }
+
+    .bottom-overlay { align-items: center; }
+    .bottom-sheet { max-width: 520px; border-radius: 16px; }
+
+    #view-banner { left: 220px; right: 0; transform: none; max-width: calc(100vw - 220px); }
+  }
 </style>
 </head>
 <body>
@@ -224,10 +305,13 @@
       <h1 id="app-header-title">שעות אימון</h1>
     </div>
     <div class="cal-toolbar">
-      <div class="cal-toolbar-nav">
-        <button class="cal-nav" onclick="calPrev()">‹</button>
-        <span id="cal-title"></span>
-        <button class="cal-nav" onclick="calNext()">›</button>
+      <div class="cal-toolbar-nav" style="position:relative">
+        <div style="width:100%;display:flex;justify-content:center;align-items:center;gap:2px">
+          <button class="cal-nav" onclick="calPrev()">‹</button>
+          <span id="cal-title"></span>
+          <button class="cal-nav" onclick="calNext()">›</button>
+        </div>
+        <button id="cal-today-chip" onclick="calJumpToday()" style="display:none;position:absolute;inset-inline-end:0;top:50%;transform:translateY(-50%);background:var(--bg3);border:0.5px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;transition:opacity 0.15s"></button>
       </div>
       <div class="cal-toolbar-controls">
         <div class="cal-view-toggle">
@@ -238,6 +322,7 @@
         <button class="cal-add-btn admin-only" style="display:none" onclick="openSessionModal(null,null,null)" id="cal-add-btn">+ אימון</button>
       </div>
     </div>
+    <div id="cal-today-strip"></div>
     <div id="cal-body"></div>
   </div>
 
@@ -284,6 +369,39 @@
     </div>
     <div id="admin-body"></div>
   </div>
+
+  <!-- SIDEBAR NAV (desktop only) -->
+  <nav class="sidebar-nav" id="sidebar-nav" style="display:none">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">🏃</span>
+      <span class="sidebar-logo-name" id="sidebar-app-name">שעות אימון</span>
+    </div>
+    <div class="sidebar-items">
+      <button class="sidebar-nav-btn active" id="snav-calendar" onclick="showScreen('calendar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="snav-lbl-calendar">לוח שנה</span>
+      </button>
+      <button class="sidebar-nav-btn" id="snav-groups" onclick="showScreen('groups')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span id="snav-lbl-groups">שחקנים</span>
+      </button>
+      <button class="sidebar-nav-btn" id="snav-summary" onclick="showScreen('summary')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span id="snav-lbl-summary">סיכום</span>
+      </button>
+      <button class="sidebar-nav-btn" id="snav-settings" onclick="showScreen('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span id="snav-lbl-settings">הגדרות</span>
+      </button>
+      <button class="sidebar-nav-btn admin-only" id="snav-admin" style="display:none" onclick="showScreen('admin')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span id="snav-lbl-admin">ניהול</span>
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-username" id="sidebar-username"></div>
+    </div>
+  </nav>
 
   <!-- BOTTOM NAV -->
   <nav class="nav" id="main-nav" style="display:none">
@@ -424,6 +542,8 @@ const STRINGS = {
     nextSessionFrom: '+ אימון מהשעה',
     cancelledSessions: 'מבוטלים', partialSessions: 'חלקיים',
     summarySubtitle: 'שעות והכנסה',
+    shareMonth: 'שתף', copiedToClipboard: 'הועתק!',
+    todaySessionsLabel: 'אימוני היום',
   },
   en: {
     appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups', playersTab: 'Players', groupsSection: 'Groups',
@@ -494,6 +614,8 @@ const STRINGS = {
     nextSessionFrom: '+ Session from',
     cancelledSessions: 'Cancelled', partialSessions: 'Partial',
     summarySubtitle: 'Hours & Earnings',
+    shareMonth: 'Share', copiedToClipboard: 'Copied!',
+    todaySessionsLabel: "Today's sessions",
   }
 };
 
@@ -541,12 +663,18 @@ function applyLangStrings() {
   const cvbM = document.getElementById('cvb-month'); if (cvbM) cvbM.textContent = t('month');
   const cvbW = document.getElementById('cvb-week'); if (cvbW) cvbW.textContent = t('week');
   const cvbD = document.getElementById('cvb-day'); if (cvbD) cvbD.textContent = t('day');
-  // Nav labels
+  // Nav labels (bottom nav + sidebar)
   const nlc = document.getElementById('nav-lbl-calendar'); if (nlc) nlc.textContent = t('calendar');
   const nlg = document.getElementById('nav-lbl-groups'); if (nlg) nlg.textContent = t('playersTab');
   const nlsum = document.getElementById('nav-lbl-summary'); if (nlsum) nlsum.textContent = t('summary');
   const nls = document.getElementById('nav-lbl-settings'); if (nls) nls.textContent = t('settings');
   const nla = document.getElementById('nav-lbl-admin'); if (nla) nla.textContent = t('admin');
+  const snc = document.getElementById('snav-lbl-calendar'); if (snc) snc.textContent = t('calendar');
+  const sng = document.getElementById('snav-lbl-groups'); if (sng) sng.textContent = t('playersTab');
+  const snsum = document.getElementById('snav-lbl-summary'); if (snsum) snsum.textContent = t('summary');
+  const sns = document.getElementById('snav-lbl-settings'); if (sns) sns.textContent = t('settings');
+  const sna = document.getElementById('snav-lbl-admin'); if (sna) sna.textContent = t('admin');
+  const san = document.getElementById('sidebar-app-name'); if (san) san.textContent = t('appTitle');
   // Headers
   const hdr = document.getElementById('app-header-title'); if (hdr) hdr.textContent = t('appTitle');
   const gh = document.getElementById('groups-h1'); if (gh) gh.textContent = t('playersTab');
@@ -761,9 +889,88 @@ function calNext() {
 }
 
 function renderCalendar() {
+  // Show/hide "Today" jump chip
+  const todayChip = document.getElementById('cal-today-chip');
+  if (todayChip) {
+    const today = new Date();
+    const todayStr = dateISO(today);
+    let todayInView = false;
+    if (calView === 'month') {
+      todayInView = calDate.getFullYear() === today.getFullYear() && calDate.getMonth() === today.getMonth();
+    } else if (calView === 'week') {
+      const dow = calDate.getDay();
+      const monday = new Date(calDate.getTime() - ((dow + 6) % 7) * 86400000);
+      const sunday = new Date(monday.getTime() + 6 * 86400000);
+      todayInView = today >= monday && today <= new Date(sunday.getTime() + 86400000 - 1);
+    } else {
+      todayInView = dateISO(calDate) === todayStr;
+    }
+    todayChip.style.display = todayInView ? 'none' : '';
+    todayChip.textContent = t('today');
+  }
+  // Render today strip
+  const stripEl = document.getElementById('cal-today-strip');
+  if (stripEl) stripEl.innerHTML = renderTodayStrip();
+  // Render view
   if (calView === 'month') renderMonthView();
   else if (calView === 'week') renderWeekView();
   else renderDayView();
+}
+
+function calJumpToday() {
+  calDate = new Date();
+  renderCalendar();
+}
+
+function renderTodayStrip() {
+  const todayStr = dateISO(new Date());
+  // Only show when today is visible in current view
+  const now = new Date();
+  let todayInView = false;
+  if (calView === 'month') {
+    todayInView = calDate.getFullYear() === now.getFullYear() && calDate.getMonth() === now.getMonth();
+  } else if (calView === 'week') {
+    const dow = calDate.getDay();
+    const monday = new Date(calDate.getTime() - ((dow + 6) % 7) * 86400000);
+    const sunday = new Date(monday.getTime() + 6 * 86400000);
+    todayInView = now >= monday && now <= new Date(sunday.getTime() + 86400000 - 1);
+  } else {
+    todayInView = dateISO(calDate) === todayStr;
+  }
+  if (!todayInView) return '';
+  const todaySessions = sessionsForDate(todayStr).filter(s => !s.cancelled?.whole && !s.cancelled?.general);
+  if (!todaySessions.length) return '';
+
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const upcoming = [...todaySessions]
+    .sort((a, b) => timeToMins(a.startTime) - timeToMins(b.startTime))
+    .find(s => timeToMins(s.startTime) > nowMins);
+
+  let totalHours = 0, totalEarnings = 0;
+  todaySessions.forEach(s => {
+    const h = sessionHours(s);
+    totalHours += h;
+    totalEarnings += h * (s.type === 'private' ? (settings.ratePrivate||0) : (settings.rateGroup||0));
+  });
+
+  const nextInfo = upcoming
+    ? `<span style="color:var(--text2)">▶ ${upcoming.startTime}</span>`
+    : `<span style="color:var(--green)">✓ ${lang==='he'?'הכל נגמר':'All done'}</span>`;
+
+  return `<div style="margin:0 16px 8px;padding:10px 14px;background:rgba(255,255,255,0.035);border:0.5px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:12px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px">${t('todaySessionsLabel')}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:14px;font-weight:600">${todaySessions.length} ${lang==='he'?'אימונים':'sessions'}</span>
+        <span style="color:var(--text3);font-size:12px">·</span>
+        <span style="font-size:13px;color:var(--text2)">${fmtHoursDecimal(totalHours)}</span>
+        <span style="color:var(--text3);font-size:12px">·</span>
+        <span style="font-size:13px;color:var(--green);font-weight:500">₪${Math.round(totalEarnings)}</span>
+        <span style="color:var(--text3);font-size:12px">·</span>
+        ${nextInfo}
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderMonthView() {
@@ -866,15 +1073,12 @@ function renderDayView() {
   const dateStr = dateISO(calDate);
   const dow = calDate.getDay();
   const dayLabel = t(DAY_KEYS[dow]) + ', ' + calDate.getDate() + ' ' + monthName(calDate.getMonth()) + ' ' + calDate.getFullYear();
-  document.getElementById('cal-title').textContent = '';
+  document.getElementById('cal-title').textContent = dayLabel;
 
   const daySessions = sessionsForDate(dateStr);
   const addBtn = isAdmin() ? `<button onclick="openSessionModal('${dateStr}',null,null)" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit">+ ${t('addSession').replace('+ ','')}</button>` : '';
 
-  let html = `<div style="padding:0 16px 12px;display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:15px;font-weight:600">${dayLabel}</span>
-    ${addBtn}
-  </div>`;
+  let html = addBtn ? `<div style="padding:0 16px 12px;display:flex;justify-content:flex-end">${addBtn}</div>` : '';
 
   if (!daySessions.length) {
     html += `<div class="card"><div class="empty">${t('noSessions')}</div></div>`;
@@ -1459,10 +1663,13 @@ function renderSummary() {
 
   const navPrev = '‹';
   const navNext = '›';
-  const nav = `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px">
-    <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;font-family:inherit">${navPrev}</button>
-    <div style="font-size:16px;font-weight:600">${monthName(month)} ${year}</div>
-    <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;font-family:inherit">${navNext}</button>
+  const nav = `<div style="display:flex;align-items:center;padding:0 16px 12px">
+    <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:2px">
+      <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navPrev}</button>
+      <div style="font-size:16px;font-weight:600;width:180px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${monthName(month)} ${year}</div>
+      <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navNext}</button>
+    </div>
+    <button id="summary-share-btn" onclick="shareMonthlySummary()" style="background:none;border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit;transition:opacity 0.15s;line-height:1;flex-shrink:0">${t('shareMonth')}</button>
   </div>`;
 
   const statsCard = `<div class="card">
@@ -1545,6 +1752,50 @@ function summaryPrev() {
 function summaryNext() {
   summaryDate = new Date(summaryDate.getFullYear(), summaryDate.getMonth()+1, 1);
   renderSummary();
+}
+
+async function shareMonthlySummary() {
+  const year = summaryDate.getFullYear();
+  const month = summaryDate.getMonth();
+  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  const monthSessions = getCalendarSessions().filter(s => s.date.startsWith(prefix));
+
+  let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
+  monthSessions.forEach(s => {
+    const h = sessionHours(s);
+    if (s.cancelled?.whole || s.cancelled?.general) return;
+    if (s.type === 'private') { privateHours += h; privateCount++; }
+    else { groupHours += h; groupCount++; }
+  });
+  const totalHours = privateHours + groupHours;
+  const totalEarnings = privateHours * (settings.ratePrivate||0) + groupHours * (settings.rateGroup||0);
+
+  const isHe = lang === 'he';
+  const lines = [
+    `📅 ${monthName(month)} ${year}`,
+    ``,
+    `${isHe ? 'פרטיים' : 'Private'}: ${privateCount} (${fmtHoursDecimal(privateHours)})`,
+    `${isHe ? 'קבוצתיים' : 'Group'}: ${groupCount} (${fmtHoursDecimal(groupHours)})`,
+    ``,
+    `${t('totalHours')}: ${fmtHoursDecimal(totalHours)}`,
+    `${t('totalEarnings')}: ₪${Math.round(totalEarnings)}`,
+  ].join('\n');
+
+  const btn = document.getElementById('summary-share-btn');
+  const flash = (msg) => {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = msg;
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1800);
+  };
+
+  if (navigator.share) {
+    try { await navigator.share({ text: lines }); } catch(e) { /* dismissed */ }
+  } else if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(lines);
+    flash(t('copiedToClipboard'));
+  }
 }
 
 // ─── INDIVIDUAL PLAYERS ──────────────────────────────────
@@ -1960,12 +2211,15 @@ function showTypeConfirmModal(message, callback) {
   setTimeout(() => document.getElementById('type-confirm-input')?.focus(), 80);
 }
 
+
 // ─── SCREEN NAV ───────────────────────────────────────────
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+name)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('nav-'+name)?.classList.add('active');
+  document.querySelectorAll('.sidebar-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('snav-'+name)?.classList.add('active');
   if (name === 'calendar') renderCalendar();
   else if (name === 'groups') renderGroups();
   else if (name === 'summary') renderSummary();
@@ -2007,6 +2261,8 @@ auth.onAuthStateChanged(async (fbUser) => {
       // Apply UI
       document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('main-nav').style.display = '';
+      document.getElementById('sidebar-nav').style.display = '';
+      document.getElementById('sidebar-username').textContent = currentUser?.username || '';
       // Show admin nav button
       document.querySelectorAll('.admin-only').forEach(el => {
         el.style.display = isAdmin() ? '' : 'none';
@@ -2031,6 +2287,7 @@ auth.onAuthStateChanged(async (fbUser) => {
     if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-nav').style.display = 'none';
+    document.getElementById('sidebar-nav').style.display = 'none';
     document.getElementById('view-banner')?.remove();
     document.querySelector('.app')?.classList.remove('viewing');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
