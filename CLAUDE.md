@@ -1,5 +1,11 @@
 # CoachHours — Developer Guide
 
+## Always Do First
+
+- **Invoke the `frontend-design` skill** before writing any frontend code, every session, no exceptions.
+
+---
+
 ## Git / Workflow Rules
 
 - **Do not push to GitHub after every change.** Only push when the user explicitly asks to push. The user decides when changes are ready to go live.
@@ -124,6 +130,27 @@ service cloud.firestore {
 - Revert commits in GitHub Desktop to restore a previous version of `index.html`.
 - User data is in **Firestore** (not git). To recover data, use the Firebase Console or the in-app Export feature.
 - Export/Import JSON is available in Settings — backs up all data keys to a `.json` file.
+
+---
+
+## Frontend Design Guardrails
+
+When writing or modifying any UI in `index.html`:
+
+- **Colors:** Never use generic defaults. Derive from the existing app palette (`--bg`, `--accent`, `--text`, etc.). Do not introduce arbitrary new colors.
+- **Shadows:** Avoid flat shadows. Use layered, color-tinted shadows with low opacity where depth is needed.
+- **Typography:** Respect the existing font stack and size scale. Apply tight tracking on large headings, generous line-height on body text.
+- **Animations:** Only animate `transform` and `opacity`. Never use `transition: all`. Use smooth, natural easing.
+- **Interactive states:** Every clickable element needs hover, focus-visible, and active states. No exceptions.
+- **Spacing:** Use the existing CSS variable spacing tokens. Do not introduce random one-off values.
+- **Depth:** UI surfaces should feel layered (base → elevated → floating), not flat.
+
+### Hard Rules
+
+- Do not add sections, features, or content the user did not ask for.
+- Do not "improve" existing UI that wasn't part of the request — match and extend the existing style.
+- Do not use `transition: all` or `transition-all`.
+- Do not introduce new external libraries or CDN dependencies without asking.
 
 ---
 

@@ -208,6 +208,9 @@
         <label class="form-label" id="lbl-password">סיסמה</label>
         <input type="password" id="auth-password" placeholder="סיסמה" style="width:100%" dir="ltr"
           onkeydown="if(event.key==='Enter')submitAuth()">
+        <div id="auth-forgot-row" style="margin-top:6px;text-align:left">
+          <button id="auth-forgot-btn" onclick="forgotPassword()" style="background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;padding:0">שכחת סיסמה?</button>
+        </div>
       </div>
       <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="margin-top:0">התחבר</button>
       <button class="btn btn-secondary" id="auth-toggle-btn" style="margin-top:8px;font-size:13px" onclick="toggleAuthMode()">הרשמה כמאמן חדש</button>
@@ -222,9 +225,9 @@
     </div>
     <div class="cal-toolbar">
       <div class="cal-toolbar-nav">
-        <button class="cal-nav" onclick="calPrev()">›</button>
+        <button class="cal-nav" onclick="calPrev()">‹</button>
         <span id="cal-title"></span>
-        <button class="cal-nav" onclick="calNext()">‹</button>
+        <button class="cal-nav" onclick="calNext()">›</button>
       </div>
       <div class="cal-toolbar-controls">
         <div class="cal-view-toggle">
@@ -407,6 +410,7 @@ const STRINGS = {
     errUserNotFound: 'אין חשבון עם כתובת אימייל זו.', errWrongPassword: 'סיסמה שגויה.',
     errEmailInUse: 'חשבון עם אימייל זה כבר קיים.', errWeakPassword: 'הסיסמה חייבת להיות לפחות 6 תווים.',
     errTooManyRequests: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.', errGeneric: 'שגיאה. נסה שוב.',
+    forgotPassword: 'שכחת סיסמה?', resetEmailSent: 'קישור לאיפוס נשלח לאימייל שלך.',
     errEndBeforeStart: 'שעת הסיום חייבת להיות אחרי שעת ההתחלה.',
     notes: 'הערות', summary: 'סיכום', monthlySummary: 'סיכום חודשי',
     totalHours: 'סה״כ שעות', totalEarnings: 'הכנסה משוערת',
@@ -476,6 +480,7 @@ const STRINGS = {
     errUserNotFound: 'No account with this email.', errWrongPassword: 'Wrong password.',
     errEmailInUse: 'An account with this email already exists.', errWeakPassword: 'Password must be at least 6 characters.',
     errTooManyRequests: 'Too many attempts. Try again later.', errGeneric: 'An error occurred. Try again.',
+    forgotPassword: 'Forgot password?', resetEmailSent: 'Password reset link sent to your email.',
     errEndBeforeStart: 'End time must be after start time.',
     notes: 'Notes', summary: 'Summary', monthlySummary: 'Monthly Summary',
     totalHours: 'Total Hours', totalEarnings: 'Estimated Earnings',
@@ -528,6 +533,7 @@ function applyLangStrings() {
   const inp_fn = document.getElementById('auth-fullname'); if (inp_fn) inp_fn.placeholder = t('fullnamePlaceholder');
   const inp_em = document.getElementById('auth-email'); if (inp_em) inp_em.placeholder = t('emailPlaceholder');
   const inp_pw = document.getElementById('auth-password'); if (inp_pw) inp_pw.placeholder = t('password');
+  const fbtn = document.getElementById('auth-forgot-btn'); if (fbtn) fbtn.textContent = t('forgotPassword');
   const sbtn = document.getElementById('auth-submit-btn'); if (sbtn) sbtn.textContent = authMode === 'register' ? t('register') : t('signIn');
   const tbtn = document.getElementById('auth-toggle-btn'); if (tbtn) tbtn.textContent = authMode === 'register' ? t('alreadyHaveAccount') : t('registerNewCoach');
   const rbtn = document.getElementById('auth-resend-btn'); if (rbtn) rbtn.textContent = t('resendVerification');
@@ -556,12 +562,8 @@ function applyLangStrings() {
   const iadd = document.getElementById('individual-add-btn'); if (iadd) iadd.textContent = t('addIndividualPlayer');
   const ipd = document.getElementById('individual-players-divider'); if (ipd) ipd.textContent = t('individualPlayers');
   const ldng = document.getElementById('loading-text'); if (ldng) ldng.textContent = t('loading');
-  // Cal nav direction: in RTL, ‹ goes forward in time, › goes back
   const navBtns = document.querySelectorAll('.cal-nav');
-  if (navBtns.length >= 2) {
-    if (lang === 'he') { navBtns[0].textContent = '›'; navBtns[1].textContent = '‹'; }
-    else { navBtns[0].textContent = '‹'; navBtns[1].textContent = '›'; }
-  }
+  if (navBtns.length >= 2) { navBtns[0].textContent = '‹'; navBtns[1].textContent = '›'; }
 }
 
 // ─── HELPERS ──────────────────────────────────────────────
@@ -1455,8 +1457,8 @@ function renderSummary() {
   const totalEarnings   = privateEarnings + groupEarnings;
   const totalHours      = privateHours + groupHours;
 
-  const navPrev = lang === 'he' ? '›' : '‹';
-  const navNext = lang === 'he' ? '‹' : '›';
+  const navPrev = '‹';
+  const navNext = '›';
   const nav = `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px">
     <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px 8px;font-family:inherit">${navPrev}</button>
     <div style="font-size:16px;font-weight:600">${monthName(month)} ${year}</div>
@@ -1640,20 +1642,24 @@ function renderSettings() {
         </div>
         <button onclick="logoutUser()" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit">${t('signOut')}</button>
       </div>
-    </div>
-    <div class="section-divider">${t('changePassword')}</div>
-    <div class="card">
-      <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
-      <div style="margin-bottom:10px">
-        <label class="form-label">${t('newPassword')}</label>
-        <input type="password" id="pwd-new" style="width:100%" dir="ltr">
+      <div style="border-top:0.5px solid var(--border);margin-top:12px;padding-top:10px">
+        <button onclick="toggleChangePwd()" style="background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit;padding:0;display:flex;align-items:center;gap:6px">
+          <span id="change-pwd-arrow" style="font-size:10px;display:inline-block;transition:transform 0.2s">▶</span>${t('changePassword')}
+        </button>
+        <div id="change-pwd-section" style="display:none;margin-top:12px">
+          <div id="change-pwd-error" class="error-box" style="margin-bottom:10px"></div>
+          <div style="margin-bottom:10px">
+            <label class="form-label">${t('newPassword')}</label>
+            <input type="password" id="pwd-new" style="width:100%" dir="ltr">
+          </div>
+          <div style="margin-bottom:12px">
+            <label class="form-label">${t('confirmPassword')}</label>
+            <input type="password" id="pwd-confirm" style="width:100%" dir="ltr">
+          </div>
+          <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">${t('updatePassword')}</button>
+          <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">${t('passwordUpdated')}</div>
+        </div>
       </div>
-      <div style="margin-bottom:12px">
-        <label class="form-label">${t('confirmPassword')}</label>
-        <input type="password" id="pwd-confirm" style="width:100%" dir="ltr">
-      </div>
-      <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">${t('updatePassword')}</button>
-      <div id="change-pwd-ok" style="display:none;color:var(--green);font-size:13px;margin-top:8px;text-align:center">${t('passwordUpdated')}</div>
     </div>
   `;
 }
@@ -1663,6 +1669,14 @@ function saveSettings() {
   settings.ratePrivate = parseFloat(document.getElementById('rate-private')?.value) || 80;
   settings.rateGroup   = parseFloat(document.getElementById('rate-group')?.value)   || 50;
   saveUD('ch_settings', settings);
+}
+
+function toggleChangePwd() {
+  const section = document.getElementById('change-pwd-section');
+  const arrow   = document.getElementById('change-pwd-arrow');
+  const open = section.style.display !== 'none';
+  section.style.display = open ? 'none' : '';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 async function changePassword() {
@@ -1795,9 +1809,28 @@ function toggleAuthMode() {
   document.getElementById('auth-name-row').style.display = isReg ? '' : 'none';
   document.getElementById('auth-submit-btn').textContent = isReg ? t('register') : t('signIn');
   document.getElementById('auth-toggle-btn').textContent = isReg ? t('alreadyHaveAccount') : t('registerNewCoach');
+  document.getElementById('auth-forgot-row').style.display = isReg ? 'none' : '';
   document.getElementById('auth-error').style.display = 'none';
   document.getElementById('auth-success').style.display = 'none';
   document.getElementById('auth-resend-btn').style.display = 'none';
+}
+
+async function forgotPassword() {
+  const email = document.getElementById('auth-email').value.trim();
+  const errEl = document.getElementById('auth-error');
+  const sucEl = document.getElementById('auth-success');
+  errEl.style.display = 'none';
+  sucEl.style.display = 'none';
+  if (!email) { errEl.textContent = t('fillAllFields'); errEl.style.display = 'block'; return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    sucEl.textContent = t('resetEmailSent');
+    sucEl.style.display = 'block';
+  } catch(e) {
+    errEl.textContent = e.code === 'auth/user-not-found' ? t('errUserNotFound') :
+                        e.code === 'auth/invalid-email'  ? t('errInvalidEmail') : t('errGeneric');
+    errEl.style.display = 'block';
+  }
 }
 
 async function submitAuth() {
