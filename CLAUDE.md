@@ -14,7 +14,7 @@
 
 ## Architecture
 
-- **Single-file PWA**: All code lives in `index.html`. No build step, no backend server.
+- **PWA**: Code split across `index.html` (markup), `css/main.css` (styles), `js/modules/*.js` + `js/main.js` (logic). No build step, no backend server, no ES module imports — scripts are loaded globally in dependency order.
 - **Storage**: Firebase Firestore (database) + Firebase Auth. Data is shared across all origins — GitHub Pages and Live Server both read/write the same cloud data.
 - **Multi-user**: Coaches register via the login screen (email + password). Admin can view/manage other coaches from Settings.
 - **Offline**: Service worker (`sw.js`) caches the app shell. Firestore offline persistence (`db.enablePersistence()`) caches data for offline reads.
@@ -60,20 +60,41 @@ session.attendance = { present: ['Name1', 'Name2'], savedAt: 'HH:MM' }
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isAdmin() {
       return request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+
     match /users/{uid} {
       allow read: if request.auth.uid == uid || isAdmin();
       allow create: if request.auth.uid == uid;
       allow update: if request.auth.uid == uid || isAdmin();
       allow delete: if isAdmin();
     }
+
     match /users/{uid}/data/{doc} {
       allow read, write: if request.auth.uid == uid;
       allow read: if isAdmin();
     }
+
+    match /sessions/{sessionId} {
+      allow read: if request.auth != null &&
+        (isAdmin() || resource.data.assignedCoachId == request.auth.uid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (request.auth != null && resource.data.assignedCoachId == request.auth.uid);
+    }
+
+    match /groups/{groupId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /meta/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
   }
 }
 ```

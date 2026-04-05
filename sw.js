@@ -1,5 +1,22 @@
-const CACHE = 'coach-hours-v4';
-const ASSETS = ['./index.html', './manifest.json'];
+const CACHE = 'coach-hours-v5';
+const ASSETS = [
+  './index.html', './manifest.json',
+  './css/main.css',
+  './js/main.js',
+  './js/modules/firebase.js',
+  './js/modules/state.js',
+  './js/modules/i18n.js',
+  './js/modules/utils.js',
+  './js/modules/data.js',
+  './js/modules/ui.js',
+  './js/modules/calendar.js',
+  './js/modules/sessions.js',
+  './js/modules/groups.js',
+  './js/modules/summary.js',
+  './js/modules/settings.js',
+  './js/modules/admin.js',
+  './js/modules/auth.js',
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
