@@ -40,6 +40,7 @@ function subscribeGroups() {
 
 function subscribePlayers() {
   if (playersUnsub) { playersUnsub(); playersUnsub = null; }
+  if (!isAdmin()) return;
   playersUnsub = db.collection('players').onSnapshot(snap => {
     players = {};
     snap.docs.forEach(d => { players[d.id] = { id: d.id, ...d.data() }; });

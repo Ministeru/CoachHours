@@ -98,16 +98,17 @@ function renderSummary() {
     else byDay.push({ date: s.date, sessions: [s] });
   });
 
+  const FULL_DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
   const dayBlocks = byDay.map(({ date, sessions: daySessions }) => {
     const [y, mo, d] = date.split('-').map(Number);
     const dow = new Date(y, mo-1, d).getDay();
-    const dayLabel = `${t(DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo-1])}`;
+    const fullDayName = t(FULL_DAY_KEYS[dow]);
 
     const rows = daySessions.map((s, i) => {
       const h = sessionHours(s);
       const isCancelled = s.cancelled?.whole;
       const isPartial = !!s.cancelled?.from;
-      const coachName = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
       const earnings = (h * rate(s.type)).toFixed(0);
       const isLast = i === daySessions.length - 1;
       const rowClick = isAdmin()
@@ -116,7 +117,7 @@ function renderSummary() {
       return `<div ${rowClick}>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(s.name)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.startTime}${isPartial?' – '+s.cancelled.from+' 🌧':' – '+s.endTime}${coachName?' · '+escH(coachName):''}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.startTime}${isPartial?' – '+s.cancelled.from+' 🌧':' – '+s.endTime}</div>
         </div>
         <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
           <div style="font-size:13px;font-weight:500;color:${isCancelled?'var(--text3)':isPartial?'var(--orange)':'var(--text)'}">${fmtHoursDecimal(h)}</div>
@@ -126,7 +127,13 @@ function renderSummary() {
     }).join('');
 
     return `<div class="card" style="margin-bottom:8px">
-      <div onclick="goToCalendarDay('${date}')" style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;cursor:pointer">${escH(dayLabel)}</div>
+      <div onclick="goToCalendarDay('${date}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:30px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-1px;min-width:2ch;text-align:center">${d}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);line-height:1.2">${escH(fullDayName)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px">${escH(t(MONTH_NAMES[mo-1]))} ${year}</div>
+        </div>
+      </div>
       ${rows}
     </div>`;
   }).join('');
@@ -186,29 +193,37 @@ function generateMonthlyPDF() {
   _pdfDirAttr  = lang === 'he' ? 'rtl' : 'ltr';
   _pdfFileName = `summary-${prefix}.pdf`;
 
+  const PDF_FULL_DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
   const dayBlocksHtml = byDay.map(({ date, sessions: daySessions }) => {
     const [y, mo, d] = date.split('-').map(Number);
     const dow      = new Date(y, mo - 1, d).getDay();
-    const dayLabel = `${t(DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo - 1])}`;
+    const dayLabel = `${t(PDF_FULL_DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo - 1])}`;
     const rows = daySessions.map(s => {
       const h           = sessionHours(s);
       const isCancelled = s.cancelled?.whole || s.cancelled?.general;
       const isPartial   = !!s.cancelled?.from;
-      const coachName   = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
       const earnings    = (h * rate(s.type)).toFixed(0);
       const timeRange   = isPartial ? `${s.startTime} – ${s.cancelled.from} 🌧` : `${s.startTime} – ${s.endTime}`;
-      const coachPart   = coachName ? ` · ${escH(coachName)}` : '';
       const hoursColor  = isCancelled ? '#888' : isPartial ? '#fb923c' : '#111';
       return `<tr style="${isCancelled ? 'opacity:0.45;' : ''}">
-        <td style="padding:6px 8px 6px 0;font-size:12px;color:#666;white-space:nowrap">${timeRange}${coachPart}</td>
-        <td style="padding:6px 0;font-size:13px;font-weight:500">${escH(s.name)}</td>
-        <td style="padding:6px 0 6px 8px;font-size:12px;text-align:end;color:${hoursColor};white-space:nowrap">
+        <td style="padding:6px 0;font-size:13px;font-weight:500;width:100%">
+          ${escH(s.name)}
+          <div style="font-size:11px;color:#666;font-weight:400;margin-top:2px">${timeRange}</div>
+        </td>
+        <td style="padding:6px 0 6px 0;font-size:12px;text-align:end;color:${hoursColor};white-space:nowrap;vertical-align:top">
           ${fmtHoursDecimal(h)}${!isCancelled ? `<br><span style="color:#999;font-size:11px">₪${earnings}</span>` : ''}
         </td>
       </tr>`;
     }).join('');
-    return `<div style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:10px">
-      <div style="font-size:11px;font-weight:700;color:#666;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px">${escH(dayLabel)}</div>
+    return `<div class="pdf-block" style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:0.5px solid #eee">
+        <span style="font-size:24px;font-weight:800;color:#111;line-height:1;letter-spacing:-0.5px">${d}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111;line-height:1.2">${escH(dayLabel.split(',')[0])}</div>
+          <div style="font-size:11px;color:#666">${escH(t(MONTH_NAMES[mo - 1]))} ${year}</div>
+        </div>
+      </div>
       <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows}</table>
     </div>`;
   }).join('');
@@ -219,7 +234,7 @@ function generateMonthlyPDF() {
   _pdfContentHtml = `
     <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px">${escH(monthName(month))} ${year}</div>
     <div style="font-size:12px;color:#666;margin-bottom:18px">${escH(t('monthlySummary'))}</div>
-    <div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:18px">
+    <div class="pdf-block" style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:18px">
       <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
         <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('privateSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${privateCount} · ${escH(fmtHoursDecimal(privateHours))}</td></tr>
         <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('groupSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${groupCount} · ${escH(fmtHoursDecimal(groupHours))}</td></tr>
@@ -263,18 +278,67 @@ async function _exportPDF(action) {
   container.innerHTML = _pdfContentHtml;
   document.body.appendChild(container);
 
+  // Measure block positions before canvas capture (reading offsetTop forces layout)
+  const blocks = Array.from(container.querySelectorAll('.pdf-block'));
+  const blockMeasurements = blocks.map(b => ({ top: b.offsetTop, height: b.offsetHeight }));
+  const containerCSSWidth = container.offsetWidth || 600;
+
   try {
     const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
     document.body.removeChild(container);
 
     const { jsPDF } = window.jspdf;
-    const pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const imgW = 210, pageH = 297;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    const pages = Math.ceil(imgH / pageH);
-    for (let i = 0; i < pages; i++) {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Page geometry (with margins)
+    const marginX = 10, marginY = 12;
+    const usableW = 210 - marginX * 2;   // mm
+    const usableH = 297 - marginY * 2;   // mm
+
+    // Scale: canvas pixels → mm
+    const mmPerPx    = usableW / canvas.width;
+    const pageHtPx   = usableH / mmPerPx;              // page height in canvas pixels
+    const scaleFactor = canvas.width / containerCSSWidth; // CSS px → canvas px
+
+    // Calculate page-break positions that avoid splitting any .pdf-block
+    const pageStarts = [0];
+    let pageEnd = pageHtPx;
+
+    for (const { top, height } of blockMeasurements) {
+      const blockTop = top * scaleFactor;
+      const blockBot = (top + height) * scaleFactor;
+
+      if (blockBot <= pageEnd) continue; // fits on current page — no action needed
+
+      if (blockTop >= pageEnd) {
+        // Gap between page end and block start — advance pages naturally
+        while (blockTop >= pageEnd) { pageStarts.push(pageEnd); pageEnd += pageHtPx; }
+      } else {
+        // Block straddles the boundary — start a new page at the block's top
+        pageStarts.push(blockTop);
+        pageEnd = blockTop + pageHtPx;
+        // If the block itself is taller than one page, slice through it
+        while (blockBot > pageEnd) { pageStarts.push(pageEnd); pageEnd += pageHtPx; }
+      }
+    }
+
+    // Render each page slice onto the PDF
+    for (let i = 0; i < pageStarts.length; i++) {
       if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -i * pageH, imgW, imgH);
+      const startPx  = Math.round(pageStarts[i]);
+      const endPx    = i + 1 < pageStarts.length ? Math.round(pageStarts[i + 1]) : canvas.height;
+      const sliceHPx = Math.min(endPx - startPx, canvas.height - startPx);
+      if (sliceHPx <= 0) continue;
+
+      const slice = document.createElement('canvas');
+      slice.width  = canvas.width;
+      slice.height = sliceHPx;
+      const ctx = slice.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, slice.width, slice.height);
+      ctx.drawImage(canvas, 0, startPx, canvas.width, sliceHPx, 0, 0, canvas.width, sliceHPx);
+
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', marginX, marginY, usableW, sliceHPx * mmPerPx);
     }
 
     const pdfBlob = pdf.output('blob');
@@ -292,6 +356,7 @@ async function _exportPDF(action) {
 
     document.getElementById('pdf-preview-overlay')?.remove();
   } catch(e) {
+    console.error('PDF export error:', e);
     if (container.parentNode) document.body.removeChild(container);
     if (dlBtn)    { dlBtn.textContent    = lang==='he'?'הורד PDF':'Download PDF'; dlBtn.style.pointerEvents    = ''; }
     if (shareBtn) { shareBtn.textContent = lang==='he'?'שתף':'Share';             shareBtn.style.pointerEvents = ''; }

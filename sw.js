@@ -1,4 +1,4 @@
-const CACHE = 'coach-hours-v5';
+const CACHE = 'coach-hours-v6';
 const ASSETS = [
   './index.html', './manifest.json',
   './css/main.css',
@@ -36,9 +36,9 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request)
       .then(response => {
-        if (response.ok) {
+        if (response.ok && response.type !== 'opaque') {
           const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE).then(c => c.put(e.request, clone).catch(() => {}));
         }
         return response;
       })
