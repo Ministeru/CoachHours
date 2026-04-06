@@ -6,12 +6,27 @@ function renderSettings() {
       <div class="rate-row">
         <label>${t('ratePrivate')}</label>
         <input type="number" id="rate-private" value="${settings.ratePrivate}" min="0" oninput="saveSettings()">
-        <span class="rate-suffix">${t('perHour')}</span>
+        <span class="rate-suffix">${t('per45min')}</span>
       </div>
       <div class="rate-row">
         <label>${t('rateGroup')}</label>
         <input type="number" id="rate-group" value="${settings.rateGroup}" min="0" oninput="saveSettings()">
         <span class="rate-suffix">${t('perHour')}</span>
+      </div>
+      <div class="rate-row">
+        <label>${t('rateDouble')}</label>
+        <input type="number" id="rate-double" value="${settings.rateDouble}" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">${t('per45min')}</span>
+      </div>
+      <div class="rate-row">
+        <label>${t('rateCamp')}</label>
+        <input type="number" id="rate-camp" value="${settings.rateCamp}" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">${t('perHour')}</span>
+      </div>
+      <div class="rate-row">
+        <label>${t('transportBonus')}</label>
+        <input type="number" id="rate-transport" value="${settings.transportBonus}" min="0" oninput="saveSettings()">
+        <span class="rate-suffix">${t('perDay')}</span>
       </div>
     </div>` : '';
 
@@ -64,6 +79,9 @@ function saveSettings() {
   if (!isAdmin()) return;
   settings.ratePrivate = parseFloat(document.getElementById('rate-private')?.value) || 80;
   settings.rateGroup   = parseFloat(document.getElementById('rate-group')?.value)   || 50;
+  settings.rateDouble      = parseFloat(document.getElementById('rate-double')?.value)    || 120;
+  settings.rateCamp        = parseFloat(document.getElementById('rate-camp')?.value)      || 40;
+  settings.transportBonus  = parseFloat(document.getElementById('rate-transport')?.value) ?? 15;
   saveUD('ch_settings', settings);
 }
 

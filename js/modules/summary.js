@@ -1,6 +1,15 @@
 // ─── SUMMARY ──────────────────────────────────────────────
 let summaryDate = new Date();
 
+// Private and duo are billed per 45-min session unit; group and camp are per hour
+function calcEarnings(hours, type) {
+  const r = type === 'private' ? (settings.ratePrivate || 0)
+          : type === 'double'  ? (settings.rateDouble  || 0)
+          : type === 'camp'    ? (settings.rateCamp    || 0)
+          : (settings.rateGroup || 0);
+  return (type === 'private' || type === 'double') ? (hours * 60 / 45) * r : hours * r;
+}
+
 function sessionHours(s) {
   if (s.cancelled?.whole || s.cancelled?.general) return 0;
   if (s.cancelled?.from) {
@@ -31,20 +40,25 @@ function renderSummary() {
 
   // Salary calc
   let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
-  let cancelledWhole = 0, partialCount = 0;
+  let doubleHours  = 0, campHours  = 0, doubleCount  = 0, campCount  = 0;
+  let rainCancelled = 0, generalCancelled = 0, partialCount = 0;
   monthSessions.forEach(s => {
     const h = sessionHours(s);
-    if (s.cancelled?.whole || s.cancelled?.general) { cancelledWhole++; return; }
+    if (s.cancelled?.whole)   { rainCancelled++;    return; }
+    if (s.cancelled?.general) { generalCancelled++; return; }
     if (s.cancelled?.from) partialCount++;
-    if (s.type === 'private') { privateHours += h; privateCount++; }
-    else { groupHours += h; groupCount++; }
+    if      (s.type === 'private') { privateHours += h; privateCount++; }
+    else if (s.type === 'double')  { doubleHours  += h; doubleCount++;  }
+    else if (s.type === 'camp')    { campHours    += h; campCount++;    }
+    else                           { groupHours   += h; groupCount++;   }
   });
 
-  const rate = (type) => type === 'private' ? (settings.ratePrivate||0) : (settings.rateGroup||0);
-  const privateEarnings = privateHours * rate('private');
-  const groupEarnings   = groupHours   * rate('group');
-  const totalEarnings   = privateEarnings + groupEarnings;
-  const totalHours      = privateHours + groupHours;
+  const workDaySet = new Set();
+  monthSessions.forEach(s => { if (!s.cancelled?.whole && !s.cancelled?.general) workDaySet.add(s.date); });
+  const workDays       = workDaySet.size;
+  const transportTotal = workDays * (settings.transportBonus || 0);
+  const totalEarnings  = calcEarnings(privateHours, 'private') + calcEarnings(groupHours, 'group') + calcEarnings(doubleHours, 'double') + calcEarnings(campHours, 'camp') + transportTotal;
+  const totalHours     = privateHours + groupHours + doubleHours + campHours;
 
   const navPrev = '‹';
   const navNext = '›';
@@ -61,21 +75,37 @@ function renderSummary() {
   </div>`;
 
   const statsCard = `<div class="card">
-    <div class="breakdown-row">
+    ${privateCount ? `<div class="breakdown-row">
       <span class="breakdown-label">${t('privateSessions')}</span>
       <span class="breakdown-val">${privateCount} · ${fmtHoursDecimal(privateHours)}</span>
-    </div>
-    <div class="breakdown-row">
+    </div>` : ''}
+    ${groupCount ? `<div class="breakdown-row">
       <span class="breakdown-label">${t('groupSessions')}</span>
       <span class="breakdown-val">${groupCount} · ${fmtHoursDecimal(groupHours)}</span>
-    </div>
+    </div>` : ''}
+    ${doubleCount ? `<div class="breakdown-row">
+      <span class="breakdown-label">${t('doubleSessions')}</span>
+      <span class="breakdown-val">${doubleCount} · ${fmtHoursDecimal(doubleHours)}</span>
+    </div>` : ''}
+    ${campCount ? `<div class="breakdown-row">
+      <span class="breakdown-label">${t('campSessions')}</span>
+      <span class="breakdown-val">${campCount} · ${fmtHoursDecimal(campHours)}</span>
+    </div>` : ''}
     ${partialCount ? `<div class="breakdown-row">
       <span class="breakdown-label" style="color:var(--orange)">🌧 ${t('partialSessions')}</span>
       <span class="breakdown-val" style="color:var(--orange)">${partialCount}</span>
     </div>` : ''}
-    ${cancelledWhole ? `<div class="breakdown-row">
-      <span class="breakdown-label" style="color:var(--text3)">🌧 ${t('cancelledSessions')}</span>
-      <span class="breakdown-val" style="color:var(--text3)">${cancelledWhole}</span>
+    ${rainCancelled ? `<div class="breakdown-row">
+      <span class="breakdown-label" style="color:var(--text3)">🌧 ${t('rainCancelledSessions')}</span>
+      <span class="breakdown-val" style="color:var(--text3)">${rainCancelled}</span>
+    </div>` : ''}
+    ${generalCancelled ? `<div class="breakdown-row">
+      <span class="breakdown-label" style="color:var(--text3)">✕ ${t('cancelledSessions')}</span>
+      <span class="breakdown-val" style="color:var(--text3)">${generalCancelled}</span>
+    </div>` : ''}
+    ${transportTotal > 0 ? `<div class="breakdown-row">
+      <span class="breakdown-label">${t('transportBonus')} · ${workDays} ${t('workDays')}</span>
+      <span class="breakdown-val">₪${transportTotal.toFixed(0)}</span>
     </div>` : ''}
     <div class="breakdown-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:12px">
       <span class="breakdown-label" style="font-weight:600">${t('totalHours')}</span>
@@ -105,11 +135,17 @@ function renderSummary() {
     const dow = new Date(y, mo-1, d).getDay();
     const fullDayName = t(FULL_DAY_KEYS[dow]);
 
+    const dayHours    = daySessions.reduce((sum, s) => sum + sessionHours(s), 0);
+    const dayEarnings = daySessions.reduce((sum, s) => {
+      if (s.cancelled?.whole || s.cancelled?.general) return sum;
+      return sum + calcEarnings(sessionHours(s), s.type);
+    }, 0);
+
     const rows = daySessions.map((s, i) => {
       const h = sessionHours(s);
-      const isCancelled = s.cancelled?.whole;
+      const isCancelled = !!(s.cancelled?.whole || s.cancelled?.general);
       const isPartial = !!s.cancelled?.from;
-      const earnings = (h * rate(s.type)).toFixed(0);
+      const earnings = calcEarnings(h, s.type).toFixed(0);
       const isLast = i === daySessions.length - 1;
       const rowClick = isAdmin()
         ? `onclick="openSummarySession('${escQ(s.id)}')" style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;${isLast?'':'border-bottom:0.5px solid var(--border);'}${isCancelled?'opacity:0.4;':''}"`
@@ -117,7 +153,7 @@ function renderSummary() {
       return `<div ${rowClick}>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(s.name)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.startTime}${isPartial?' – '+s.cancelled.from+' 🌧':' – '+s.endTime}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${escH(t(s.type||'private'))} · ${s.startTime}${isPartial?' – '+s.cancelled.from:' – '+s.endTime}${isCancelled?(s.cancelled?.whole?' · 🌧 '+escH(t('rainWhole')):' · ✕ '+escH(t('cancelGeneral'))):isPartial?' · 🌧 '+escH(t('rainFrom')):''}</div>
         </div>
         <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
           <div style="font-size:13px;font-weight:500;color:${isCancelled?'var(--text3)':isPartial?'var(--orange)':'var(--text)'}">${fmtHoursDecimal(h)}</div>
@@ -125,6 +161,12 @@ function renderSummary() {
         </div>
       </div>`;
     }).join('');
+
+    const dayTotalRow = dayHours > 0 ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:4px;border-top:0.5px solid var(--border)">
+        <span style="font-size:11px;font-weight:600;color:var(--text2)">${fmtHoursDecimal(dayHours)}</span>
+        ${dayEarnings > 0 ? `<span style="font-size:11px;font-weight:700;color:var(--green)">₪${dayEarnings.toFixed(0)}</span>` : ''}
+      </div>` : '';
 
     return `<div class="card" style="margin-bottom:8px">
       <div onclick="goToCalendarDay('${date}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid var(--border)">
@@ -135,6 +177,7 @@ function renderSummary() {
         </div>
       </div>
       ${rows}
+      ${dayTotalRow}
     </div>`;
   }).join('');
 
@@ -167,18 +210,25 @@ function generateMonthlyPDF() {
   const monthSessions = getCalendarSessions().filter(s => s.date.startsWith(prefix));
 
   let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
-  let cancelledWhole = 0, partialCount = 0;
+  let doubleHours  = 0, campHours  = 0, doubleCount  = 0, campCount  = 0;
+  let rainCancelled = 0, generalCancelled = 0, partialCount = 0;
   monthSessions.forEach(s => {
     const h = sessionHours(s);
-    if (s.cancelled?.whole || s.cancelled?.general) { cancelledWhole++; return; }
+    if (s.cancelled?.whole)   { rainCancelled++;    return; }
+    if (s.cancelled?.general) { generalCancelled++; return; }
     if (s.cancelled?.from) partialCount++;
-    if (s.type === 'private') { privateHours += h; privateCount++; }
-    else                      { groupHours   += h; groupCount++;   }
+    if      (s.type === 'private') { privateHours += h; privateCount++; }
+    else if (s.type === 'double')  { doubleHours  += h; doubleCount++;  }
+    else if (s.type === 'camp')    { campHours    += h; campCount++;    }
+    else                           { groupHours   += h; groupCount++;   }
   });
 
-  const rate = (type) => type === 'private' ? (settings.ratePrivate || 0) : (settings.rateGroup || 0);
-  const totalEarnings = privateHours * rate('private') + groupHours * rate('group');
-  const totalHours    = privateHours + groupHours;
+  const workDaySet = new Set();
+  monthSessions.forEach(s => { if (!s.cancelled?.whole && !s.cancelled?.general) workDaySet.add(s.date); });
+  const workDays       = workDaySet.size;
+  const transportTotal = workDays * (settings.transportBonus || 0);
+  const totalEarnings  = calcEarnings(privateHours, 'private') + calcEarnings(groupHours, 'group') + calcEarnings(doubleHours, 'double') + calcEarnings(campHours, 'camp') + transportTotal;
+  const totalHours     = privateHours + groupHours + doubleHours + campHours;
 
   const sortedSessions = [...monthSessions].sort(
     (a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
@@ -199,11 +249,18 @@ function generateMonthlyPDF() {
     const [y, mo, d] = date.split('-').map(Number);
     const dow      = new Date(y, mo - 1, d).getDay();
     const dayLabel = `${t(PDF_FULL_DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo - 1])}`;
+
+    const dayHours    = daySessions.reduce((sum, s) => sum + sessionHours(s), 0);
+    const dayEarnings = daySessions.reduce((sum, s) => {
+      if (s.cancelled?.whole || s.cancelled?.general) return sum;
+      return sum + calcEarnings(sessionHours(s), s.type);
+    }, 0);
+
     const rows = daySessions.map(s => {
       const h           = sessionHours(s);
-      const isCancelled = s.cancelled?.whole || s.cancelled?.general;
+      const isCancelled = !!(s.cancelled?.whole || s.cancelled?.general);
       const isPartial   = !!s.cancelled?.from;
-      const earnings    = (h * rate(s.type)).toFixed(0);
+      const earnings    = calcEarnings(h, s.type).toFixed(0);
       const timeRange   = isPartial ? `${s.startTime} – ${s.cancelled.from} 🌧` : `${s.startTime} – ${s.endTime}`;
       const hoursColor  = isCancelled ? '#888' : isPartial ? '#fb923c' : '#111';
       return `<tr style="${isCancelled ? 'opacity:0.45;' : ''}">
@@ -216,6 +273,15 @@ function generateMonthlyPDF() {
         </td>
       </tr>`;
     }).join('');
+
+    const dayTotalHtml = dayHours > 0 ? `
+      <tr><td colspan="2" style="padding-top:8px;border-top:0.5px solid #eee">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:#555">${escH(fmtHoursDecimal(dayHours))}</span>
+          ${dayEarnings > 0 ? `<span style="font-size:11px;font-weight:700;color:#16a34a">₪${dayEarnings.toFixed(0)}</span>` : ''}
+        </div>
+      </td></tr>` : '';
+
     return `<div class="pdf-block" style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:0.5px solid #eee">
         <span style="font-size:24px;font-weight:800;color:#111;line-height:1;letter-spacing:-0.5px">${d}</span>
@@ -224,21 +290,27 @@ function generateMonthlyPDF() {
           <div style="font-size:11px;color:#666">${escH(t(MONTH_NAMES[mo - 1]))} ${year}</div>
         </div>
       </div>
-      <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows}</table>
+      <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows}${dayTotalHtml}</table>
     </div>`;
   }).join('');
 
-  const partialRow   = partialCount   ? `<tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee;color:#fb923c">🌧 ${t('partialSessions')}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee;color:#fb923c">${partialCount}</td></tr>` : '';
-  const cancelledRow = cancelledWhole ? `<tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee;color:#888">🌧 ${t('cancelledSessions')}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee;color:#888">${cancelledWhole}</td></tr>` : '';
+  const td  = (txt, extra='') => `<td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee${extra}">${txt}</td>`;
+  const tdR = (txt, extra='') => `<td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee${extra}">${txt}</td>`;
+  const privateRow  = privateCount  ? `<tr>${td(escH(t('privateSessions')))}${tdR(`${privateCount} · ${escH(fmtHoursDecimal(privateHours))}`)}</tr>` : '';
+  const groupRow    = groupCount    ? `<tr>${td(escH(t('groupSessions')))}${tdR(`${groupCount} · ${escH(fmtHoursDecimal(groupHours))}`)}</tr>` : '';
+  const doubleRow   = doubleCount   ? `<tr>${td(escH(t('doubleSessions')))}${tdR(`${doubleCount} · ${escH(fmtHoursDecimal(doubleHours))}`)}</tr>` : '';
+  const campRow     = campCount     ? `<tr>${td(escH(t('campSessions')))}${tdR(`${campCount} · ${escH(fmtHoursDecimal(campHours))}`)}</tr>` : '';
+  const partialRow      = partialCount      ? `<tr>${td('🌧 '+t('partialSessions'),';color:#fb923c')}${tdR(partialCount,';color:#fb923c')}</tr>` : '';
+  const rainCancelRow   = rainCancelled     ? `<tr>${td('🌧 '+t('rainCancelledSessions'),';color:#888')}${tdR(rainCancelled,';color:#888')}</tr>` : '';
+  const genCancelRow    = generalCancelled  ? `<tr>${td('✕ '+t('cancelledSessions'),';color:#888')}${tdR(generalCancelled,';color:#888')}</tr>` : '';
 
   _pdfContentHtml = `
     <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px">${escH(monthName(month))} ${year}</div>
     <div style="font-size:12px;color:#666;margin-bottom:18px">${escH(t('monthlySummary'))}</div>
     <div class="pdf-block" style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:18px">
       <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
-        <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('privateSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${privateCount} · ${escH(fmtHoursDecimal(privateHours))}</td></tr>
-        <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('groupSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${groupCount} · ${escH(fmtHoursDecimal(groupHours))}</td></tr>
-        ${partialRow}${cancelledRow}
+        ${privateRow}${groupRow}${doubleRow}${campRow}${partialRow}${rainCancelRow}${genCancelRow}
+        ${transportTotal > 0 ? `<tr>${td(escH(t('transportBonus'))+' · '+workDays+' '+escH(t('workDays')))}${tdR('₪'+transportTotal.toFixed(0))}</tr>` : ''}
         <tr><td style="font-size:14px;font-weight:700;padding:9px 0 5px;border-top:1px solid #ccc">${escH(t('totalHours'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:9px 0 5px;border-top:1px solid #ccc">${escH(fmtHoursDecimal(totalHours))}</td></tr>
         <tr><td style="font-size:14px;font-weight:600;padding:5px 0">${escH(t('totalEarnings'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:5px 0;color:#16a34a">₪${totalEarnings.toFixed(0)}</td></tr>
       </table>

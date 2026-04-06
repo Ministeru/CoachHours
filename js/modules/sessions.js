@@ -63,20 +63,22 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
 
     <div class="form-group">
       <label class="form-label">${t('sessionType')}</label>
-      <div class="type-toggle">
-        <button class="type-btn${_sessionType==='private'?' act-private':''}" id="sm-type-private" onclick="setSessionType('private')">${t('private')}</button>
-        <button class="type-btn${_sessionType==='group'?' act-group':''}" id="sm-type-group" onclick="setSessionType('group')">${t('group')}</button>
+      <div class="chip-group">
+        <button class="chip${_sessionType==='private'?' active':''}" id="sm-type-private" onclick="setSessionType('private')">${t('private')}</button>
+        <button class="chip${_sessionType==='group'?' active':''}" id="sm-type-group" onclick="setSessionType('group')">${t('group')}</button>
+        <button class="chip${_sessionType==='double'?' active':''}" id="sm-type-double" onclick="setSessionType('double')">${t('double')}</button>
+        <button class="chip${_sessionType==='camp'?' active':''}" id="sm-type-camp" onclick="setSessionType('camp')">${t('camp')}</button>
       </div>
     </div>
 
-    <div class="form-group" id="sm-group-row" style="display:${_sessionType==='group'?'':'none'}">
+    <div class="form-group" id="sm-group-row" style="display:${(_sessionType==='group'||_sessionType==='camp')?'':'none'}">
       <label class="form-label">${t('selectGroup')}</label>
       <select id="sm-group" onchange="onGroupChange(this.value)">
         <option value="">${t('selectGroup')}</option>${groupOptions}
       </select>
     </div>
 
-    <div class="form-group" id="sm-player-row" style="display:${_sessionType==='private'?'':'none'}">
+    <div class="form-group" id="sm-player-row" style="display:${(_sessionType==='private'||_sessionType==='double')?'':'none'}">
       <label class="form-label">${t('playerLabel')}</label>
       <input type="text" id="sm-player" list="sm-players-list" value="${escH(s?.assignedPlayerName||'')}" placeholder="${t('playerPlaceholder')}">
       <datalist id="sm-players-list">${allPlayersList}</datalist>
@@ -158,10 +160,13 @@ let _rainMode = 'none';
 
 function setSessionType(type) {
   _sessionType = type;
-  document.getElementById('sm-type-private')?.classList.toggle('act-private', type==='private');
-  document.getElementById('sm-type-group')?.classList.toggle('act-group', type==='group');
-  document.getElementById('sm-group-row').style.display  = type==='group'   ? '' : 'none';
-  document.getElementById('sm-player-row').style.display = type==='private' ? '' : 'none';
+  ['private','group','double','camp'].forEach(tp => {
+    document.getElementById('sm-type-'+tp)?.classList.toggle('active', tp===type);
+  });
+  const isGroupType   = type === 'group' || type === 'camp';
+  const isPrivateType = type === 'private' || type === 'double';
+  document.getElementById('sm-group-row').style.display  = isGroupType   ? '' : 'none';
+  document.getElementById('sm-player-row').style.display = isPrivateType ? '' : 'none';
 }
 
 function setRecurring(freq) {
@@ -205,7 +210,7 @@ async function saveSessionModal() {
   const coach  = document.getElementById('sm-coach')?.value || null;
   const grp    = document.getElementById('sm-group')?.value || null;
   const player = document.getElementById('sm-player')?.value.trim() || null;
-  const type   = document.getElementById('sm-type-group')?.classList.contains('act-group') ? 'group' : 'private';
+  const type   = _sessionType;
   const notes  = document.getElementById('sm-notes')?.value.trim() || '';
 
   if (!name || !start || !end || !date) return;
@@ -220,15 +225,15 @@ async function saveSessionModal() {
   const base = {
     name, startTime: start, endTime: end, date, notes,
     type, assignedCoachId: coach || null,
-    groupId: type==='group' ? grp : null,
-    assignedPlayerName: type==='private' ? player : null,
+    groupId: (type==='group' || type==='camp') ? grp : null,
+    assignedPlayerName: (type==='private' || type==='double') ? player : null,
     cancelled: false, attendance: null, recurring: null
   };
 
   if (_modalSession) {
     // Editing existing
     const patch = { name, startTime: start, endTime: end, date, notes, type, assignedCoachId: coach||null,
-      groupId: type==='group'?grp:null, assignedPlayerName: type==='private'?player:null };
+      groupId: (type==='group'||type==='camp')?grp:null, assignedPlayerName: (type==='private'||type==='double')?player:null };
     // Handle cancellation
     if (_rainMode === 'none') patch.cancelled = false;
     else if (_rainMode === 'general') patch.cancelled = { general: true, whole: false, from: null };

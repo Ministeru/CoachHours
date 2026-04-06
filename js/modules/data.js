@@ -9,7 +9,7 @@ function saveUD(key, val) {
 async function loadUserSettings() {
   const ref = db.collection('users').doc(activeUid()).collection('data');
   const [set] = await Promise.all([ref.doc('ch_settings').get()]);
-  settings = Object.assign({ ratePrivate: 80, rateGroup: 50 }, set.exists ? set.data().data : {});
+  settings = Object.assign({ ratePrivate: 80, rateGroup: 50, rateDouble: 120, rateCamp: 40, transportBonus: 15 }, set.exists ? set.data().data : {});
 }
 
 function subscribeSessions() {
