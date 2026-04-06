@@ -71,7 +71,7 @@ const STRINGS = {
     nextSessionFrom: '+ אימון מהשעה',
     cancelledSessions: 'מבוטלים', partialSessions: 'חלקיים',
     summarySubtitle: 'שעות והכנסה',
-    shareMonth: 'שתף', copiedToClipboard: 'הועתק!',
+    exportPDF: 'PDF', copiedToClipboard: 'הועתק!',
     todaySessionsLabel: 'אימוני היום',
   },
   en: {
@@ -143,7 +143,7 @@ const STRINGS = {
     nextSessionFrom: '+ Session from',
     cancelledSessions: 'Cancelled', partialSessions: 'Partial',
     summarySubtitle: 'Hours & Earnings',
-    shareMonth: 'Share', copiedToClipboard: 'Copied!',
+    exportPDF: 'PDF', copiedToClipboard: 'Copied!',
     todaySessionsLabel: "Today's sessions",
   }
 };

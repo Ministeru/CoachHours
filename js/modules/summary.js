@@ -10,6 +10,13 @@ function sessionHours(s) {
   return (timeToMins(s.endTime) - timeToMins(s.startTime)) / 60;
 }
 
+function isSummaryMonthPast() {
+  const today = new Date();
+  const sy = summaryDate.getFullYear(), sm = summaryDate.getMonth();
+  const ty = today.getFullYear(),       tm = today.getMonth();
+  return sy < ty || (sy === ty && sm < tm);
+}
+
 function renderSummary() {
   const year = summaryDate.getFullYear();
   const month = summaryDate.getMonth();
@@ -41,13 +48,16 @@ function renderSummary() {
 
   const navPrev = '‹';
   const navNext = '›';
+  const isPast = isSummaryMonthPast();
   const nav = `<div style="display:flex;align-items:center;padding:0 16px 12px">
     <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:2px">
       <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navPrev}</button>
       <div style="font-size:16px;font-weight:600;width:180px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${monthName(month)} ${year}</div>
       <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navNext}</button>
     </div>
-    <button id="summary-share-btn" onclick="shareMonthlySummary()" style="background:none;border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit;transition:opacity 0.15s;line-height:1;flex-shrink:0">${t('shareMonth')}</button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button id="summary-pdf-btn" onclick="generateMonthlyPDF()" style="background:none;border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);font-family:inherit;transition:opacity 0.15s;line-height:1;${isPast ? 'cursor:pointer' : 'opacity:0.35;pointer-events:none'}">${t('exportPDF')}</button>
+    </div>
   </div>`;
 
   const statsCard = `<div class="card">
@@ -135,46 +145,155 @@ function summaryNext() {
   renderSummary();
 }
 
-async function shareMonthlySummary() {
-  const year = summaryDate.getFullYear();
-  const month = summaryDate.getMonth();
-  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+
+let _pdfContentHtml = '';
+let _pdfFileName    = '';
+let _pdfDirAttr     = 'ltr';
+
+function generateMonthlyPDF() {
+  if (!isSummaryMonthPast()) return;
+
+  const year   = summaryDate.getFullYear();
+  const month  = summaryDate.getMonth();
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+
   const monthSessions = getCalendarSessions().filter(s => s.date.startsWith(prefix));
 
   let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
+  let cancelledWhole = 0, partialCount = 0;
   monthSessions.forEach(s => {
     const h = sessionHours(s);
-    if (s.cancelled?.whole || s.cancelled?.general) return;
+    if (s.cancelled?.whole || s.cancelled?.general) { cancelledWhole++; return; }
+    if (s.cancelled?.from) partialCount++;
     if (s.type === 'private') { privateHours += h; privateCount++; }
-    else { groupHours += h; groupCount++; }
+    else                      { groupHours   += h; groupCount++;   }
   });
-  const totalHours = privateHours + groupHours;
-  const totalEarnings = privateHours * (settings.ratePrivate||0) + groupHours * (settings.rateGroup||0);
 
-  const isHe = lang === 'he';
-  const lines = [
-    `📅 ${monthName(month)} ${year}`,
-    ``,
-    `${isHe ? 'פרטיים' : 'Private'}: ${privateCount} (${fmtHoursDecimal(privateHours)})`,
-    `${isHe ? 'קבוצתיים' : 'Group'}: ${groupCount} (${fmtHoursDecimal(groupHours)})`,
-    ``,
-    `${t('totalHours')}: ${fmtHoursDecimal(totalHours)}`,
-    `${t('totalEarnings')}: ₪${Math.round(totalEarnings)}`,
-  ].join('\n');
+  const rate = (type) => type === 'private' ? (settings.ratePrivate || 0) : (settings.rateGroup || 0);
+  const totalEarnings = privateHours * rate('private') + groupHours * rate('group');
+  const totalHours    = privateHours + groupHours;
 
-  const btn = document.getElementById('summary-share-btn');
-  const flash = (msg) => {
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = msg;
-    btn.style.color = 'var(--green)';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1800);
-  };
+  const sortedSessions = [...monthSessions].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
+  );
+  const byDay = [];
+  sortedSessions.forEach(s => {
+    const last = byDay[byDay.length - 1];
+    if (last && last.date === s.date) last.sessions.push(s);
+    else byDay.push({ date: s.date, sessions: [s] });
+  });
 
-  if (navigator.share) {
-    try { await navigator.share({ text: lines }); } catch(e) { /* dismissed */ }
-  } else if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(lines);
-    flash(t('copiedToClipboard'));
+  _pdfDirAttr  = lang === 'he' ? 'rtl' : 'ltr';
+  _pdfFileName = `summary-${prefix}.pdf`;
+
+  const dayBlocksHtml = byDay.map(({ date, sessions: daySessions }) => {
+    const [y, mo, d] = date.split('-').map(Number);
+    const dow      = new Date(y, mo - 1, d).getDay();
+    const dayLabel = `${t(DAY_KEYS[dow])}, ${d} ${t(MONTH_NAMES[mo - 1])}`;
+    const rows = daySessions.map(s => {
+      const h           = sessionHours(s);
+      const isCancelled = s.cancelled?.whole || s.cancelled?.general;
+      const isPartial   = !!s.cancelled?.from;
+      const coachName   = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
+      const earnings    = (h * rate(s.type)).toFixed(0);
+      const timeRange   = isPartial ? `${s.startTime} – ${s.cancelled.from} 🌧` : `${s.startTime} – ${s.endTime}`;
+      const coachPart   = coachName ? ` · ${escH(coachName)}` : '';
+      const hoursColor  = isCancelled ? '#888' : isPartial ? '#fb923c' : '#111';
+      return `<tr style="${isCancelled ? 'opacity:0.45;' : ''}">
+        <td style="padding:6px 8px 6px 0;font-size:12px;color:#666;white-space:nowrap">${timeRange}${coachPart}</td>
+        <td style="padding:6px 0;font-size:13px;font-weight:500">${escH(s.name)}</td>
+        <td style="padding:6px 0 6px 8px;font-size:12px;text-align:end;color:${hoursColor};white-space:nowrap">
+          ${fmtHoursDecimal(h)}${!isCancelled ? `<br><span style="color:#999;font-size:11px">₪${earnings}</span>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:#666;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px">${escH(dayLabel)}</div>
+      <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows}</table>
+    </div>`;
+  }).join('');
+
+  const partialRow   = partialCount   ? `<tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee;color:#fb923c">🌧 ${t('partialSessions')}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee;color:#fb923c">${partialCount}</td></tr>` : '';
+  const cancelledRow = cancelledWhole ? `<tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee;color:#888">🌧 ${t('cancelledSessions')}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee;color:#888">${cancelledWhole}</td></tr>` : '';
+
+  _pdfContentHtml = `
+    <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px">${escH(monthName(month))} ${year}</div>
+    <div style="font-size:12px;color:#666;margin-bottom:18px">${escH(t('monthlySummary'))}</div>
+    <div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:18px">
+      <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
+        <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('privateSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${privateCount} · ${escH(fmtHoursDecimal(privateHours))}</td></tr>
+        <tr><td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee">${escH(t('groupSessions'))}</td><td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee">${groupCount} · ${escH(fmtHoursDecimal(groupHours))}</td></tr>
+        ${partialRow}${cancelledRow}
+        <tr><td style="font-size:14px;font-weight:700;padding:9px 0 5px;border-top:1px solid #ccc">${escH(t('totalHours'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:9px 0 5px;border-top:1px solid #ccc">${escH(fmtHoursDecimal(totalHours))}</td></tr>
+        <tr><td style="font-size:14px;font-weight:600;padding:5px 0">${escH(t('totalEarnings'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:5px 0;color:#16a34a">₪${totalEarnings.toFixed(0)}</td></tr>
+      </table>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#888;letter-spacing:0.07em;text-transform:uppercase;margin-bottom:8px">${escH(t('monthlySummary'))}</div>
+    ${byDay.length ? dayBlocksHtml : `<div style="color:#888;font-size:13px;padding:12px 0">${escH(t('noSessions'))}</div>`}
+  `;
+
+  const canShare = !!navigator.canShare;
+  const overlay = document.createElement('div');
+  overlay.id = 'pdf-preview-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;background:var(--bg)';
+  overlay.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid var(--border);flex-shrink:0">
+      <button onclick="document.getElementById('pdf-preview-overlay').remove()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--text2);padding:0;font-family:inherit">×</button>
+      <span style="font-size:15px;font-weight:600;color:var(--text)">${escH(monthName(month))} ${year}</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 16px;direction:${_pdfDirAttr};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#111;background:#fff">
+      ${_pdfContentHtml}
+    </div>
+    <div style="display:flex;gap:10px;padding:12px 16px;border-top:0.5px solid var(--border);flex-shrink:0;background:var(--bg)">
+      <button id="pdf-action-download" onclick="_exportPDF('download')" style="flex:1;background:var(--accent);color:#111;border:none;border-radius:var(--radius-sm);padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">↓ ${lang==='he'?'הורד PDF':'Download PDF'}</button>
+      ${canShare ? `<button id="pdf-action-share" onclick="_exportPDF('share')" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--text)">${lang==='he'?'שתף':'Share'}</button>` : ''}
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function _exportPDF(action) {
+  const dlBtn    = document.getElementById('pdf-action-download');
+  const shareBtn = document.getElementById('pdf-action-share');
+  if (dlBtn)    { dlBtn.textContent    = '...'; dlBtn.style.pointerEvents    = 'none'; }
+  if (shareBtn) { shareBtn.textContent = '...'; shareBtn.style.pointerEvents = 'none'; }
+
+  const container = document.createElement('div');
+  container.style.cssText = `position:fixed;top:0;left:-9999px;width:600px;background:#fff;padding:28px 32px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#111;direction:${_pdfDirAttr}`;
+  container.innerHTML = _pdfContentHtml;
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    document.body.removeChild(container);
+
+    const { jsPDF } = window.jspdf;
+    const pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgW = 210, pageH = 297;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    const pages = Math.ceil(imgH / pageH);
+    for (let i = 0; i < pages; i++) {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -i * pageH, imgW, imgH);
+    }
+
+    const pdfBlob = pdf.output('blob');
+    const pdfFile = new File([pdfBlob], _pdfFileName, { type: 'application/pdf' });
+
+    if (action === 'share' && navigator.canShare?.({ files: [pdfFile] })) {
+      await navigator.share({ files: [pdfFile], title: _pdfFileName });
+    } else {
+      const url = URL.createObjectURL(pdfBlob);
+      const a   = document.createElement('a');
+      a.href = url; a.download = _pdfFileName;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    document.getElementById('pdf-preview-overlay')?.remove();
+  } catch(e) {
+    if (container.parentNode) document.body.removeChild(container);
+    if (dlBtn)    { dlBtn.textContent    = lang==='he'?'הורד PDF':'Download PDF'; dlBtn.style.pointerEvents    = ''; }
+    if (shareBtn) { shareBtn.textContent = lang==='he'?'שתף':'Share';             shareBtn.style.pointerEvents = ''; }
   }
 }
