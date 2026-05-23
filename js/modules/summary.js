@@ -35,10 +35,8 @@ function renderSummary() {
   document.getElementById('summary-h1').textContent = t('summary');
   document.getElementById('summary-subtitle').textContent = t('summarySubtitle');
 
-  // Filter sessions for this month visible to the current user
   const monthSessions = getCalendarSessions().filter(s => s.date.startsWith(prefix));
 
-  // Salary calc
   let privateHours = 0, groupHours = 0, privateCount = 0, groupCount = 0;
   let doubleHours  = 0, campHours  = 0, doubleCount  = 0, campCount  = 0;
   let rainCancelled = 0, generalCancelled = 0, partialCount = 0;
@@ -60,67 +58,84 @@ function renderSummary() {
   const totalEarnings  = calcEarnings(privateHours, 'private') + calcEarnings(groupHours, 'group') + calcEarnings(doubleHours, 'double') + calcEarnings(campHours, 'camp') + transportTotal;
   const totalHours     = privateHours + groupHours + doubleHours + campHours;
 
-  const navPrev = '‹';
-  const navNext = '›';
   const isPast = isSummaryMonthPast();
-  const nav = `<div style="display:flex;align-items:center;padding:0 16px 12px">
-    <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:2px">
-      <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navPrev}</button>
-      <div style="font-size:16px;font-weight:600;width:180px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${monthName(month)} ${year}</div>
-      <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">${navNext}</button>
-    </div>
-    <div style="display:flex;gap:6px;flex-shrink:0">
-      <button id="summary-pdf-btn" onclick="generateMonthlyPDF()" style="background:none;border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);font-family:inherit;transition:opacity 0.15s;line-height:1;${isPast ? 'cursor:pointer' : 'opacity:0.35;pointer-events:none'}">${t('exportPDF')}</button>
+
+  const nav = `<div style="display:flex;align-items:center;justify-content:center;padding:0 16px 12px;gap:2px">
+    <button onclick="summaryPrev()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">‹</button>
+    <div style="font-size:16px;font-weight:600;width:180px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${monthName(month)} ${year}</div>
+    <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">›</button>
+  </div>`;
+
+  // Hero card: big earnings number
+  const heroCard = `<div class="card">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">${t('totalEarnings')}</div>
+    <div style="font-size:44px;font-weight:800;letter-spacing:-2px;color:var(--green);line-height:1;font-variant-numeric:tabular-nums">₪${totalEarnings.toFixed(0)}</div>
+    <div style="display:flex;gap:20px;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${t('totalHours')}</div>
+        <div style="font-size:16px;font-weight:700">${fmtHoursDecimal(totalHours)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${t('workDays')}</div>
+        <div style="font-size:16px;font-weight:700">${workDays}</div>
+      </div>
     </div>
   </div>`;
 
-  const statsCard = `<div class="card">
-    ${privateCount ? `<div class="breakdown-row">
-      <span class="breakdown-label">${t('privateSessions')}</span>
-      <span class="breakdown-val">${privateCount} · ${fmtHoursDecimal(privateHours)}</span>
-    </div>` : ''}
-    ${groupCount ? `<div class="breakdown-row">
-      <span class="breakdown-label">${t('groupSessions')}</span>
-      <span class="breakdown-val">${groupCount} · ${fmtHoursDecimal(groupHours)}</span>
-    </div>` : ''}
-    ${doubleCount ? `<div class="breakdown-row">
-      <span class="breakdown-label">${t('doubleSessions')}</span>
-      <span class="breakdown-val">${doubleCount} · ${fmtHoursDecimal(doubleHours)}</span>
-    </div>` : ''}
-    ${campCount ? `<div class="breakdown-row">
-      <span class="breakdown-label">${t('campSessions')}</span>
-      <span class="breakdown-val">${campCount} · ${fmtHoursDecimal(campHours)}</span>
-    </div>` : ''}
-    ${partialCount ? `<div class="breakdown-row">
-      <span class="breakdown-label" style="color:var(--orange)">🌧 ${t('partialSessions')}</span>
-      <span class="breakdown-val" style="color:var(--orange)">${partialCount}</span>
-    </div>` : ''}
-    ${rainCancelled ? `<div class="breakdown-row">
-      <span class="breakdown-label" style="color:var(--text3)">🌧 ${t('rainCancelledSessions')}</span>
-      <span class="breakdown-val" style="color:var(--text3)">${rainCancelled}</span>
-    </div>` : ''}
-    ${generalCancelled ? `<div class="breakdown-row">
-      <span class="breakdown-label" style="color:var(--text3)">✕ ${t('cancelledSessions')}</span>
-      <span class="breakdown-val" style="color:var(--text3)">${generalCancelled}</span>
-    </div>` : ''}
-    ${transportTotal > 0 ? `<div class="breakdown-row">
-      <span class="breakdown-label">${t('transportBonus')} · ${workDays} ${t('workDays')}</span>
-      <span class="breakdown-val">₪${transportTotal.toFixed(0)}</span>
-    </div>` : ''}
-    <div class="breakdown-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:12px">
-      <span class="breakdown-label" style="font-weight:600">${t('totalHours')}</span>
-      <span class="breakdown-val" style="font-weight:700">${fmtHoursDecimal(totalHours)}</span>
-    </div>
-    <div class="breakdown-row">
-      <span class="breakdown-label" style="font-weight:600">${t('totalEarnings')}</span>
-      <span class="breakdown-val" style="font-weight:700;color:var(--green)">₪${totalEarnings.toFixed(0)}</span>
-    </div>
+  // Type rows for donut + legend
+  const typeRows = [];
+  if (privateCount) typeRows.push({ label: t('privateSessions'), count: privateCount, hours: privateHours, color: '#22c55e', earnings: calcEarnings(privateHours, 'private') });
+  if (groupCount)   typeRows.push({ label: t('groupSessions'),   count: groupCount,   hours: groupHours,   color: '#60a5fa', earnings: calcEarnings(groupHours,   'group')   });
+  if (doubleCount)  typeRows.push({ label: t('doubleSessions'),  count: doubleCount,  hours: doubleHours,  color: '#a78bfa', earnings: calcEarnings(doubleHours,  'double')  });
+  if (campCount)    typeRows.push({ label: t('campSessions'),    count: campCount,    hours: campHours,    color: '#fb923c', earnings: calcEarnings(campHours,    'camp')    });
+
+  const extraRows = [
+    partialCount     ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--orange)">🌧 ${t('partialSessions')}</span><span class="breakdown-val" style="color:var(--orange)">${partialCount}</span></div>` : '',
+    rainCancelled    ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--text3)">🌧 ${t('rainCancelledSessions')}</span><span class="breakdown-val" style="color:var(--text3)">${rainCancelled}</span></div>` : '',
+    generalCancelled ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--text3)">✕ ${t('cancelledSessions')}</span><span class="breakdown-val" style="color:var(--text3)">${generalCancelled}</span></div>` : '',
+    transportTotal > 0 ? `<div class="breakdown-row"><span class="breakdown-label">${t('transportBonus')} · ${workDays} ${t('workDays')}</span><span class="breakdown-val">₪${transportTotal.toFixed(0)}</span></div>` : '',
+  ].filter(Boolean).join('');
+
+  // SVG donut chart — viewBox has padding so strokes don't clip
+  let donutHtml = '';
+  if (typeRows.length) {
+    const R = 15.9155, CX = 18, CY = 18;
+    let cumulative = 0;
+    const segments = typeRows.map(tr => {
+      const pct = totalHours ? (tr.hours / totalHours * 100) : 0;
+      if (pct < 0.5) return '';
+      const dashoffset = 25 - cumulative;
+      cumulative += pct;
+      return `<circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="${tr.color}" stroke-width="4.5" stroke-dasharray="${pct.toFixed(2)} ${(100-pct).toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}"/>`;
+    }).join('');
+    const legend = typeRows.map(tr => `
+      <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:0.5px solid var(--border)">
+        <div style="width:10px;height:10px;border-radius:3px;background:${tr.color};flex-shrink:0"></div>
+        <span style="font-size:12px;color:var(--text2);flex:1">${tr.label}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text)">${tr.count} · ${fmtHoursDecimal(tr.hours)}</span>
+      </div>`).join('');
+    donutHtml = `<div class="card">
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <svg viewBox="-3 -3 42 42" width="140" height="140" style="overflow:visible">
+          <circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="var(--bg3)" stroke-width="4.5"/>
+          ${segments}
+          <circle cx="${CX}" cy="${CY}" r="11" fill="var(--bg2)"/>
+          <text x="${CX}" y="16.5" text-anchor="middle" font-size="5" fill="#f0f0f0" font-weight="700">${fmtHoursDecimal(totalHours)}</text>
+          <text x="${CX}" y="22" text-anchor="middle" font-size="3.4" fill="#777777">${lang==='he'?'שעות':'hours'}</text>
+        </svg>
+      </div>
+      <div style="margin-bottom:${extraRows?'0':'4px'}">${legend}</div>
+      ${extraRows ? `<div style="padding-top:8px">${extraRows}</div>` : ''}
+    </div>`;
+  }
+
+  // PDF export button — always enabled; warning shown inside preview if month is current
+  const pdfBtn = `<div style="padding:0 16px 8px">
+    <button id="summary-pdf-btn" onclick="generateMonthlyPDF()" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:500;color:var(--text2);font-family:inherit;cursor:pointer">↓ ${t('exportPDF')}</button>
   </div>`;
 
-  // Session list grouped by day
+  // Build day groups for session log
   const sortedSessions = [...monthSessions].sort((a,b) => a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
-
-  // Group by date
   const byDay = [];
   sortedSessions.forEach(s => {
     const last = byDay[byDay.length - 1];
@@ -128,6 +143,7 @@ function renderSummary() {
     else byDay.push({ date: s.date, sessions: [s] });
   });
 
+  // Day-by-day session log
   const FULL_DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
   const dayBlocks = byDay.map(({ date, sessions: daySessions }) => {
@@ -183,7 +199,9 @@ function renderSummary() {
 
   const listCard = byDay.length ? dayBlocks : `<div class="empty">${t('noSessions')}</div>`;
 
-  document.getElementById('summary-body').innerHTML = nav + `<div class="section-divider">${t('monthlySummary')}</div>` + statsCard + listCard;
+  document.getElementById('summary-body').innerHTML =
+    `<div class="summary-left">${nav}${heroCard}${donutHtml}${pdfBtn}</div>` +
+    `<div class="summary-right"><div class="section-divider">${t('monthlySummary')}</div>${listCard}</div>`;
 }
 
 function summaryPrev() {
@@ -201,8 +219,6 @@ let _pdfFileName    = '';
 let _pdfDirAttr     = 'ltr';
 
 function generateMonthlyPDF() {
-  if (!isSummaryMonthPast()) return;
-
   const year   = summaryDate.getFullYear();
   const month  = summaryDate.getMonth();
   const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -329,6 +345,7 @@ function generateMonthlyPDF() {
       <span style="font-size:15px;font-weight:600;color:var(--text)">${escH(monthName(month))} ${year}</span>
     </div>
     <div style="flex:1;overflow-y:auto;padding:20px 16px;direction:${_pdfDirAttr};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#111;background:#fff">
+      ${!isSummaryMonthPast() ? `<div style="background:#fff3cd;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e">${lang==='he'?'שים לב: החודש טרם הסתיים — ייתכן שחסרות פגישות.':'Heads up: this month isn\'t over yet — some sessions may still be missing.'}</div>` : ''}
       ${_pdfContentHtml}
     </div>
     <div style="display:flex;gap:10px;padding:12px 16px;border-top:0.5px solid var(--border);flex-shrink:0;background:var(--bg)">

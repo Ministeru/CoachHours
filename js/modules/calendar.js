@@ -49,9 +49,6 @@ function renderCalendar() {
     todayChip.style.display = todayInView ? 'none' : '';
     todayChip.textContent = t('today');
   }
-  // Render today strip
-  const stripEl = document.getElementById('cal-today-strip');
-  if (stripEl) stripEl.innerHTML = renderTodayStrip();
   // Render view
   if (calView === 'month') renderMonthView();
   else if (calView === 'week') renderWeekView();
@@ -63,56 +60,6 @@ function calJumpToday() {
   renderCalendar();
 }
 
-function renderTodayStrip() {
-  const todayStr = dateISO(new Date());
-  // Only show when today is visible in current view
-  const now = new Date();
-  let todayInView = false;
-  if (calView === 'month') {
-    todayInView = calDate.getFullYear() === now.getFullYear() && calDate.getMonth() === now.getMonth();
-  } else if (calView === 'week') {
-    const dow = calDate.getDay();
-    const monday = new Date(calDate.getTime() - ((dow + 6) % 7) * 86400000);
-    const sunday = new Date(monday.getTime() + 6 * 86400000);
-    todayInView = now >= monday && now <= new Date(sunday.getTime() + 86400000 - 1);
-  } else {
-    todayInView = dateISO(calDate) === todayStr;
-  }
-  if (!todayInView) return '';
-  const todaySessions = sessionsForDate(todayStr).filter(s => !s.cancelled?.whole && !s.cancelled?.general);
-  if (!todaySessions.length) return '';
-
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const upcoming = [...todaySessions]
-    .sort((a, b) => timeToMins(a.startTime) - timeToMins(b.startTime))
-    .find(s => timeToMins(s.startTime) > nowMins);
-
-  let totalHours = 0, totalEarnings = 0;
-  todaySessions.forEach(s => {
-    const h = sessionHours(s);
-    totalHours += h;
-    totalEarnings += h * (s.type === 'private' ? (settings.ratePrivate||0) : (settings.rateGroup||0));
-  });
-
-  const nextInfo = upcoming
-    ? `<span style="color:var(--text2)">▶ ${upcoming.startTime}</span>`
-    : `<span style="color:var(--green)">✓ ${lang==='he'?'הכל נגמר':'All done'}</span>`;
-
-  return `<div style="margin:0 16px 8px;padding:10px 14px;background:rgba(255,255,255,0.035);border:0.5px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:12px">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px">${t('todaySessionsLabel')}</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:14px;font-weight:600">${todaySessions.length} ${lang==='he'?'אימונים':'sessions'}</span>
-        <span style="color:var(--text3);font-size:12px">·</span>
-        <span style="font-size:13px;color:var(--text2)">${fmtHoursDecimal(totalHours)}</span>
-        <span style="color:var(--text3);font-size:12px">·</span>
-        <span style="font-size:13px;color:var(--green);font-weight:500">₪${Math.round(totalEarnings)}</span>
-        <span style="color:var(--text3);font-size:12px">·</span>
-        ${nextInfo}
-      </div>
-    </div>
-  </div>`;
-}
 
 function renderMonthView() {
   const year = calDate.getFullYear(), month = calDate.getMonth();
@@ -154,7 +101,9 @@ function renderMonthView() {
     }).join('');
     const more = daysSessions.length > 2 ? `<div class="month-more">+${daysSessions.length-2}</div>` : '';
     const addBtn = isAdmin() ? `<button class="month-add-btn" onclick="event.stopPropagation();openSessionModal('${date}',null,null)">+</button>` : '';
-    return `<div class="month-day${otherMonth?' other-month':''}${isToday?' today':''}" onclick="goToDay('${date}')">
+    const hasMissingAtt = daysSessions.some(s =>
+      s.type === 'group' && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
+    return `<div class="month-day${otherMonth?' other-month':''}${isToday?' today':''}${hasMissingAtt?' has-missing-att':''}" onclick="goToDay('${date}')">
       <div class="month-day-num">${dayNum}</div>
       ${chips}${more}${addBtn}
     </div>`;
@@ -195,9 +144,12 @@ function renderWeekView() {
     const isToday = dateStr === today;
     const daySessions = sessionsForDate(dateStr);
     const addBtn = isAdmin() ? `<button onclick="openSessionModal('${dateStr}',null,null)" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">+</button>` : '';
+    const weekMissingAtt = daySessions.some(s =>
+      s.type === 'group' && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
+    const missingDot = weekMissingAtt ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin-inline-start:6px;vertical-align:middle;flex-shrink:0"></span>` : '';
     html += `<div class="week-day-block">
       <div class="week-day-header${isToday?' today':''}">
-        <span>${dayLabel}</span>${addBtn}
+        <span>${dayLabel}${missingDot}</span>${addBtn}
       </div>`;
     if (!daySessions.length) {
       html += `<div style="font-size:11px;color:var(--text3);padding:4px 0 6px">${t('noSessions')}</div>`;
@@ -267,7 +219,7 @@ function sessionCardHtml(s) {
   }
 
   let attBtn = '';
-  if (s.type === 'group' && !isCancelled && isAttendanceOpen(s)) {
+  if (s.type === 'group' && !isCancelled && (isAttendanceOpen(s) || isAdmin())) {
     const present = s.attendance?.present?.length ?? '?';
     const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
     attBtn = `<div class="session-card-att-btn" onclick="event.stopPropagation();openAttendanceModal('${s.id}')">✅ ${t('attendance')} ${present}/${total}</div>`;
@@ -275,6 +227,8 @@ function sessionCardHtml(s) {
     const present = s.attendance.present?.length ?? 0;
     const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
     attBtn = `<div style="font-size:11px;color:var(--text3);margin-top:4px">✅ ${present}/${total}</div>`;
+  } else if (s.type === 'group' && !isCancelled && isPastSession(s)) {
+    attBtn = `<div style="font-size:11px;color:var(--orange);margin-top:4px;display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--orange);display:inline-block;flex-shrink:0"></span>${lang==='he'?'נוכחות לא סומנה':'Attendance not recorded'}</div>`;
   }
 
   const clickHandler = isAdmin() ? `onclick="openSessionModal('${s.date}','${s.startTime}','${escQ(s.id)}')"` : '';
@@ -293,6 +247,14 @@ function sessionCardHtml(s) {
 }
 
 // ─── ATTENDANCE ────────────────────────────────────────────
+function isPastSession(s) {
+  const now = new Date();
+  const [endH, endM] = s.endTime.split(':').map(Number);
+  const end = parseDate(s.date);
+  end.setHours(endH, endM, 0, 0);
+  return now > end;
+}
+
 function isAttendanceOpen(session) {
   const now = new Date();
   const [endH, endM] = session.endTime.split(':').map(Number);
@@ -301,7 +263,20 @@ function isAttendanceOpen(session) {
   const nextDay10 = parseDate(session.date);
   nextDay10.setDate(nextDay10.getDate() + 1);
   nextDay10.setHours(10, 0, 0, 0);
-  return now >= sessionEnd && now <= nextDay10;
+  if (now < sessionEnd || now > nextDay10) return false;
+  // Close window early if a newer session for the same group is scheduled on or after today.
+  // Prevents the previous session's button staying open and getting mistaken for the current day.
+  if (session.groupId) {
+    const todayStr = dateISO(now);
+    const blocked = sessions.some(s =>
+      s.id !== session.id &&
+      s.groupId === session.groupId &&
+      s.date > session.date &&
+      s.date >= todayStr
+    );
+    if (blocked) return false;
+  }
+  return true;
 }
 
 function openAttendanceModal(sessionId) {
@@ -316,7 +291,7 @@ function openAttendanceModal(sessionId) {
     return;
   }
 
-  if (!isAttendanceOpen(s)) {
+  if (!isAttendanceOpen(s) && !isAdmin()) {
     createModal(`<div class="sheet-title">${t('attendance')}</div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:16px">${t('attendanceWindow')}</p>
       <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>`);
@@ -337,16 +312,18 @@ function openAttendanceModal(sessionId) {
     <div class="sheet-title">${escH(g.name)}</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${s.date} · ${s.startTime}${savedAt?' · '+savedAt:''}</div>
     ${rows}${noPlayers}
-    <button class="btn btn-primary" style="margin-top:14px" onclick="saveAttendance('${sessionId}','${g.players.map(escQ).join(',')}')">
+    <button class="btn btn-primary" style="margin-top:14px" onclick="saveAttendance('${escQ(sessionId)}')">
       ${t('saveAttendance')}
     </button>
     <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
   `);
 }
 
-async function saveAttendance(sessionId, playersCsv) {
-  const players = playersCsv ? playersCsv.split(',') : [];
-  const present = players.filter(name => document.getElementById('att-'+escId(name))?.checked);
+async function saveAttendance(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  const g = s?.groupId ? groups[s.groupId] : null;
+  if (!s || !g) return;
+  const present = g.players.filter(name => document.getElementById('att-'+escId(name))?.checked);
   const now = new Date();
   const savedAt = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   await updateSession(sessionId, { attendance: { present, savedAt } });

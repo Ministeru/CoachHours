@@ -44,8 +44,8 @@ function renderGroups() {
             ${g.players.map(name => {
               const c = counts[name]||0;
               const pct = gsessions.length ? (c/gsessions.length)*100 : 0;
-              return `<div class="att-row">
-                <span style="font-size:13px;min-width:90px;flex-shrink:0">${escH(name)}</span>
+              return `<div class="att-row" onclick="openPlayerHistory('${escQ(g.id)}','${escQ(name)}')" style="cursor:pointer">
+                <span style="font-size:13px;min-width:90px;flex-shrink:0;color:var(--text);text-decoration:underline;text-decoration-color:var(--border2)">${escH(name)}</span>
                 <div class="att-bar"><div class="att-fill" style="width:${pct}%"></div></div>
                 <span style="font-size:12px;color:var(--text2);min-width:38px;text-align:${lang==='he'?'left':'right'}">${c}/${gsessions.length}</span>
               </div>`;
@@ -199,4 +199,118 @@ function confirmDeleteIndividualPlayer(id, name) {
     closeModal();
     await deleteIndividualPlayer(id);
   });
+}
+
+// ─── PLAYER HISTORY ──────────────────────────────────────
+function openPlayerHistory(groupId, playerName) {
+  const g = groups[groupId];
+  if (!g) return;
+  const DAY_KEYS_FULL = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const gsessions = getCalendarSessions()
+    .filter(s => s.groupId === groupId)
+    .sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+
+  // List view rows
+  const rows = gsessions.map(s => {
+    let statusColor, statusLabel;
+    if (!s.attendance) {
+      statusColor = 'var(--text3)'; statusLabel = '—';
+    } else if ((s.attendance.present || []).includes(playerName)) {
+      statusColor = 'var(--green)'; statusLabel = '+';
+    } else {
+      statusColor = 'var(--red)'; statusLabel = '×';
+    }
+    const [y, mo, d] = s.date.split('-').map(Number);
+    const dow = new Date(y, mo-1, d).getDay();
+    const isCancelled = s.cancelled?.whole || s.cancelled?.general;
+    return `<div onclick="closeModal();goToCalendarDay('${escQ(s.date)}')" style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:0.5px solid var(--border);cursor:pointer;${isCancelled?'opacity:0.4':''}">
+      <span style="font-size:14px;font-weight:700;width:20px;text-align:center;color:${statusColor}">${statusLabel}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${s.date} · ${escH(t(DAY_KEYS_FULL[dow]))}</div>
+        <div style="font-size:11px;color:var(--text2)">${s.startTime} – ${s.endTime}${isCancelled?' · '+escH(t('cancelled')):''}</div>
+      </div>
+      <span style="font-size:12px;color:var(--text3)">›</span>
+    </div>`;
+  }).join('');
+
+  // Calendar month view
+  const monthMap = {};
+  gsessions.forEach(s => {
+    const ym = s.date.substring(0, 7);
+    if (!monthMap[ym]) monthMap[ym] = [];
+    monthMap[ym].push(s);
+  });
+  const calMonths = Object.entries(monthMap).sort(([a],[b]) => a.localeCompare(b)).map(([ym, mSessions]) => {
+    const [y, m] = ym.split('-').map(Number);
+    const dayStatus = {};
+    mSessions.forEach(s => {
+      const d = parseInt(s.date.split('-')[2]);
+      const isCancelled = s.cancelled?.whole || s.cancelled?.general;
+      if (isCancelled) { dayStatus[d] = 'cancelled'; return; }
+      if (!s.attendance)                                       dayStatus[d] = 'noatt';
+      else if ((s.attendance.present||[]).includes(playerName)) dayStatus[d] = 'present';
+      else                                                     dayStatus[d] = 'absent';
+    });
+    const firstDow = new Date(y, m-1, 1).getDay();
+    const lastDay  = new Date(y, m, 0).getDate();
+    const dayHeaders = ['S','M','T','W','T','F','S'].map(h =>
+      `<div style="font-size:9px;font-weight:600;color:var(--text3);text-align:center;padding-bottom:4px">${h}</div>`
+    ).join('');
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<div></div>';
+    for (let d = 1; d <= lastDay; d++) {
+      const st = dayStatus[d];
+      let bg = 'transparent', color = 'var(--text3)', fw = '400';
+      if      (st === 'present')   { bg = 'rgba(34,197,94,0.2)';  color = 'var(--green)';  fw = '700'; }
+      else if (st === 'absent')    { bg = 'rgba(248,113,113,0.2)'; color = 'var(--red)';    fw = '700'; }
+      else if (st === 'noatt')     { bg = 'var(--bg3)';             color = 'var(--text2)';  fw = '500'; }
+      else if (st === 'cancelled') { color = 'var(--text3)'; }
+      const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      cells += `<div onclick="closeModal();goToCalendarDay('${dateStr}')" style="font-size:11px;text-align:center;padding:4px 2px;border-radius:5px;background:${bg};color:${color};font-weight:${fw};cursor:${st?'pointer':'default'}">${d}</div>`;
+    }
+    return `<div style="margin-bottom:18px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">${monthName(m-1)} ${y}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${dayHeaders}${cells}</div>
+    </div>`;
+  }).join('') || `<div style="color:var(--text3);font-size:13px;padding:12px 0">${lang==='he'?'אין פגישות':'No sessions'}</div>`;
+
+  const sessionsWithAtt = gsessions.filter(s => s.attendance);
+  const presentCount    = sessionsWithAtt.filter(s => (s.attendance.present||[]).includes(playerName)).length;
+  const totalCount      = sessionsWithAtt.length;
+  const pct = totalCount ? Math.round(presentCount / totalCount * 100) : 0;
+
+  const btnStyle = (active) => `padding:5px 14px;font-size:12px;font-weight:600;border-radius:20px;border:0.5px solid;cursor:pointer;font-family:inherit;${active?'background:var(--bg3);border-color:var(--border2);color:var(--text)':'background:none;border-color:transparent;color:var(--text2)'}`;
+
+  createModal(`
+    <div class="sheet-title">${escH(playerName)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${escH(g.name)}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="att-bar" style="flex:1"><div class="att-fill" style="width:${pct}%"></div></div>
+      <span style="font-size:13px;font-weight:600;color:var(--text);min-width:54px;text-align:${lang==='he'?'left':'right'}">${presentCount}/${totalCount}</span>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      <button id="phv-list" onclick="phToggleView('list')" style="${btnStyle(true)}">${lang==='he'?'רשימה':'List'}</button>
+      <button id="phv-cal"  onclick="phToggleView('cal')"  style="${btnStyle(false)}">${lang==='he'?'לוח חודשי':'Month'}</button>
+    </div>
+    <div id="phv-list-body" style="max-height:55vh;overflow-y:auto">
+      ${rows || `<div style="color:var(--text3);font-size:13px;padding:12px 0">${lang==='he'?'אין נוכחות שמורה':'No attendance recorded'}</div>`}
+    </div>
+    <div id="phv-cal-body" style="max-height:55vh;overflow-y:auto;display:none">${calMonths}</div>
+    <button class="btn btn-secondary" style="margin-top:14px" onclick="closeModal()">${t('cancel')}</button>
+  `);
+}
+
+function phToggleView(view) {
+  const isList = view === 'list';
+  const listBody = document.getElementById('phv-list-body');
+  const calBody  = document.getElementById('phv-cal-body');
+  const listBtn  = document.getElementById('phv-list');
+  const calBtn   = document.getElementById('phv-cal');
+  if (!listBody || !calBody) return;
+  listBody.style.display = isList ? '' : 'none';
+  calBody.style.display  = isList ? 'none' : '';
+  const activeStyle = 'padding:5px 14px;font-size:12px;font-weight:600;border-radius:20px;cursor:pointer;font-family:inherit;background:var(--bg3);border:0.5px solid var(--border2);color:var(--text)';
+  const inactiveStyle = 'padding:5px 14px;font-size:12px;font-weight:600;border-radius:20px;cursor:pointer;font-family:inherit;background:none;border:0.5px solid transparent;color:var(--text2)';
+  if (listBtn) listBtn.style.cssText = isList ? activeStyle : inactiveStyle;
+  if (calBtn)  calBtn.style.cssText  = isList ? inactiveStyle : activeStyle;
 }

@@ -32,7 +32,7 @@ auth.onAuthStateChanged(async (fbUser) => {
       // Apply UI
       document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('main-nav').style.display = '';
-      document.getElementById('sidebar-nav').style.display = '';
+      document.getElementById('sidebar-nav').classList.remove('auth-hidden');
       document.getElementById('sidebar-username').textContent = currentUser?.username || '';
       // Show admin nav button
       document.querySelectorAll('.admin-only').forEach(el => {
@@ -58,7 +58,7 @@ auth.onAuthStateChanged(async (fbUser) => {
     if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-nav').style.display = 'none';
-    document.getElementById('sidebar-nav').style.display = 'none';
+    document.getElementById('sidebar-nav').classList.add('auth-hidden');
     document.getElementById('view-banner')?.remove();
     document.querySelector('.app')?.classList.remove('viewing');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
