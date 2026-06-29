@@ -57,8 +57,7 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
 
     <div class="form-group">
       <label class="form-label">${t('date')}</label>
-      <input type="date" id="sm-date" value="${s?s.date:defaultDate}"
-        style="font-size:16px;font-weight:600;color:var(--accent)">
+      <div id="sm-date-picker"></div>
     </div>
 
     <div class="form-group">
@@ -130,7 +129,7 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
       </div>
       <div id="rec-until-row" style="display:none;margin-top:8px">
         <label class="form-label">${t('until')}</label>
-        <input type="date" id="sm-until" value="">
+        <div id="sm-until-picker"></div>
       </div>
     </div>` : ''}
     ${rainSection}
@@ -138,6 +137,10 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
     ${deleteBtn}
     <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
   `);
+
+  // Custom date picker replaces the native date input
+  dpInit('sm-date-picker', [s ? s.date : defaultDate], { single: true });
+  dpRender('sm-date-picker');
 }
 
 function getAllPlayers() {
@@ -176,6 +179,13 @@ function setRecurring(freq) {
   });
   const row = document.getElementById('rec-until-row');
   if (row) row.style.display = freq !== 'none' ? '' : 'none';
+  // Build the "until" picker the first time recurring is enabled in THIS modal
+  // (guard on the container being empty, since _dpState persists across modals).
+  const cont = document.getElementById('sm-until-picker');
+  if (freq !== 'none' && cont && !cont.children.length) {
+    dpInit('sm-until-picker', [], { single: true });
+    dpRender('sm-until-picker');
+  }
 }
 
 function setRainCancel(mode) {
@@ -206,7 +216,7 @@ async function saveSessionModal() {
   const name  = document.getElementById('sm-name')?.value.trim();
   const start = document.getElementById('sm-start')?.value;
   const end   = document.getElementById('sm-end')?.value;
-  const date  = document.getElementById('sm-date')?.value;
+  const date  = dpGetDates('sm-date-picker')[0];
   const coach  = document.getElementById('sm-coach')?.value || null;
   const grp    = document.getElementById('sm-group')?.value || null;
   const player = document.getElementById('sm-player')?.value.trim() || null;
@@ -263,7 +273,7 @@ async function saveSessionModal() {
     }
   } else {
     // New session
-    const until = document.getElementById('sm-until')?.value;
+    const until = dpGetDates('sm-until-picker')[0];
     if (_recurringFreq !== 'none' && until) {
       await createRecurringSessions(base, _recurringFreq, until);
     } else {

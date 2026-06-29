@@ -118,5 +118,6 @@ function logoutUser() {
   if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
   if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
   if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
+  if (eventsUnsub)   { eventsUnsub();   eventsUnsub = null; }
   auth.signOut();
 }

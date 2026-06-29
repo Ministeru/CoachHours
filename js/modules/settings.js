@@ -30,7 +30,7 @@ function renderSettings() {
       </div>
     </div>` : '';
 
-  const accountRole = isAdmin() ? t('adminCoach') : t('coach');
+  const accountRole = isAdmin() ? `${t('adminCoach')}${SEP}${t('coach')}` : t('coach');
 
   document.getElementById('settings-body').innerHTML = `
     ${ratesSection}
@@ -49,7 +49,7 @@ function renderSettings() {
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:14px;font-weight:500">${escH(currentUser?.username||'')}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${escH(currentUser?.email||'')} · ${accountRole}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${escH(currentUser?.email||'')}${SEP}${accountRole}</div>
         </div>
         <button onclick="logoutUser()" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit">${t('signOut')}</button>
       </div>

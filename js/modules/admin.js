@@ -45,7 +45,7 @@ function toggleActivityLog() {
   body.style.display = open ? 'block' : 'none';
   if (arrow) arrow.textContent = open ? '↓' : '›';
   if (open) body.innerHTML = activityLog.length
-    ? activityLog.map(e => `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(e.t)} <strong>${escH(e.action)}</strong>${e.detail?' · '+escH(e.detail):''}</div>`).join('')
+    ? activityLog.map(e => `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(e.t)} <strong>${escH(e.action)}</strong>${e.detail?SEP+escH(e.detail):''}</div>`).join('')
     : `<div style="padding:8px 0">${t('noActivity')}</div>`;
 }
 

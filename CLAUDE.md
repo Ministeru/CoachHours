@@ -34,21 +34,42 @@
 
 ## Firestore Data Structure
 
+**Per-user subcollections** (`{ data: value }`-wrapped, isolated per coach):
 ```
 /users/{uid}                        — profile: { username, email, role, createdAt, removed? }
 /users/{uid}/data/ch_history        — { data: [...] }
 /users/{uid}/data/ch_deleted        — { data: [...] }
-/users/{uid}/data/ch_settings       — { data: {...} }
+/users/{uid}/data/ch_settings       — { data: {...} }   ← rates (admin-edited)
 /users/{uid}/data/ch_received       — { data: {...} }
 /users/{uid}/data/ch_groups         — { data: {...} }
 ```
 
-All data documents use a `{ data: value }` wrapper to keep the shape consistent.
+**Shared top-level collections** (admin-writable, all-coach-readable):
+```
+/sessions/{id}   — { name, type, date, startTime, endTime, groupId?, assignedPlayerName?,
+                     assignedCoachId?, notes?, cancelled, attendance?, recurring? }
+                   type ∈ private | group | double | camp
+/groups/{id}     — { id, name, players: [name, ...] }
+/players/{id}    — { id, name, createdAt }   ← individual private players
+/events/{id}     — { id, name, type: camp|tournament,
+                     dates: ['YYYY-MM-DD', ...],        ← custom day selection (daypicker.js)
+                     startDate, endDate,                ← derived min/max of dates (range fallback for old events)
+                     roster: [name, ...],
+                     attendance: { 'YYYY-MM-DD': { <groupId>: { present: [name], savedAt } } },
+                     coaches: [{ id, name, coachId|null }],   ← camp: generic slot until assigned a real coach
+                     coachIds: [uid, ...],              ← flat list of assigned coach uids — Firestore rules gate writes on this
+                     groups:  [{ id, name, players: [name], coachSlotId|null }],  ← camp: roster split per coach
+                     createdBy, createdAt }   ← camps/tournaments (Events tab)
+/meta/firstUser  — { uid }   ← marks the first registrant as admin
+```
+
+All `/users/.../data/*` documents use a `{ data: value }` wrapper to keep the shape consistent.
 
 Session attendance is stored directly on each session object (not in a separate Firestore document):
 ```javascript
 session.attendance = { present: ['Name1', 'Name2'], savedAt: 'HH:MM' }
 ```
+Event attendance is keyed by **date → group** on the event object: `event.attendance['YYYY-MM-DD'][groupId] = { present, savedAt }`. Events with no camp groups use the pseudo-group id `'all'` (the whole roster). The old flat shape (`{ present, savedAt }` directly under the date) is migrated to `{ all: {...} }` on next save — see `dayAtt()` / `accessibleGroups()` in `events.js`. Each coach marks only their assigned group; admins mark any. Group **and camp** *sessions* (calendar) also track attendance against a roster — see `isAttendanceType()`.
 
 ---
 
@@ -91,6 +112,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /players/{playerId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (request.auth != null && request.auth.uid in resource.data.coachIds);
+    }
+
     match /meta/{doc} {
       allow read, write: if request.auth != null;
     }
@@ -100,6 +133,10 @@ service cloud.firestore {
 ```
 
 **Note**: Admins can READ another coach's data subcollection but not write it. Admin "View" mode is read-only for saves; in-memory edits still work but will not persist to the viewed coach's Firestore.
+
+**Rules live in the Firebase Console** (not in the repo) — there is no `firestore.rules` file. When you add a new top-level collection in code, you MUST add a matching rule in Console → Firestore → Rules, or all reads/writes silently fail with permission-denied. `groups`, `players`, and `events` all follow the same pattern: read for any signed-in user, write admin-only.
+
+> **Future (multi-coach Events):** when coaches get to mark attendance on events assigned to them, loosen the `events` write rule to mirror `sessions` (allow a coach to `update` an event they're assigned to), instead of admin-only write.
 
 ### What's Implemented
 

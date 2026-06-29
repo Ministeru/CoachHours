@@ -96,13 +96,17 @@ function renderMonthView() {
     const isToday = date === today;
     const chips = daysSessions.slice(0,2).map(s => {
       const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from || s.cancelled.general);
-      const cls = isCancelled ? 'month-chip-cancelled' : (s.type === 'group' ? 'month-chip-group' : 'month-chip-private');
+      const cls = isCancelled       ? 'month-chip-cancelled'
+                : s.type === 'group'  ? 'month-chip-group'
+                : s.type === 'double' ? 'month-chip-double'
+                : s.type === 'camp'   ? 'month-chip-camp'
+                : 'month-chip-private';
       return `<div class="month-chip ${cls}">${escH(s.name)}</div>`;
     }).join('');
     const more = daysSessions.length > 2 ? `<div class="month-more">+${daysSessions.length-2}</div>` : '';
     const addBtn = isAdmin() ? `<button class="month-add-btn" onclick="event.stopPropagation();openSessionModal('${date}',null,null)">+</button>` : '';
     const hasMissingAtt = daysSessions.some(s =>
-      s.type === 'group' && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
+      isAttendanceType(s) && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
     return `<div class="month-day${otherMonth?' other-month':''}${isToday?' today':''}${hasMissingAtt?' has-missing-att':''}" onclick="goToDay('${date}')">
       <div class="month-day-num">${dayNum}</div>
       ${chips}${more}${addBtn}
@@ -145,7 +149,7 @@ function renderWeekView() {
     const daySessions = sessionsForDate(dateStr);
     const addBtn = isAdmin() ? `<button onclick="openSessionModal('${dateStr}',null,null)" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">+</button>` : '';
     const weekMissingAtt = daySessions.some(s =>
-      s.type === 'group' && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
+      isAttendanceType(s) && !(s.cancelled?.whole || s.cancelled?.from || s.cancelled?.general) && !s.attendance && isPastSession(s));
     const missingDot = weekMissingAtt ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin-inline-start:6px;vertical-align:middle;flex-shrink:0"></span>` : '';
     html += `<div class="week-day-block">
       <div class="week-day-header${isToday?' today':''}">
@@ -189,18 +193,20 @@ function renderDayView() {
 
 function sessionCardHtml(s) {
   const isCancelled = s.cancelled && (s.cancelled.whole || s.cancelled.from || s.cancelled.general);
-  const typeClass = s.type === 'group' ? 'group' : 'private';
+  const typeClass = s.type === 'group' ? 'group' : s.type === 'double' ? 'double' : s.type === 'camp' ? 'camp' : 'private';
   const cancelClass = isCancelled ? ' cancelled' : '';
   const coachName = allCoaches.find(c => c.id === s.assignedCoachId)?.username || '';
   const groupName = s.groupId && groups[s.groupId] ? groups[s.groupId].name : '';
   const playerName = s.assignedPlayerName || '';
 
-  // Type badge
-  const typeBadge = `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-inline-start:6px;${
-    s.type==='group'
-      ? 'background:rgba(96,165,250,0.2);color:var(--blue)'
-      : 'background:rgba(34,197,94,0.2);color:var(--green)'
-  }">${t(s.type)}</span>`;
+  // Type badge — color matches the session card / summary palette per type
+  const badgeStyle = {
+    group:   'background:rgba(96,165,250,0.2);color:var(--blue)',
+    double:  'background:rgba(167,139,250,0.2);color:#a78bfa',
+    camp:    'background:rgba(251,146,60,0.2);color:var(--orange)',
+    private: 'background:rgba(34,197,94,0.2);color:var(--green)',
+  }[s.type] || 'background:rgba(34,197,94,0.2);color:var(--green)';
+  const typeBadge = `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-inline-start:6px;${badgeStyle}">${t(s.type)}</span>`;
 
   // Info rows
   let infoRows = `<div class="session-card-meta" style="margin-top:5px">⏱ ${s.startTime} – ${s.endTime}</div>`;
@@ -219,15 +225,15 @@ function sessionCardHtml(s) {
   }
 
   let attBtn = '';
-  if (s.type === 'group' && !isCancelled && (isAttendanceOpen(s) || isAdmin())) {
+  if (isAttendanceType(s) && !isCancelled && (isAttendanceOpen(s) || isAdmin())) {
     const present = s.attendance?.present?.length ?? '?';
     const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
     attBtn = `<div class="session-card-att-btn" onclick="event.stopPropagation();openAttendanceModal('${s.id}')">✅ ${t('attendance')} ${present}/${total}</div>`;
-  } else if (s.type === 'group' && !isCancelled && s.attendance) {
+  } else if (isAttendanceType(s) && !isCancelled && s.attendance) {
     const present = s.attendance.present?.length ?? 0;
     const total = s.groupId && groups[s.groupId] ? groups[s.groupId].players.length : '?';
     attBtn = `<div style="font-size:11px;color:var(--text3);margin-top:4px">✅ ${present}/${total}</div>`;
-  } else if (s.type === 'group' && !isCancelled && isPastSession(s)) {
+  } else if (isAttendanceType(s) && !isCancelled && isPastSession(s)) {
     attBtn = `<div style="font-size:11px;color:var(--orange);margin-top:4px;display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--orange);display:inline-block;flex-shrink:0"></span>${lang==='he'?'נוכחות לא סומנה':'Attendance not recorded'}</div>`;
   }
 
@@ -266,7 +272,8 @@ function isAttendanceOpen(session) {
   if (now < sessionEnd || now > nextDay10) return false;
   // Close window early if a newer session for the same group is scheduled on or after today.
   // Prevents the previous session's button staying open and getting mistaken for the current day.
-  if (session.groupId) {
+  // Camps are exempt: consecutive-day camps legitimately have a next-day session for the same roster.
+  if (session.groupId && session.type !== 'camp') {
     const todayStr = dateISO(now);
     const blocked = sessions.some(s =>
       s.id !== session.id &&
@@ -300,18 +307,22 @@ function openAttendanceModal(sessionId) {
 
   const current = s.attendance?.present || [];
   const savedAt = s.attendance?.savedAt || null;
-  const rows = g.players.map(name => `
-    <label style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
-      <input type="checkbox" id="att-${escId(name)}" ${current.includes(name)?'checked':''}
-        style="width:18px;height:18px;accent-color:var(--blue)">
-      <span style="font-size:15px">${escH(name)}</span>
-    </label>`).join('');
-  const noPlayers = !g.players.length ? `<p style="color:var(--text2);font-size:13px;padding:12px 0">${t('noPlayers')}</p>` : '';
+  const rows = g.players.map(name => attRowHtml(name, current.includes(name))).join('');
+  const noPlayers = !g.players.length ? `<p id="att-empty" style="color:var(--text2);font-size:13px;padding:12px 0">${t('noPlayers')}</p>` : '';
+
+  // Camps grow their roster as the camp runs — admin can add a walk-in kid on the spot.
+  const addRow = (isAdmin() && s.type === 'camp') ? `
+    <div class="add-row" style="margin-top:10px">
+      <input type="text" id="att-add-input" placeholder="${t('playerPlaceholder')}"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addAttendancePlayer('${escQ(sessionId)}')}">
+      <button onclick="addAttendancePlayer('${escQ(sessionId)}')">${t('addPlayer')}</button>
+    </div>` : '';
 
   createModal(`
     <div class="sheet-title">${escH(g.name)}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${s.date} · ${s.startTime}${savedAt?' · '+savedAt:''}</div>
-    ${rows}${noPlayers}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${s.date}${SEP}${s.startTime}${savedAt?SEP+savedAt:''}</div>
+    <div id="att-rows">${rows}</div>${noPlayers}
+    ${addRow}
     <button class="btn btn-primary" style="margin-top:14px" onclick="saveAttendance('${escQ(sessionId)}')">
       ${t('saveAttendance')}
     </button>
@@ -319,11 +330,42 @@ function openAttendanceModal(sessionId) {
   `);
 }
 
-async function saveAttendance(sessionId) {
+function attRowHtml(name, checked) {
+  return `<label style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
+    <input type="checkbox" id="att-${escId(name)}" data-name="${escH(name)}" ${checked?'checked':''}
+      style="width:18px;height:18px;accent-color:var(--blue)">
+    <span style="font-size:15px">${escH(name)}</span>
+  </label>`;
+}
+
+// Add a walk-in player to a camp's roster mid-session and mark them present.
+async function addAttendancePlayer(sessionId) {
+  if (!isAdmin()) return;
   const s = sessions.find(x => x.id === sessionId);
   const g = s?.groupId ? groups[s.groupId] : null;
   if (!s || !g) return;
-  const present = g.players.filter(name => document.getElementById('att-'+escId(name))?.checked);
+  const input = document.getElementById('att-add-input');
+  const name = input?.value.trim();
+  if (!name) return;
+  if (g.players.includes(name)) {
+    const existing = document.getElementById('att-'+escId(name));
+    if (existing) existing.checked = true;
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+  await saveGroup(s.groupId, { ...g, players: [...g.players, name] });
+  document.getElementById('att-empty')?.remove();
+  document.getElementById('att-rows')?.insertAdjacentHTML('beforeend', attRowHtml(name, true));
+  if (input) { input.value = ''; input.focus(); }
+}
+
+async function saveAttendance(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  // Read straight from the checkboxes so walk-in players added mid-session are included.
+  const present = Array.from(document.querySelectorAll('#att-rows input[type="checkbox"]:checked'))
+    .map(cb => cb.dataset.name)
+    .filter(Boolean);
   const now = new Date();
   const savedAt = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   await updateSession(sessionId, { attendance: { present, savedAt } });

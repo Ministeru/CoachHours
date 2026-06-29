@@ -1,4 +1,6 @@
 // ─── HELPERS ──────────────────────────────────────────────
+// Inline separator markup that replaces the old "·" middots across the UI
+const SEP = '<span class="sep"></span>';
 function escQ(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
@@ -18,6 +20,8 @@ function addMins(time, mins) {
 }
 
 function isAdmin() { return currentUser?.role === 'admin'; }
+// Group and camp sessions both track attendance against a roster
+function isAttendanceType(s) { return s.type === 'group' || s.type === 'camp'; }
 function activeUid() { return viewingUserId || currentUser?.id || ''; }
 function requireAuth() { if (!currentUser) { logoutUser(); return false; } return true; }
 

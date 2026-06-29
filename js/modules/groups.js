@@ -35,18 +35,21 @@ function renderGroups() {
       // Attendance stats
       let attHtml = '';
       if (g.players.length) {
-        const gsessions = getCalendarSessions().filter(s => s.groupId === g.id && s.attendance);
+        const gsessions = getCalendarSessions()
+          .filter(s => s.groupId === g.id && s.attendance)
+          .sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
         if (gsessions.length) {
-          const counts = {};
-          gsessions.forEach(s => (s.attendance.present||[]).forEach(n => { counts[n]=(counts[n]||0)+1; }));
           attHtml = `<div style="margin-top:14px">
             <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:8px">${t('attendance')} (${gsessions.length})</div>
             ${g.players.map(name => {
-              const c = counts[name]||0;
-              const pct = gsessions.length ? (c/gsessions.length)*100 : 0;
+              const c = gsessions.filter(s => (s.attendance.present||[]).includes(name)).length;
+              // One cell per session, in date order — shows the attendance pattern, not just a total
+              const segs = gsessions.map(s =>
+                `<span class="att-seg${(s.attendance.present||[]).includes(name)?' on':''}"></span>`
+              ).join('');
               return `<div class="att-row" onclick="openPlayerHistory('${escQ(g.id)}','${escQ(name)}')" style="cursor:pointer">
                 <span style="font-size:13px;min-width:90px;flex-shrink:0;color:var(--text);text-decoration:underline;text-decoration-color:var(--border2)">${escH(name)}</span>
-                <div class="att-bar"><div class="att-fill" style="width:${pct}%"></div></div>
+                <div class="att-strip">${segs}</div>
                 <span style="font-size:12px;color:var(--text2);min-width:38px;text-align:${lang==='he'?'left':'right'}">${c}/${gsessions.length}</span>
               </div>`;
             }).join('')}
@@ -68,7 +71,7 @@ function renderGroups() {
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleGroupExpand('${g.id}')">
         <div>
           <div style="font-size:15px;font-weight:600">${escH(g.name)}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length} · ${sessionCount} ${t('sessionsCount')}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length}${SEP}${sessionCount} ${t('sessionsCount')}</div>
         </div>
         <span style="font-size:22px;color:var(--text3);display:inline-block;transform:rotate(${expanded?'90':'0'}deg)">›</span>
       </div>${inner}
@@ -226,8 +229,8 @@ function openPlayerHistory(groupId, playerName) {
     return `<div onclick="closeModal();goToCalendarDay('${escQ(s.date)}')" style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:0.5px solid var(--border);cursor:pointer;${isCancelled?'opacity:0.4':''}">
       <span style="font-size:14px;font-weight:700;width:20px;text-align:center;color:${statusColor}">${statusLabel}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500">${s.date} · ${escH(t(DAY_KEYS_FULL[dow]))}</div>
-        <div style="font-size:11px;color:var(--text2)">${s.startTime} – ${s.endTime}${isCancelled?' · '+escH(t('cancelled')):''}</div>
+        <div style="font-size:13px;font-weight:500">${s.date}${SEP}${escH(t(DAY_KEYS_FULL[dow]))}</div>
+        <div style="font-size:11px;color:var(--text2)">${s.startTime} – ${s.endTime}${isCancelled?SEP+escH(t('cancelled')):''}</div>
       </div>
       <span style="font-size:12px;color:var(--text3)">›</span>
     </div>`;

@@ -46,7 +46,7 @@ const STRINGS = {
     saveAttendance: 'שמור נוכחות', noPlayers: 'אין שחקנים בקבוצה זו.',
     matchingGroupNotFound: 'לא נמצאה קבוצה מתאימה לאימון זה.',
     confirmDelete: 'אישור מחיקה', confirmDeleteMsg: 'פעולה זו אינה הפיכה.',
-    adminCoach: 'מנהל · מאמן', coach: 'מאמן', loading: 'טוען…',
+    adminCoach: 'מנהל', coach: 'מאמן', loading: 'טוען…',
     date: 'תאריך', playerLabel: 'שחקן / תלמיד', playerPlaceholder: 'בחר או הקלד שם',
     sessionsCount: 'אימונים', noActivity: 'אין פעילות',
     verificationSent: 'אימייל אימות נשלח. בדוק את תיבת הדואר שלך.',
@@ -77,6 +77,11 @@ const STRINGS = {
     double: 'זוגי', camp: 'קייטנה',
     rateDouble: 'שיעור זוגי', rateCamp: 'קייטנה',
     doubleSessions: 'שיעורים זוגיים', campSessions: 'אימוני קייטנה',
+    events: 'אירועים', eventsSubtitle: 'קייטנות, טורנירים ועוד', newEvent: 'אירוע חדש',
+    eventName: 'שם האירוע', startDate: 'תאריך התחלה', endDate: 'תאריך סיום',
+    roster: 'רשימת שחקנים', noEvents: 'אין אירועים עדיין', eventDays: 'ימים',
+    day: 'ימים', deleteEvent: 'מחק אירוע', errEndBeforeStartDate: 'תאריך הסיום חייב להיות אחרי ההתחלה.',
+    eventType: 'סוג אירוע', tournament: 'טורניר', errNoDays: 'בחר לפחות יום אחד.', editDays: 'ערוך ימים',
   },
   en: {
     appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups', playersTab: 'Players', groupsSection: 'Groups',
@@ -122,7 +127,7 @@ const STRINGS = {
     saveAttendance: 'Save attendance', noPlayers: 'No players in this group.',
     matchingGroupNotFound: 'No matching group found for this session.',
     confirmDelete: 'Confirm Delete', confirmDeleteMsg: 'This action cannot be undone.',
-    adminCoach: 'Admin · Coach', coach: 'Coach', loading: 'Loading…',
+    adminCoach: 'Admin', coach: 'Coach', loading: 'Loading…',
     date: 'Date', playerLabel: 'Player / Student', playerPlaceholder: 'Choose or type name',
     sessionsCount: 'sessions', noActivity: 'No activity',
     verificationSent: 'Verification email sent. Check your inbox.',
@@ -153,6 +158,11 @@ const STRINGS = {
     double: 'Duo', camp: 'Camp',
     rateDouble: 'Duo session', rateCamp: 'Camp session',
     doubleSessions: 'Duo Sessions', campSessions: 'Camp Sessions',
+    events: 'Events', eventsSubtitle: 'Camps, tournaments & more', newEvent: 'New Event',
+    eventName: 'Event name', startDate: 'Start date', endDate: 'End date',
+    roster: 'Roster', noEvents: 'No events yet', eventDays: 'Days',
+    day: 'days', deleteEvent: 'Delete event', errEndBeforeStartDate: 'End date must be after start date.',
+    eventType: 'Event type', tournament: 'Tournament', errNoDays: 'Select at least one day.', editDays: 'Edit days',
   }
 };
 
@@ -174,6 +184,7 @@ function setLang(newLang) {
     else if (id === 'summary') renderSummary();
     else if (id === 'settings') renderSettings();
     else if (id === 'admin') renderAdminPanel();
+    else if (id === 'events') renderEvents();
   }
 }
 
@@ -206,11 +217,13 @@ function applyLangStrings() {
   const nlsum = document.getElementById('nav-lbl-summary'); if (nlsum) nlsum.textContent = t('summary');
   const nls = document.getElementById('nav-lbl-settings'); if (nls) nls.textContent = t('settings');
   const nla = document.getElementById('nav-lbl-admin'); if (nla) nla.textContent = t('admin');
+  const nle = document.getElementById('nav-lbl-events'); if (nle) nle.textContent = t('events');
   const snc = document.getElementById('snav-lbl-calendar'); if (snc) snc.textContent = t('calendar');
   const sng = document.getElementById('snav-lbl-groups'); if (sng) sng.textContent = t('playersTab');
   const snsum = document.getElementById('snav-lbl-summary'); if (snsum) snsum.textContent = t('summary');
   const sns = document.getElementById('snav-lbl-settings'); if (sns) sns.textContent = t('settings');
   const sna = document.getElementById('snav-lbl-admin'); if (sna) sna.textContent = t('admin');
+  const sne = document.getElementById('snav-lbl-events'); if (sne) sne.textContent = t('events');
   const san = document.getElementById('sidebar-app-name'); if (san) san.textContent = t('appTitle');
   // Headers
   const hdr = document.getElementById('app-header-title'); if (hdr) hdr.textContent = t('appTitle');
@@ -222,6 +235,9 @@ function applyLangStrings() {
   const sh = document.getElementById('settings-h1'); if (sh) sh.textContent = t('settings');
   const ah = document.getElementById('admin-h1'); if (ah) ah.textContent = t('admin');
   const as2 = document.getElementById('admin-subtitle'); if (as2) as2.textContent = t('adminSubtitle');
+  const eh = document.getElementById('events-h1'); if (eh) eh.textContent = t('events');
+  const es = document.getElementById('events-subtitle'); if (es) es.textContent = t('eventsSubtitle');
+  const eadd = document.getElementById('events-add-btn'); if (eadd) eadd.textContent = '+ ' + t('newEvent');
   const cadd = document.getElementById('cal-add-btn'); if (cadd) cadd.textContent = t('addSession');
   const gadd = document.getElementById('groups-add-btn'); if (gadd) gadd.textContent = '+ ' + t('newGroup');
   const iadd = document.getElementById('individual-add-btn'); if (iadd) iadd.textContent = t('addIndividualPlayer');

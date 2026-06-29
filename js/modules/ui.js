@@ -50,4 +50,5 @@ function showScreen(name) {
   else if (name === 'summary') renderSummary();
   else if (name === 'settings') renderSettings();
   else if (name === 'admin') renderAdminPanel();
+  else if (name === 'events') renderEvents();
 }

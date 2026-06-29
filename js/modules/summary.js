@@ -66,19 +66,13 @@ function renderSummary() {
     <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">›</button>
   </div>`;
 
-  // Hero card: big earnings number
-  const heroCard = `<div class="card">
-    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">${t('totalEarnings')}</div>
-    <div style="font-size:44px;font-weight:800;letter-spacing:-2px;color:var(--green);line-height:1;font-variant-numeric:tabular-nums">₪${totalEarnings.toFixed(0)}</div>
-    <div style="display:flex;gap:20px;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
-      <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${t('totalHours')}</div>
-        <div style="font-size:16px;font-weight:700">${fmtHoursDecimal(totalHours)}</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${t('workDays')}</div>
-        <div style="font-size:16px;font-weight:700">${workDays}</div>
-      </div>
+  // Balance card: the "account balance" — total earnings front and center
+  const heroCard = `<div class="card sum-balance">
+    <div class="sum-balance-label">${t('totalEarnings')}</div>
+    <div class="sum-balance-amount">₪${totalEarnings.toFixed(0)}</div>
+    <div class="sum-balance-stats">
+      <div class="sum-stat"><span>${t('totalHours')}</span><strong>${fmtHoursDecimal(totalHours)}</strong></div>
+      <div class="sum-stat"><span>${t('workDays')}</span><strong>${workDays}</strong></div>
     </div>
   </div>`;
 
@@ -89,16 +83,9 @@ function renderSummary() {
   if (doubleCount)  typeRows.push({ label: t('doubleSessions'),  count: doubleCount,  hours: doubleHours,  color: '#a78bfa', earnings: calcEarnings(doubleHours,  'double')  });
   if (campCount)    typeRows.push({ label: t('campSessions'),    count: campCount,    hours: campHours,    color: '#fb923c', earnings: calcEarnings(campHours,    'camp')    });
 
-  const extraRows = [
-    partialCount     ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--orange)">🌧 ${t('partialSessions')}</span><span class="breakdown-val" style="color:var(--orange)">${partialCount}</span></div>` : '',
-    rainCancelled    ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--text3)">🌧 ${t('rainCancelledSessions')}</span><span class="breakdown-val" style="color:var(--text3)">${rainCancelled}</span></div>` : '',
-    generalCancelled ? `<div class="breakdown-row"><span class="breakdown-label" style="color:var(--text3)">✕ ${t('cancelledSessions')}</span><span class="breakdown-val" style="color:var(--text3)">${generalCancelled}</span></div>` : '',
-    transportTotal > 0 ? `<div class="breakdown-row"><span class="breakdown-label">${t('transportBonus')} · ${workDays} ${t('workDays')}</span><span class="breakdown-val">₪${transportTotal.toFixed(0)}</span></div>` : '',
-  ].filter(Boolean).join('');
-
-  // SVG donut chart — viewBox has padding so strokes don't clip
+  // Statement card: itemized income (like a bank statement) with a compact donut on top
   let donutHtml = '';
-  if (typeRows.length) {
+  if (typeRows.length || transportTotal > 0) {
     const R = 15.9155, CX = 18, CY = 18;
     let cumulative = 0;
     const segments = typeRows.map(tr => {
@@ -108,25 +95,31 @@ function renderSummary() {
       cumulative += pct;
       return `<circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="${tr.color}" stroke-width="4.5" stroke-dasharray="${pct.toFixed(2)} ${(100-pct).toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}"/>`;
     }).join('');
-    const legend = typeRows.map(tr => `
-      <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:0.5px solid var(--border)">
-        <div style="width:10px;height:10px;border-radius:3px;background:${tr.color};flex-shrink:0"></div>
-        <span style="font-size:12px;color:var(--text2);flex:1">${tr.label}</span>
-        <span style="font-size:12px;font-weight:600;color:var(--text)">${tr.count} · ${fmtHoursDecimal(tr.hours)}</span>
-      </div>`).join('');
-    donutHtml = `<div class="card">
-      <div style="display:flex;justify-content:center;margin-bottom:16px">
-        <svg viewBox="-3 -3 42 42" width="140" height="140" style="overflow:visible">
-          <circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="var(--bg3)" stroke-width="4.5"/>
-          ${segments}
-          <circle cx="${CX}" cy="${CY}" r="11" fill="var(--bg2)"/>
-          <text x="${CX}" y="16.5" text-anchor="middle" font-size="5" fill="#f0f0f0" font-weight="700">${fmtHoursDecimal(totalHours)}</text>
-          <text x="${CX}" y="22" text-anchor="middle" font-size="3.4" fill="#777777">${lang==='he'?'שעות':'hours'}</text>
-        </svg>
-      </div>
-      <div style="margin-bottom:${extraRows?'0':'4px'}">${legend}</div>
-      ${extraRows ? `<div style="padding-top:8px">${extraRows}</div>` : ''}
+    const donutSvg = typeRows.length ? `<div class="stmt-donut">
+      <svg viewBox="-3 -3 42 42" width="116" height="116" style="overflow:visible">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="var(--bg3)" stroke-width="4.5"/>
+        ${segments}
+        <circle cx="${CX}" cy="${CY}" r="11" fill="var(--bg2)"/>
+      </svg></div>` : '';
+
+    const stmtLine = (label, sub, amt, color) => `<div class="stmt-row">
+      <span class="stmt-swatch" style="background:${color || 'transparent'}"></span>
+      <div class="stmt-main"><div class="stmt-label">${label}</div>${sub ? `<div class="stmt-sub">${sub}</div>` : ''}</div>
+      <div class="stmt-amt">${amt}</div>
     </div>`;
+
+    const lineItems = typeRows.map(tr =>
+      stmtLine(tr.label, `${tr.count}${SEP}${fmtHoursDecimal(tr.hours)}`, `₪${tr.earnings.toFixed(0)}`, tr.color)
+    ).join('');
+
+    const extra = [
+      transportTotal > 0 ? stmtLine(t('transportBonus'), `${workDays} ${t('workDays')}`, `₪${transportTotal.toFixed(0)}`) : '',
+      partialCount     ? stmtLine(`🌧 ${t('partialSessions')}`, '', partialCount) : '',
+      rainCancelled    ? stmtLine(`🌧 ${t('rainCancelledSessions')}`, '', rainCancelled) : '',
+      generalCancelled ? stmtLine(`✕ ${t('cancelledSessions')}`, '', generalCancelled) : '',
+    ].join('');
+
+    donutHtml = `<div class="card">${donutSvg}<div class="statement">${lineItems}${extra}</div></div>`;
   }
 
   // PDF export button — always enabled; warning shown inside preview if month is current
@@ -169,7 +162,7 @@ function renderSummary() {
       return `<div ${rowClick}>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(s.name)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${escH(t(s.type||'private'))} · ${s.startTime}${isPartial?' – '+s.cancelled.from:' – '+s.endTime}${isCancelled?(s.cancelled?.whole?' · 🌧 '+escH(t('rainWhole')):' · ✕ '+escH(t('cancelGeneral'))):isPartial?' · 🌧 '+escH(t('rainFrom')):''}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${escH(t(s.type||'private'))}${SEP}${s.startTime}${isPartial?' – '+s.cancelled.from:' – '+s.endTime}${isCancelled?(s.cancelled?.whole?SEP+'🌧 '+escH(t('rainWhole')):SEP+'✕ '+escH(t('cancelGeneral'))):isPartial?SEP+'🌧 '+escH(t('rainFrom')):''}</div>
         </div>
         <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
           <div style="font-size:13px;font-weight:500;color:${isCancelled?'var(--text3)':isPartial?'var(--orange)':'var(--text)'}">${fmtHoursDecimal(h)}</div>
@@ -200,8 +193,10 @@ function renderSummary() {
   const listCard = byDay.length ? dayBlocks : `<div class="empty">${t('noSessions')}</div>`;
 
   document.getElementById('summary-body').innerHTML =
-    `<div class="summary-left">${nav}${heroCard}${donutHtml}${pdfBtn}</div>` +
-    `<div class="summary-right"><div class="section-divider">${t('monthlySummary')}</div>${listCard}</div>`;
+    nav +
+    `<div class="summary-cards">${heroCard}${donutHtml}</div>` +
+    pdfBtn +
+    `<div class="section-divider">${t('monthlySummary')}</div>${listCard}`;
 }
 
 function summaryPrev() {
@@ -312,10 +307,10 @@ function generateMonthlyPDF() {
 
   const td  = (txt, extra='') => `<td style="font-size:13px;padding:7px 0;border-bottom:0.5px solid #eee${extra}">${txt}</td>`;
   const tdR = (txt, extra='') => `<td style="font-size:13px;font-weight:500;text-align:end;padding:7px 0;border-bottom:0.5px solid #eee${extra}">${txt}</td>`;
-  const privateRow  = privateCount  ? `<tr>${td(escH(t('privateSessions')))}${tdR(`${privateCount} · ${escH(fmtHoursDecimal(privateHours))}`)}</tr>` : '';
-  const groupRow    = groupCount    ? `<tr>${td(escH(t('groupSessions')))}${tdR(`${groupCount} · ${escH(fmtHoursDecimal(groupHours))}`)}</tr>` : '';
-  const doubleRow   = doubleCount   ? `<tr>${td(escH(t('doubleSessions')))}${tdR(`${doubleCount} · ${escH(fmtHoursDecimal(doubleHours))}`)}</tr>` : '';
-  const campRow     = campCount     ? `<tr>${td(escH(t('campSessions')))}${tdR(`${campCount} · ${escH(fmtHoursDecimal(campHours))}`)}</tr>` : '';
+  const privateRow  = privateCount  ? `<tr>${td(escH(t('privateSessions')))}${tdR(`${privateCount}${SEP}${escH(fmtHoursDecimal(privateHours))}`)}</tr>` : '';
+  const groupRow    = groupCount    ? `<tr>${td(escH(t('groupSessions')))}${tdR(`${groupCount}${SEP}${escH(fmtHoursDecimal(groupHours))}`)}</tr>` : '';
+  const doubleRow   = doubleCount   ? `<tr>${td(escH(t('doubleSessions')))}${tdR(`${doubleCount}${SEP}${escH(fmtHoursDecimal(doubleHours))}`)}</tr>` : '';
+  const campRow     = campCount     ? `<tr>${td(escH(t('campSessions')))}${tdR(`${campCount}${SEP}${escH(fmtHoursDecimal(campHours))}`)}</tr>` : '';
   const partialRow      = partialCount      ? `<tr>${td('🌧 '+t('partialSessions'),';color:#fb923c')}${tdR(partialCount,';color:#fb923c')}</tr>` : '';
   const rainCancelRow   = rainCancelled     ? `<tr>${td('🌧 '+t('rainCancelledSessions'),';color:#888')}${tdR(rainCancelled,';color:#888')}</tr>` : '';
   const genCancelRow    = generalCancelled  ? `<tr>${td('✕ '+t('cancelledSessions'),';color:#888')}${tdR(generalCancelled,';color:#888')}</tr>` : '';
@@ -326,7 +321,7 @@ function generateMonthlyPDF() {
     <div class="pdf-block" style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:18px">
       <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
         ${privateRow}${groupRow}${doubleRow}${campRow}${partialRow}${rainCancelRow}${genCancelRow}
-        ${transportTotal > 0 ? `<tr>${td(escH(t('transportBonus'))+' · '+workDays+' '+escH(t('workDays')))}${tdR('₪'+transportTotal.toFixed(0))}</tr>` : ''}
+        ${transportTotal > 0 ? `<tr>${td(escH(t('transportBonus'))+SEP+workDays+' '+escH(t('workDays')))}${tdR('₪'+transportTotal.toFixed(0))}</tr>` : ''}
         <tr><td style="font-size:14px;font-weight:700;padding:9px 0 5px;border-top:1px solid #ccc">${escH(t('totalHours'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:9px 0 5px;border-top:1px solid #ccc">${escH(fmtHoursDecimal(totalHours))}</td></tr>
         <tr><td style="font-size:14px;font-weight:600;padding:5px 0">${escH(t('totalEarnings'))}</td><td style="font-size:14px;font-weight:700;text-align:end;padding:5px 0;color:#16a34a">₪${totalEarnings.toFixed(0)}</td></tr>
       </table>

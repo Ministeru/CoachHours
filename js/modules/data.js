@@ -48,6 +48,33 @@ function subscribePlayers() {
   }, e => console.error('[CoachHours] Players listener error:', e));
 }
 
+function subscribeEvents() {
+  if (eventsUnsub) { eventsUnsub(); eventsUnsub = null; }
+  eventsUnsub = db.collection('events').onSnapshot(snap => {
+    events = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (a.startDate||'').localeCompare(b.startDate||''));
+    updateEventsNav();
+    if (document.getElementById('screen-events')?.classList.contains('active')) renderEvents();
+  }, e => console.error('[CoachHours] Events listener error:', e));
+}
+
+async function saveEvent(id, data) {
+  if (!requireAuth()) return;
+  // Admins manage everything; an assigned coach may write (e.g. their group's attendance).
+  const ev = events.find(e => e.id === id);
+  const isAssignedCoach = ev && (ev.coaches || []).some(c => c.coachId === currentUser.id);
+  if (!isAdmin() && !isAssignedCoach) return;
+  try { await db.collection('events').doc(id).set(data, { merge: true }); }
+  catch(e) { console.error('[CoachHours] saveEvent error:', e); }
+}
+
+async function deleteEvent(id) {
+  if (!requireAuth() || !isAdmin()) return;
+  try { await db.collection('events').doc(id).delete(); logActivity('DELETE_EVENT', id); }
+  catch(e) { console.error('[CoachHours] deleteEvent error:', e); }
+}
+
 async function saveIndividualPlayer(id, data) {
   if (!requireAuth() || !isAdmin()) return;
   try { await db.collection('players').doc(id).set(data); }

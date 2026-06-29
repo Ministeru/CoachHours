@@ -28,6 +28,7 @@ auth.onAuthStateChanged(async (fbUser) => {
       subscribeSessions();
       subscribeGroups();
       subscribePlayers();
+      subscribeEvents();
 
       // Apply UI
       document.getElementById('loading-overlay').style.display = 'none';
@@ -38,6 +39,7 @@ auth.onAuthStateChanged(async (fbUser) => {
       document.querySelectorAll('.admin-only').forEach(el => {
         el.style.display = isAdmin() ? '' : 'none';
       });
+      updateEventsNav();
       applyLangStrings();
       showScreen('calendar');
       logActivity('SESSION_RESUME', currentUser.username);
@@ -56,6 +58,7 @@ auth.onAuthStateChanged(async (fbUser) => {
     if (sessionsUnsub) { sessionsUnsub(); sessionsUnsub = null; }
     if (groupsUnsub)   { groupsUnsub();   groupsUnsub = null; }
     if (playersUnsub)  { playersUnsub();  playersUnsub = null; }
+    if (eventsUnsub)   { eventsUnsub();   eventsUnsub = null; }
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-nav').style.display = 'none';
     document.getElementById('sidebar-nav').classList.add('auth-hidden');

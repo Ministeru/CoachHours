@@ -1,4 +1,4 @@
-const CACHE = 'coach-hours-v6';
+const CACHE = 'coach-hours-v9';
 const ASSETS = [
   './index.html', './manifest.json',
   './css/main.css',
@@ -15,6 +15,8 @@ const ASSETS = [
   './js/modules/summary.js',
   './js/modules/settings.js',
   './js/modules/admin.js',
+  './js/modules/daypicker.js',
+  './js/modules/events.js',
   './js/modules/auth.js',
 ];
 
