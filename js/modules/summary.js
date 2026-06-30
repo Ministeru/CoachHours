@@ -53,6 +53,19 @@ function renderSummary() {
 
   const workDaySet = new Set();
   monthSessions.forEach(s => { if (!s.cancelled?.whole && !s.cancelled?.general) workDaySet.add(s.date); });
+  // Event-contributed hours (events with startTime/endTime set count as camp sessions)
+  const visibleEvents = isAdmin() ? events : events.filter(ev => (ev.coaches || []).some(c => c.coachId === currentUser?.id));
+  const evDayRows = [];
+  visibleEvents.forEach(ev => {
+    if (!ev.startTime || !ev.endTime) return;
+    const evH = (timeToMins(ev.endTime) - timeToMins(ev.startTime)) / 60;
+    if (evH <= 0) return;
+    eventDates(ev).filter(d => d.startsWith(prefix)).forEach(d => {
+      campHours += evH; campCount++;
+      workDaySet.add(d);
+      evDayRows.push({ date: d, name: ev.name, hours: evH, startTime: ev.startTime, endTime: ev.endTime });
+    });
+  });
   const workDays       = workDaySet.size;
   const transportTotal = workDays * (settings.transportBonus || 0);
   const totalEarnings  = calcEarnings(privateHours, 'private') + calcEarnings(groupHours, 'group') + calcEarnings(doubleHours, 'double') + calcEarnings(campHours, 'camp') + transportTotal;
@@ -66,7 +79,59 @@ function renderSummary() {
     <button onclick="summaryNext()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;padding:8px 12px;line-height:1;font-family:inherit">›</button>
   </div>`;
 
-  // Balance card: the "account balance" — total earnings front and center
+  // Type rows for breakdown
+  const typeRows = [];
+  if (privateCount) typeRows.push({ label: t('privateSessions'), count: privateCount, hours: privateHours, color: '#22c55e', earnings: calcEarnings(privateHours, 'private') });
+  if (groupCount)   typeRows.push({ label: t('groupSessions'),   count: groupCount,   hours: groupHours,   color: '#60a5fa', earnings: calcEarnings(groupHours,   'group')   });
+  if (doubleCount)  typeRows.push({ label: t('doubleSessions'),  count: doubleCount,  hours: doubleHours,  color: '#a78bfa', earnings: calcEarnings(doubleHours,  'double')  });
+  if (campCount)    typeRows.push({ label: t('campSessions'),    count: campCount,    hours: campHours,    color: '#fb923c', earnings: calcEarnings(campHours,    'camp')    });
+
+  // Stacked bar — proportional width per session type
+  const stackSegs = totalHours > 0 && typeRows.length
+    ? typeRows.map(tr => `<div class="sum-seg" style="width:${(tr.hours / totalHours * 100).toFixed(1)}%;background:${tr.color}"></div>`).join('')
+    : '';
+  const stackedBar = stackSegs ? `<div class="sum-stack">${stackSegs}</div>` : '';
+
+  // Type legend rows
+  const typeLegRows = typeRows.map(tr =>
+    `<div class="sum-typrow">
+      <span class="sum-typswatch" style="background:${tr.color}"></span>
+      <span class="sum-typlabel">${tr.label}</span>
+      <span class="sum-typtxt">${tr.count}${SEP}${fmtHoursDecimal(tr.hours)}</span>
+      <span class="sum-typamt">₪${tr.earnings.toFixed(0)}</span>
+    </div>`
+  ).join('');
+
+  const extraLegRows = [
+    transportTotal > 0 ? `<div class="sum-typrow">
+      <span class="sum-typswatch" style="background:var(--text3)"></span>
+      <span class="sum-typlabel">${t('transportBonus')}</span>
+      <span class="sum-typtxt">${workDays} ${t('workDays')}</span>
+      <span class="sum-typamt">₪${transportTotal.toFixed(0)}</span>
+    </div>` : '',
+    partialCount ? `<div class="sum-typrow">
+      <span class="sum-typswatch" style="background:var(--orange);opacity:0.5"></span>
+      <span class="sum-typlabel">🌧 ${t('partialSessions')}</span>
+      <span class="sum-typtxt"></span>
+      <span class="sum-typamt" style="color:var(--text2);font-weight:500">${partialCount}</span>
+    </div>` : '',
+    rainCancelled ? `<div class="sum-typrow">
+      <span class="sum-typswatch" style="background:var(--text3)"></span>
+      <span class="sum-typlabel">🌧 ${t('rainCancelledSessions')}</span>
+      <span class="sum-typtxt"></span>
+      <span class="sum-typamt" style="color:var(--text3);font-weight:500">${rainCancelled}</span>
+    </div>` : '',
+    generalCancelled ? `<div class="sum-typrow">
+      <span class="sum-typswatch" style="background:var(--text3)"></span>
+      <span class="sum-typlabel">✕ ${t('cancelledSessions')}</span>
+      <span class="sum-typtxt"></span>
+      <span class="sum-typamt" style="color:var(--text3);font-weight:500">${generalCancelled}</span>
+    </div>` : '',
+  ].join('');
+
+  const hasBreakdown = typeRows.length > 0 || transportTotal > 0 || partialCount || rainCancelled || generalCancelled;
+
+  // Single unified card: earnings + stats + breakdown
   const heroCard = `<div class="card sum-balance">
     <div class="sum-balance-label">${t('totalEarnings')}</div>
     <div class="sum-balance-amount">₪${totalEarnings.toFixed(0)}</div>
@@ -74,53 +139,8 @@ function renderSummary() {
       <div class="sum-stat"><span>${t('totalHours')}</span><strong>${fmtHoursDecimal(totalHours)}</strong></div>
       <div class="sum-stat"><span>${t('workDays')}</span><strong>${workDays}</strong></div>
     </div>
+    ${hasBreakdown ? `<div class="sum-breakdown">${stackedBar}<div class="sum-typelist">${typeLegRows}${extraLegRows}</div></div>` : ''}
   </div>`;
-
-  // Type rows for donut + legend
-  const typeRows = [];
-  if (privateCount) typeRows.push({ label: t('privateSessions'), count: privateCount, hours: privateHours, color: '#22c55e', earnings: calcEarnings(privateHours, 'private') });
-  if (groupCount)   typeRows.push({ label: t('groupSessions'),   count: groupCount,   hours: groupHours,   color: '#60a5fa', earnings: calcEarnings(groupHours,   'group')   });
-  if (doubleCount)  typeRows.push({ label: t('doubleSessions'),  count: doubleCount,  hours: doubleHours,  color: '#a78bfa', earnings: calcEarnings(doubleHours,  'double')  });
-  if (campCount)    typeRows.push({ label: t('campSessions'),    count: campCount,    hours: campHours,    color: '#fb923c', earnings: calcEarnings(campHours,    'camp')    });
-
-  // Statement card: itemized income (like a bank statement) with a compact donut on top
-  let donutHtml = '';
-  if (typeRows.length || transportTotal > 0) {
-    const R = 15.9155, CX = 18, CY = 18;
-    let cumulative = 0;
-    const segments = typeRows.map(tr => {
-      const pct = totalHours ? (tr.hours / totalHours * 100) : 0;
-      if (pct < 0.5) return '';
-      const dashoffset = 25 - cumulative;
-      cumulative += pct;
-      return `<circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="${tr.color}" stroke-width="4.5" stroke-dasharray="${pct.toFixed(2)} ${(100-pct).toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}"/>`;
-    }).join('');
-    const donutSvg = typeRows.length ? `<div class="stmt-donut">
-      <svg viewBox="-3 -3 42 42" width="116" height="116" style="overflow:visible">
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="transparent" stroke="var(--bg3)" stroke-width="4.5"/>
-        ${segments}
-        <circle cx="${CX}" cy="${CY}" r="11" fill="var(--bg2)"/>
-      </svg></div>` : '';
-
-    const stmtLine = (label, sub, amt, color) => `<div class="stmt-row">
-      <span class="stmt-swatch" style="background:${color || 'transparent'}"></span>
-      <div class="stmt-main"><div class="stmt-label">${label}</div>${sub ? `<div class="stmt-sub">${sub}</div>` : ''}</div>
-      <div class="stmt-amt">${amt}</div>
-    </div>`;
-
-    const lineItems = typeRows.map(tr =>
-      stmtLine(tr.label, `${tr.count}${SEP}${fmtHoursDecimal(tr.hours)}`, `₪${tr.earnings.toFixed(0)}`, tr.color)
-    ).join('');
-
-    const extra = [
-      transportTotal > 0 ? stmtLine(t('transportBonus'), `${workDays} ${t('workDays')}`, `₪${transportTotal.toFixed(0)}`) : '',
-      partialCount     ? stmtLine(`🌧 ${t('partialSessions')}`, '', partialCount) : '',
-      rainCancelled    ? stmtLine(`🌧 ${t('rainCancelledSessions')}`, '', rainCancelled) : '',
-      generalCancelled ? stmtLine(`✕ ${t('cancelledSessions')}`, '', generalCancelled) : '',
-    ].join('');
-
-    donutHtml = `<div class="card">${donutSvg}<div class="statement">${lineItems}${extra}</div></div>`;
-  }
 
   // PDF export button — always enabled; warning shown inside preview if month is current
   const pdfBtn = `<div style="padding:0 16px 8px">
@@ -135,27 +155,38 @@ function renderSummary() {
     if (last && last.date === s.date) last.sessions.push(s);
     else byDay.push({ date: s.date, sessions: [s] });
   });
+  // Merge event-day entries into byDay in sorted order
+  evDayRows.forEach(ev => {
+    let slot = byDay.find(d => d.date === ev.date);
+    if (!slot) {
+      const idx = byDay.findIndex(d => d.date > ev.date);
+      slot = { date: ev.date, sessions: [], evEntries: [] };
+      if (idx === -1) byDay.push(slot); else byDay.splice(idx, 0, slot);
+    }
+    (slot.evEntries = slot.evEntries || []).push(ev);
+  });
 
   // Day-by-day session log
   const FULL_DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-  const dayBlocks = byDay.map(({ date, sessions: daySessions }) => {
+  const dayBlocks = byDay.map(({ date, sessions: daySessions, evEntries: dayEvEntries = [] }) => {
     const [y, mo, d] = date.split('-').map(Number);
     const dow = new Date(y, mo-1, d).getDay();
     const fullDayName = t(FULL_DAY_KEYS[dow]);
 
-    const dayHours    = daySessions.reduce((sum, s) => sum + sessionHours(s), 0);
+    const dayHours    = daySessions.reduce((sum, s) => sum + sessionHours(s), 0)
+                      + dayEvEntries.reduce((sum, ev) => sum + ev.hours, 0);
     const dayEarnings = daySessions.reduce((sum, s) => {
       if (s.cancelled?.whole || s.cancelled?.general) return sum;
       return sum + calcEarnings(sessionHours(s), s.type);
-    }, 0);
+    }, 0) + dayEvEntries.reduce((sum, ev) => sum + calcEarnings(ev.hours, 'camp'), 0);
 
     const rows = daySessions.map((s, i) => {
       const h = sessionHours(s);
       const isCancelled = !!(s.cancelled?.whole || s.cancelled?.general);
       const isPartial = !!s.cancelled?.from;
       const earnings = calcEarnings(h, s.type).toFixed(0);
-      const isLast = i === daySessions.length - 1;
+      const isLast = (i === daySessions.length - 1) && dayEvEntries.length === 0;
       const rowClick = isAdmin()
         ? `onclick="openSummarySession('${escQ(s.id)}')" style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;${isLast?'':'border-bottom:0.5px solid var(--border);'}${isCancelled?'opacity:0.4;':''}"`
         : `onclick="goToCalendarDay('${date}')" style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;${isLast?'':'border-bottom:0.5px solid var(--border);'}${isCancelled?'opacity:0.4;':''}"`;
@@ -167,6 +198,20 @@ function renderSummary() {
         <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
           <div style="font-size:13px;font-weight:500;color:${isCancelled?'var(--text3)':isPartial?'var(--orange)':'var(--text)'}">${fmtHoursDecimal(h)}</div>
           ${!isCancelled?`<div style="font-size:11px;color:var(--text2)">₪${earnings}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const evRows = dayEvEntries.map((ev, i) => {
+      const isLast = i === dayEvEntries.length - 1;
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${isLast?'':'border-bottom:0.5px solid var(--border);'}">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(ev.name)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${t('camp')}${SEP}${ev.startTime} – ${ev.endTime}</div>
+        </div>
+        <div style="text-align:${lang==='he'?'left':'right'};flex-shrink:0">
+          <div style="font-size:13px;font-weight:500">${fmtHoursDecimal(ev.hours)}</div>
+          <div style="font-size:11px;color:var(--text2)">₪${calcEarnings(ev.hours,'camp').toFixed(0)}</div>
         </div>
       </div>`;
     }).join('');
@@ -185,7 +230,7 @@ function renderSummary() {
           <div style="font-size:11px;color:var(--text2);margin-top:1px">${escH(t(MONTH_NAMES[mo-1]))} ${year}</div>
         </div>
       </div>
-      ${rows}
+      ${rows}${evRows}
       ${dayTotalRow}
     </div>`;
   }).join('');
@@ -194,9 +239,10 @@ function renderSummary() {
 
   document.getElementById('summary-body').innerHTML =
     nav +
-    `<div class="summary-cards">${heroCard}${donutHtml}</div>` +
-    pdfBtn +
-    `<div class="section-divider">${t('monthlySummary')}</div>${listCard}`;
+    `<div class="sum-grid">
+      <div class="sum-left">${heroCard}${pdfBtn}</div>
+      <div class="sum-right"><div class="section-divider">${t('monthlySummary')}</div>${listCard}</div>
+    </div>`;
 }
 
 function summaryPrev() {

@@ -2,6 +2,61 @@
 let expandedGroupIds = new Set();
 let expandedGroupEditMode = new Set();
 
+// Stable color per group derived from its ID
+const _GROUP_PALETTE = ['#60a5fa','#fb923c','#4ade80','#f472b6','#a78bfa','#fbbf24'];
+function groupColor(groupId) {
+  let h = 0;
+  for (let i = 0; i < groupId.length; i++) h = (h * 31 + groupId.charCodeAt(i)) & 0xffff;
+  return _GROUP_PALETTE[h % _GROUP_PALETTE.length];
+}
+
+function groupCoachName(groupId) {
+  const gs = sessions.filter(s => s.groupId === groupId && s.assignedCoachId);
+  if (!gs.length) return null;
+  const coachId = [...gs].sort((a,b) => b.date.localeCompare(a.date))[0].assignedCoachId;
+  return allCoaches.find(c => c.id === coachId)?.username || null;
+}
+
+// ─── DRAG-AND-DROP (roster → group) ──────────────────────
+let _draggingPlayerName = null;
+const _groupDragCounters = {};
+
+function onPlayerDragStart(e, name) {
+  _draggingPlayerName = name;
+  e.dataTransfer.setData('text/plain', name);
+  e.dataTransfer.effectAllowed = 'copy';
+  document.body.classList.add('player-dragging');
+}
+
+function onPlayerDragEnd() {
+  _draggingPlayerName = null;
+  document.body.classList.remove('player-dragging');
+  document.querySelectorAll('.group-drop-zone.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function onGroupDragEnter(e, groupId) {
+  _groupDragCounters[groupId] = (_groupDragCounters[groupId] || 0) + 1;
+  document.getElementById('gdz-' + groupId)?.classList.add('drag-over');
+}
+
+function onGroupDragLeave(e, groupId) {
+  _groupDragCounters[groupId] = Math.max(0, (_groupDragCounters[groupId] || 1) - 1);
+  if (!_groupDragCounters[groupId]) {
+    document.getElementById('gdz-' + groupId)?.classList.remove('drag-over');
+  }
+}
+
+async function onGroupDrop(e, groupId) {
+  e.preventDefault();
+  _groupDragCounters[groupId] = 0;
+  document.getElementById('gdz-' + groupId)?.classList.remove('drag-over');
+  document.body.classList.remove('player-dragging');
+  const name = (e.dataTransfer.getData('text/plain') || _draggingPlayerName || '').trim();
+  _draggingPlayerName = null;
+  if (!name || !isAdmin()) return;
+  await addPlayer(groupId, name);
+}
+
 function renderGroups() {
   const addRow = document.getElementById('groups-add-btn-row');
   if (addRow) addRow.style.display = isAdmin() ? '' : 'none';
@@ -67,14 +122,23 @@ function renderGroups() {
       </div>`;
     }
 
-    return `<div class="card">
+    const gColor = groupColor(g.id);
+    return `<div class="card"
+      ondragover="event.preventDefault()"
+      ondragenter="onGroupDragEnter(event,'${g.id}')"
+      ondragleave="onGroupDragLeave(event,'${g.id}')"
+      ondrop="onGroupDrop(event,'${g.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleGroupExpand('${g.id}')">
         <div>
-          <div style="font-size:15px;font-weight:600">${escH(g.name)}</div>
+          <div style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+            <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${gColor};flex-shrink:0"></span>
+            ${escH(g.name)}
+          </div>
           <div style="font-size:12px;color:var(--text2);margin-top:2px">${g.players.length}${SEP}${sessionCount} ${t('sessionsCount')}</div>
         </div>
         <span style="font-size:22px;color:var(--text3);display:inline-block;transform:rotate(${expanded?'90':'0'}deg)">›</span>
       </div>${inner}
+      <div class="group-drop-zone" id="gdz-${g.id}">${lang==='he'?'גרור שחקן לכאן':'Drop player here'}</div>
     </div>`;
   }).join('');
 
@@ -163,16 +227,65 @@ function renderIndividualPlayers() {
     return;
   }
 
-  el.innerHTML = pArr.map(p => {
-    const sessionCount = getCalendarSessions().filter(s => s.type === 'private' && s.assignedPlayerName === p.name).length;
-    return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
-      <div>
-        <div style="font-size:15px;font-weight:500">${escH(p.name)}</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">${sessionCount} ${t('sessionsCount')}</div>
-      </div>
-      ${isAdmin() ? `<button onclick="confirmDeleteIndividualPlayer('${p.id}','${escQ(p.name)}')" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1" title="${t('delete')}">×</button>` : ''}
+  // Map player name → first group that contains them
+  const nameToGroupId = {};
+  Object.values(groups).forEach(g => {
+    g.players.forEach(name => { if (!nameToGroupId[name]) nameToGroupId[name] = g.id; });
+  });
+
+  // Bucket players by group (or unassigned)
+  const bucketed = {};
+  const unassigned = [];
+  pArr.forEach(p => {
+    const gid = nameToGroupId[p.name];
+    if (gid) { (bucketed[gid] = bucketed[gid] || []).push(p); }
+    else unassigned.push(p);
+  });
+
+  let html = '';
+  const hasGrouped = Object.values(groups).some(g => bucketed[g.id]?.length);
+
+  Object.values(groups).forEach(g => {
+    const gPlayers = bucketed[g.id];
+    if (!gPlayers?.length) return;
+    const color = groupColor(g.id);
+    const coach = groupCoachName(g.id);
+    html += `<div class="roster-group-header">
+      <div style="width:3px;height:14px;border-radius:2px;background:${color};flex-shrink:0"></div>
+      <span class="roster-group-name">${escH(g.name)}</span>
+      ${coach ? `<span class="roster-group-coach">· ${escH(coach)}</span>` : ''}
     </div>`;
-  }).join('');
+    html += gPlayers.map(p => playerRosterCard(p, color)).join('');
+  });
+
+  if (unassigned.length) {
+    if (hasGrouped) html += `<div class="roster-group-header">
+      <div style="width:3px;height:14px;border-radius:2px;background:var(--border2);flex-shrink:0"></div>
+      <span class="roster-group-name">${lang==='he'?'לא משויך':'Unassigned'}</span>
+    </div>`;
+    html += unassigned.map(p => playerRosterCard(p, null)).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function playerRosterCard(p, accentColor) {
+  const bar = accentColor
+    ? `<div style="width:3px;height:34px;border-radius:2px;background:${accentColor};flex-shrink:0"></div>`
+    : `<div style="width:3px;flex-shrink:0"></div>`;
+  return `<div class="card roster-player-card"
+    draggable="${isAdmin() ? 'true' : 'false'}"
+    ondragstart="onPlayerDragStart(event,'${escQ(p.name)}')"
+    ondragend="onPlayerDragEnd()">
+    <div style="display:flex;align-items:center;gap:10px">
+      ${bar}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(p.name)}</div>
+      </div>
+      ${isAdmin() ? `<button onclick="event.stopPropagation();confirmDeleteIndividualPlayer('${p.id}','${escQ(p.name)}')" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1">×</button>` : ''}
+      ${isAdmin() ? `<span style="color:var(--text3);font-size:13px;user-select:none">⠿</span>` : ''}
+    </div>
+  </div>`;
 }
 
 function openAddIndividualPlayerModal() {

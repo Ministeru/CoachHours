@@ -101,7 +101,10 @@ function renderMonthView() {
                 : s.type === 'double' ? 'month-chip-double'
                 : s.type === 'camp'   ? 'month-chip-camp'
                 : 'month-chip-private';
-      return `<div class="month-chip ${cls}">${escH(s.name)}</div>`;
+      const chipName = (s.type === 'group' || s.type === 'camp')
+        ? (s.groupId && groups[s.groupId] ? groups[s.groupId].name : s.name)
+        : (s.assignedPlayerName || s.name);
+      return `<div class="month-chip ${cls}">${escH(chipName)}</div>`;
     }).join('');
     const more = daysSessions.length > 2 ? `<div class="month-more">+${daysSessions.length-2}</div>` : '';
     const addBtn = isAdmin() ? `<button class="month-add-btn" onclick="event.stopPropagation();openSessionModal('${date}',null,null)">+</button>` : '';
@@ -241,9 +244,13 @@ function sessionCardHtml(s) {
   const slotTaken = sessions.some(x => x.date === s.date && x.id !== s.id && x.startTime === s.endTime);
   const nextBtn = (isAdmin() && !slotTaken) ? `<button style="margin-top:6px;padding:4px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit" onclick="event.stopPropagation();openSessionModal('${escQ(s.date)}','${escQ(s.endTime)}',null)">${t('nextSessionFrom')} ${s.endTime}</button>` : '';
 
+  const cardTitle = (s.type === 'group' || s.type === 'camp')
+    ? (groupName || s.name)
+    : (playerName || s.name);
+
   return `<div class="session-card ${typeClass}${cancelClass}" ${clickHandler} style="margin-bottom:8px">
     <div style="display:flex;align-items:center">
-      <div class="session-card-name" style="flex:1">${escH(s.name)}</div>${typeBadge}
+      <div class="session-card-name" style="flex:1">${escH(cardTitle)}</div>${typeBadge}
     </div>
     ${infoRows}
     ${cancelBadge}

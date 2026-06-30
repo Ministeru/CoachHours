@@ -19,7 +19,7 @@ function addMins(time, mins) {
   return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
 }
 
-function isAdmin() { return currentUser?.role === 'admin'; }
+function isAdmin() { return !viewingUserId && currentUser?.role === 'admin'; }
 // Group and camp sessions both track attendance against a roster
 function isAttendanceType(s) { return s.type === 'group' || s.type === 'camp'; }
 function activeUid() { return viewingUserId || currentUser?.id || ''; }

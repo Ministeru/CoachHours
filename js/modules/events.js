@@ -31,20 +31,12 @@ function eventCoachIds(coaches) {
   return [...new Set((coaches || []).map(c => c.coachId).filter(Boolean))];
 }
 
-function coachHasEventAccess() {
-  if (isAdmin()) return true;
-  if (!currentUser) return false;
-  return events.some(ev => (ev.coaches || []).some(c => c.coachId === currentUser.id));
-}
-
-// Show/hide the Events nav: admins always; coaches only when assigned to ≥1 event.
+// Events nav is always visible for everyone; the screen itself shows an empty state when there's nothing to show.
 function updateEventsNav() {
-  const show = coachHasEventAccess();
   ['nav-events', 'snav-events'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = show ? '' : 'none';
+    if (el) el.style.display = '';
   });
-  if (!show && document.getElementById('screen-events')?.classList.contains('active')) showScreen('calendar');
 }
 
 // Groups the current user may mark for this event. No groups → whole roster as one ('all').
@@ -53,7 +45,7 @@ function accessibleGroups(ev) {
     return [{ id: 'all', name: t('roster'), players: ev.roster || [] }];
   }
   if (isAdmin()) return ev.groups.map(g => ({ id: g.id, name: g.name, players: g.players || [] }));
-  const mySlots = new Set((ev.coaches || []).filter(c => c.coachId === currentUser.id).map(c => c.id));
+  const mySlots = new Set((ev.coaches || []).filter(c => c.coachId === activeUid()).map(c => c.id));
   return ev.groups.filter(g => mySlots.has(g.coachSlotId)).map(g => ({ id: g.id, name: g.name, players: g.players || [] }));
 }
 
@@ -83,13 +75,15 @@ function renderEvents() {
   const el = document.getElementById('events-list');
   if (!el) return;
   // Coaches see only events they're assigned to.
-  const visible = isAdmin() ? events : events.filter(ev => (ev.coaches || []).some(c => c.coachId === currentUser.id));
+  const uid = activeUid();
+  const visible = isAdmin() ? events : events.filter(ev => (ev.coaches || []).some(c => c.coachId === uid));
   if (!visible.length) { el.innerHTML = `<div class="empty">${t('noEvents')}</div>`; return; }
 
   el.innerHTML = visible.map(ev => {
     const days     = eventDates(ev);
-    const rosterN  = (ev.roster || []).length;
-    const markedN  = days.filter(d => ev.attendance?.[d]).length;
+    const accGrps  = accessibleGroups(ev);
+    const rosterN  = isAdmin() ? (ev.roster || []).length : accGrps.reduce((s, g) => s + (g.players || []).length, 0);
+    const markedN  = days.filter(d => accGrps.some(g => dayAtt(ev, d, g.id))).length;
     const typeColor = ev.type === 'tournament' ? 'var(--orange)' : 'var(--blue)';
     const typeBg    = ev.type === 'tournament' ? 'rgba(251,146,60,0.18)' : 'rgba(96,165,250,0.18)';
     const typeBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${typeBg};color:${typeColor}">${t(ev.type || 'camp')}</span>`;
@@ -127,6 +121,16 @@ function openAddEventModal() {
       <label class="form-label">${t('eventDays')}</label>
       <div id="dp-container"></div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('startTime')}</label>
+        <input type="time" id="ev-start" value="09:00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('endTime')}</label>
+        <input type="time" id="ev-end" value="17:00">
+      </div>
+    </div>
     <div id="ev-error" class="error-box" style="margin-bottom:8px"></div>
     <button class="btn btn-primary" style="margin-top:4px" onclick="saveNewEvent()">${t('save')}</button>
     <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
@@ -145,10 +149,13 @@ async function saveNewEvent() {
     if (errEl) { errEl.textContent = t('errNoDays'); errEl.style.display = 'block'; }
     return;
   }
+  const startTime = document.getElementById('ev-start')?.value || null;
+  const endTime   = document.getElementById('ev-end')?.value || null;
   const id = 'e' + Date.now();
   await saveEvent(id, {
     id, name, type: _eventType, dates,
     startDate: dates[0], endDate: dates[dates.length - 1],
+    startTime: startTime || null, endTime: endTime || null,
     roster: [], attendance: {}, coaches: [], groups: [], coachIds: [],
     createdBy: currentUser.id, createdAt: Date.now()
   });
@@ -164,27 +171,54 @@ function openEvent(eventId) {
   const accGroups = accessibleGroups(ev);
   const totalPlayers = accGroups.reduce((s, g) => s + (g.players?.length || 0), 0);
 
-  // Day list — present/total scoped to what THIS user can mark (admin: full; coach: their group)
-  const dayRows = days.map(d => {
-    const present = accGroups.reduce((s, g) => { const a = dayAtt(ev, d, g.id); return s + (a ? (a.present || []).length : 0); }, 0);
-    const anyMarked = accGroups.some(g => dayAtt(ev, d, g.id));
-    const [y, mo, dd] = d.split('-').map(Number);
-    const dow = new Date(y, mo - 1, dd).getDay();
-    const label = `${t(EV_DAY_KEYS[dow])} ${dd}/${mo}`;
-    const status = anyMarked
-      ? `<span style="font-size:12px;color:var(--green);font-weight:600">${present}/${totalPlayers}</span>`
-      : `<span style="font-size:12px;color:var(--text3)">—</span>`;
-    return `<div onclick="openEventDay('${escQ(eventId)}','${d}')" style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
-      <span style="font-size:14px">${escH(label)}</span>${status}
-    </div>`;
-  }).join('') || `<div style="font-size:13px;color:var(--text3);padding:10px 0">—</div>`;
+  // Day calendar — month grid, coaches can only tap today, admin can tap any event day.
+  const todayISO = dateISO(new Date());
+  const daySet = new Set(days);
+  const monthKeys = [...new Set(days.map(d => d.slice(0, 7)))];
+  const calGrids = monthKeys.map(ym => {
+    const [cy, cm] = ym.split('-').map(Number);
+    const firstDow = new Date(cy, cm - 1, 1).getDay();
+    const daysInMonth = new Date(cy, cm, 0).getDate();
+    const headers = DAY_KEYS.map(k => `<div class="month-day-header">${t(k)}</div>`).join('');
+    const pads = Array(firstDow).fill('<div></div>').join('');
+    const cells = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${cy}-${String(cm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isEventDay = daySet.has(iso);
+      const isToday = iso === todayISO;
+      const canMark = isEventDay && (admin || iso === todayISO);
+      let statusHtml = '';
+      if (isEventDay) {
+        const anyMarked = accGroups.some(g => dayAtt(ev, iso, g.id));
+        if (anyMarked) {
+          const present = accGroups.reduce((s, g) => { const a = dayAtt(ev, iso, g.id); return s + (a ? (a.present || []).length : 0); }, 0);
+          statusHtml = `<div style="font-size:9px;color:var(--green);font-weight:700;line-height:1.2">${present}/${totalPlayers}</div>`;
+        }
+      }
+      const cellStyle = isEventDay
+        ? `background:rgba(96,165,250,0.14);border:0.5px solid rgba(96,165,250,0.3);${canMark ? 'cursor:pointer;' : 'opacity:0.5;'}`
+        : 'opacity:0.18;pointer-events:none;';
+      cells.push(`<div class="month-day${isToday ? ' today' : ''}" ${canMark ? `onclick="openEventDay('${escQ(eventId)}','${iso}')"` : ''} style="${cellStyle}">
+        <div class="month-day-num">${d}</div>${statusHtml}
+      </div>`);
+    }
+    return `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">${monthName(cm-1)} ${cy}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${headers}${pads}${cells.join('')}</div>`;
+  }).join('<div style="height:10px"></div>');
+  const dayRows = calGrids || `<div style="font-size:13px;color:var(--text3);padding:10px 0">—</div>`;
 
   // Admin-only management blocks (roster + camp coaches/groups)
   let adminBlocks = '';
   if (admin) {
-    const rosterChips = (ev.roster || []).map(n =>
-      `<span class="player-chip">${escH(n)}<span class="rm" onclick="removeEventRosterPlayer('${escQ(eventId)}','${escQ(n)}')">×</span></span>`
-    ).join('') || `<span style="font-size:13px;color:var(--text3)">${t('noPlayers')}</span>`;
+    const rosterList = (ev.roster || []).length
+      ? (ev.roster || []).map((n, i) =>
+        `<div style="display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
+          <span style="font-size:12px;color:var(--text3);min-width:26px">${i + 1}</span>
+          <span style="flex:1;font-size:14px">${escH(n)}</span>
+          <span onclick="removeEventRosterPlayer('${escQ(eventId)}','${escQ(n)}')" style="color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</span>
+        </div>`
+      ).join('')
+      : `<div style="font-size:13px;color:var(--text3);padding:8px 0">${t('noPlayers')}</div>`;
 
     let campSections = '';
     if ((ev.type || 'camp') === 'camp') {
@@ -228,7 +262,7 @@ function openEvent(eventId) {
 
     adminBlocks = `
       <div class="card-label" style="margin:16px 0 8px">${t('roster')}</div>
-      <div class="player-chips" style="margin-bottom:10px">${rosterChips}</div>
+      <div style="margin-bottom:10px">${rosterList}</div>
       <div class="add-row">
         <input type="text" id="ev-roster-input" placeholder="${t('playerPlaceholder')}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();addEventRosterPlayer('${escQ(eventId)}')}">
@@ -242,9 +276,20 @@ function openEvent(eventId) {
     ? `<button onclick="openEditEventDays('${escQ(eventId)}')" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:16px;padding:4px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit">${t('editDays')}</button>`
     : '';
 
+  const timeLine = (ev.startTime && ev.endTime)
+    ? `${ev.startTime} – ${ev.endTime}`
+    : (admin ? `<span style="color:var(--text3)">${lang==='he'?'שעות לא הוגדרו':'No hours set'}</span>` : '');
+  const editTimesBtn = admin
+    ? `<button onclick="openEditEventTimes('${escQ(eventId)}')" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:16px;padding:4px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit">${lang==='he'?'ערוך שעות':'Edit hours'}</button>`
+    : '';
+
   createModal(`
     <div class="sheet-title">${escH(ev.name)}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:16px">${t(ev.type || 'camp')}${SEP}${fmtEventRange(ev.startDate, ev.endDate)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${t(ev.type || 'camp')}${SEP}${fmtEventRange(ev.startDate, ev.endDate)}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px">
+      <span style="font-size:12px;color:var(--text2)">${timeLine}</span>
+      ${editTimesBtn}
+    </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="card-label" style="margin:0">${t('eventDays')}</div>
@@ -427,6 +472,7 @@ function openEventDay(eventId, date) {
   if (!ev) return;
   const groups = accessibleGroups(ev);
   if (groups.length === 1) { openEventGroupDay(eventId, date, groups[0].id); return; }
+  if (isAdmin() && groups.length > 1) { openEventDayAdmin(eventId, date); return; }
   if (!groups.length) {
     createModal(`<div class="sheet-title">${escH(ev.name)}</div>
       <p style="font-size:13px;color:var(--text2);padding:12px 0">${t('noPlayers')}</p>
@@ -452,6 +498,29 @@ function openEventDay(eventId, date) {
   `);
 }
 
+// Returns true/false if schedule data exists for this player on this day, null if no data.
+function schedExpected(ev, date, groupId, playerName) {
+  const g = ev.schedule?.[date]?.[groupId];
+  if (!g || typeof g !== 'object') return null;
+  const v = g[playerName];
+  return v === undefined ? null : Boolean(v);
+}
+
+// Admin tap: cycle null → expected → not expected → null
+async function togglePlayerSchedule(eventId, date, groupId, playerName, inAdminView) {
+  if (!isAdmin()) return;
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+  const cur = schedExpected(ev, date, groupId, playerName);
+  const next = cur === null ? true : cur === true ? false : null;
+  const grpSched = { ...(ev.schedule?.[date]?.[groupId] || {}) };
+  if (next === null) delete grpSched[playerName]; else grpSched[playerName] = next;
+  const schedule = { ...(ev.schedule || {}), [date]: { ...(ev.schedule?.[date] || {}), [groupId]: grpSched } };
+  await saveEvent(eventId, { ...ev, schedule });
+  if (inAdminView) openEventDayAdmin(eventId, date);
+  else openEventGroupDay(eventId, date, groupId);
+}
+
 function openEventGroupDay(eventId, date, groupId) {
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
@@ -461,19 +530,45 @@ function openEventGroupDay(eventId, date, groupId) {
   const present = att.present || [];
   const [y, mo, dd] = date.split('-').map(Number);
   const dow = new Date(y, mo - 1, dd).getDay();
+  const admin = isAdmin();
 
-  const rows  = grp.players.map(n => attRowHtml(n, present.includes(n))).join('');
+  const rows = grp.players.map(n => {
+    const exp = schedExpected(ev, date, groupId, n);
+    const dotBg  = exp === true ? 'var(--blue)' : exp === false ? 'var(--orange)' : 'transparent';
+    const dotBdr = exp === null ? '1.5px solid var(--border)' : 'none';
+    const dotTip = exp === true ? (lang==='he'?'מגיע':'Expected') : exp === false ? (lang==='he'?'לא מגיע':'Not expected') : '';
+    const dot = admin
+      ? `<span onclick="togglePlayerSchedule('${escQ(eventId)}','${date}','${escQ(groupId)}','${escQ(n)}',false)" title="${dotTip}" style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0;cursor:pointer"></span>`
+      : `<span title="${dotTip}" style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0"></span>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)">
+      ${dot}
+      <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer">
+        <input type="checkbox" id="att-${escId(n)}" data-name="${escH(n)}" ${present.includes(n)?'checked':''}
+          style="width:18px;height:18px;accent-color:var(--blue)">
+        <span style="font-size:15px">${escH(n)}</span>
+      </label>
+    </div>`;
+  }).join('');
+
+  const schedGrp = ev.schedule?.[date]?.[groupId];
+  const expCount = schedGrp ? Object.values(schedGrp).filter(Boolean).length : null;
+  const schedInfo = expCount !== null
+    ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">● <span style="color:var(--blue)">${expCount}</span> / <span style="color:var(--orange)">${grp.players.length - expCount}</span> ${lang==='he'?'לא מגיעים — לחץ על הנקודה לעריכה':'not expected — tap dot to edit'}</div>`
+    : '';
+
   const empty = !grp.players.length ? `<p id="att-empty" style="color:var(--text2);font-size:13px;padding:12px 0">${t('noPlayers')}</p>` : '';
+  const addPlayerRow = admin ? `<div class="add-row" style="margin-top:10px">
+    <input type="text" id="att-add-input" placeholder="${t('playerPlaceholder')}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();addEventGroupDayPlayer('${escQ(eventId)}','${date}','${escQ(groupId)}')}">
+    <button onclick="addEventGroupDayPlayer('${escQ(eventId)}','${date}','${escQ(groupId)}')">${t('addPlayer')}</button>
+  </div>` : '';
 
   createModal(`
     <div class="sheet-title">${escH(grp.name)}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${escH(ev.name)}${SEP}${t(EV_DAY_KEYS[dow])}${SEP}${dd}/${mo}/${y}${att.savedAt ? SEP + att.savedAt : ''}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${escH(ev.name)}${SEP}${t(EV_DAY_KEYS[dow])}${SEP}${dd}/${mo}/${y}${att.savedAt ? SEP + escH(att.savedAt) + (att.savedBy ? ' · ' + escH(att.savedBy) : '') : ''}</div>
+    ${schedInfo}
     <div id="att-rows">${rows}</div>${empty}
-    <div class="add-row" style="margin-top:10px">
-      <input type="text" id="att-add-input" placeholder="${t('playerPlaceholder')}"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();addEventGroupDayPlayer('${escQ(eventId)}','${date}','${escQ(groupId)}')}">
-      <button onclick="addEventGroupDayPlayer('${escQ(eventId)}','${date}','${escQ(groupId)}')">${t('addPlayer')}</button>
-    </div>
+    ${addPlayerRow}
     <button class="btn btn-primary" style="margin-top:14px" onclick="saveEventGroupDay('${escQ(eventId)}','${date}','${escQ(groupId)}')">${t('saveAttendance')}</button>
     <button class="btn btn-secondary" onclick="openEvent('${escQ(eventId)}')">${t('cancel')}</button>
   `);
@@ -481,6 +576,7 @@ function openEventGroupDay(eventId, date, groupId) {
 
 // Walk-in kid: add to the roster (and the marked group) and check them present.
 async function addEventGroupDayPlayer(eventId, date, groupId) {
+  if (!isAdmin()) return;
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
   const input = document.getElementById('att-add-input');
@@ -502,6 +598,42 @@ async function addEventGroupDayPlayer(eventId, date, groupId) {
   if (input) { input.value = ''; input.focus(); }
 }
 
+// ─── EVENT HOURS (for summary calculation) ────────────────
+function openEditEventTimes(eventId) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev || !isAdmin()) return;
+  createModal(`
+    <div class="sheet-title">${lang==='he'?'שעות האירוע':'Event hours'}</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('startTime')}</label>
+        <input type="time" id="ev-edit-start" value="${ev.startTime || '09:00'}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('endTime')}</label>
+        <input type="time" id="ev-edit-end" value="${ev.endTime || '17:00'}">
+      </div>
+    </div>
+    <div id="ev-time-error" class="error-box" style="margin-bottom:8px"></div>
+    <button class="btn btn-primary" style="margin-top:4px" onclick="saveEventTimes('${escQ(eventId)}')">${t('save')}</button>
+    <button class="btn btn-secondary" onclick="openEvent('${escQ(eventId)}')">${t('cancel')}</button>
+  `);
+}
+
+async function saveEventTimes(eventId) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev || !isAdmin()) return;
+  const startTime = document.getElementById('ev-edit-start')?.value || null;
+  const endTime   = document.getElementById('ev-edit-end')?.value || null;
+  if (startTime && endTime && timeToMins(endTime) <= timeToMins(startTime)) {
+    const err = document.getElementById('ev-time-error');
+    if (err) { err.textContent = t('errEndBeforeStart'); err.style.display = 'block'; }
+    return;
+  }
+  await saveEvent(eventId, { ...ev, startTime: startTime || null, endTime: endTime || null });
+  openEvent(eventId);
+}
+
 async function saveEventGroupDay(eventId, date, groupId) {
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
@@ -512,9 +644,76 @@ async function saveEventGroupDay(eventId, date, groupId) {
   const savedAt = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   let day = ev.attendance?.[date];
   if (day && Array.isArray(day.present)) day = { all: day }; // migrate legacy flat shape
-  day = { ...(day || {}), [groupId]: { present, savedAt } };
+  const savedBy = currentUser?.username || '';
+  day = { ...(day || {}), [groupId]: { present, savedAt, savedBy } };
   const attendance = { ...(ev.attendance || {}), [date]: day };
   await saveEvent(eventId, { ...ev, attendance });
   logActivity('EVENT_ATTENDANCE', `${ev.name} ${date} ${groupId}`);
+  openEvent(eventId);
+}
+
+// Admin combined view: all groups for one day on a single screen.
+function openEventDayAdmin(eventId, date) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+  const groups = accessibleGroups(ev);
+  const [y, mo, dd] = date.split('-').map(Number);
+  const dow = new Date(y, mo - 1, dd).getDay();
+
+  const sections = groups.map(g => {
+    const att = dayAtt(ev, date, g.id) || {};
+    const present = att.present || [];
+    const schedGrp = ev.schedule?.[date]?.[g.id];
+    const expCount = schedGrp ? Object.values(schedGrp).filter(Boolean).length : null;
+    const rows = g.players.map(n => {
+      const exp = schedExpected(ev, date, g.id, n);
+      const dotBg  = exp === true ? 'var(--blue)' : exp === false ? 'var(--orange)' : 'transparent';
+      const dotBdr = exp === null ? '1.5px solid var(--border)' : 'none';
+      const dotTip = exp === true ? (lang==='he'?'מגיע':'Expected') : exp === false ? (lang==='he'?'לא מגיע':'Not expected') : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)">
+        <span onclick="togglePlayerSchedule('${escQ(eventId)}','${date}','${escQ(g.id)}','${escQ(n)}',true)" title="${dotTip}"
+          style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0;cursor:pointer"></span>
+        <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer">
+          <input type="checkbox" data-group="${escH(g.id)}" data-name="${escH(n)}" ${present.includes(n)?'checked':''}
+            style="width:18px;height:18px;accent-color:var(--blue)">
+          <span style="font-size:15px">${escH(n)}</span>
+        </label>
+      </div>`;
+    }).join('') || `<p style="color:var(--text2);font-size:13px;padding:8px 0">${t('noPlayers')}</p>`;
+    const savedLabel = att.savedAt ? `<span style="font-size:11px;color:var(--text3);margin-left:6px">${escH(att.savedAt)}${att.savedBy ? ' · ' + escH(att.savedBy) : ''}</span>` : '';
+    const expLabel = expCount !== null ? `<span style="font-size:11px;color:var(--text3);margin-inline-start:6px">·  <span style="color:var(--blue)">●</span> ${expCount} <span style="color:var(--orange)">●</span> ${g.players.length - expCount}</span>` : '';
+    return `<div class="card-label" style="margin:14px 0 4px">${escH(g.name)}${expLabel}${savedLabel}</div>
+      <div>${rows}</div>`;
+  }).join('');
+
+  createModal(`
+    <div class="sheet-title">${escH(ev.name)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${t(EV_DAY_KEYS[dow])}${SEP}${dd}/${mo}/${y}</div>
+    ${sections}
+    <button class="btn btn-primary" style="margin-top:14px" onclick="saveEventAllGroups('${escQ(eventId)}','${date}')">${t('saveAttendance')}</button>
+    <button class="btn btn-secondary" onclick="openEvent('${escQ(eventId)}')">${t('cancel')}</button>
+  `);
+}
+
+async function saveEventAllGroups(eventId, date) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev || !isAdmin()) return;
+  const now = new Date();
+  const savedAt = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const groups = accessibleGroups(ev);
+  let day = ev.attendance?.[date];
+  if (day && Array.isArray(day.present)) day = { all: day }; // migrate legacy flat shape
+  day = { ...(day || {}) };
+  const allCheckboxes = Array.from(document.querySelectorAll('#app-modal input[type="checkbox"][data-group]'));
+  groups.forEach(g => {
+    const present = allCheckboxes
+      .filter(cb => cb.dataset.group === g.id && cb.checked)
+      .map(cb => cb.dataset.name)
+      .filter(Boolean);
+    day[g.id] = { present, savedAt, savedBy: currentUser?.username || '' };
+  });
+  const attendance = { ...(ev.attendance || {}), [date]: day };
+  await saveEvent(eventId, { ...ev, attendance });
+  logActivity('EVENT_ATTENDANCE', `${ev.name} ${date} all-groups`);
   openEvent(eventId);
 }

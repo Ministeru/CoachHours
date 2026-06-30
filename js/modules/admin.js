@@ -60,6 +60,9 @@ async function adminView(userId) {
   let banner = document.getElementById('view-banner');
   if (!banner) { banner = document.createElement('div'); banner.id = 'view-banner'; app?.prepend(banner); }
   banner.innerHTML = `<span>${t('viewing')}: ${escH(u?.username||'')}</span><button onclick="adminExitView()" style="background:rgba(0,0,0,0.15);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:#111;font-weight:600">${t('exitView')}</button>`;
+  // Hide admin-only nav items; refresh events nav for the viewed coach
+  document.querySelectorAll('.admin-only').forEach(el => { el.style.display = 'none'; });
+  updateEventsNav();
   showScreen('calendar');
 }
 
@@ -67,6 +70,9 @@ async function adminExitView() {
   viewingUserId = null;
   document.getElementById('view-banner')?.remove();
   document.querySelector('.app')?.classList.remove('viewing');
+  // Restore admin nav items
+  document.querySelectorAll('.admin-only').forEach(el => { el.style.display = ''; });
+  updateEventsNav();
   showScreen('admin');
 }
 

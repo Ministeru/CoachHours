@@ -205,6 +205,28 @@ html[dir="ltr"] .day-hour-label { text-align: left; padding-left: 4px; }
 .stmt-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
 .stmt-amt { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* ─── SUMMARY: breakdown bars ─── */
+.sum-breakdown { margin-top: 16px; padding-top: 16px; border-top: 0.5px solid var(--border); }
+.sum-stack { display: flex; height: 7px; border-radius: 4px; overflow: hidden; gap: 2px; margin-bottom: 14px; }
+.sum-seg { height: 100%; min-width: 3px; border-radius: 3px; }
+.sum-typelist { display: flex; flex-direction: column; }
+.sum-typrow { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.sum-typrow:last-child { border-bottom: none; }
+.sum-typswatch { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+.sum-typlabel { font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sum-typtxt { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.sum-typamt { font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ─── PLAYER ROSTER (Groups screen) ─── */
+.roster-group-header { display: flex; align-items: center; gap: 8px; padding: 8px 16px 4px; margin-top: 4px; }
+.roster-group-name { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.07em; text-transform: uppercase; flex: 1; }
+.roster-group-coach { font-size: 11px; color: var(--text3); }
+.roster-player-card { cursor: grab; padding: 10px 14px; }
+.roster-player-card:active { cursor: grabbing; opacity: 0.75; }
+.group-drop-zone { display: none; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 10px; text-align: center; font-size: 12px; color: var(--text3); margin-top: 8px; }
+.player-dragging .group-drop-zone { display: block; }
+.group-drop-zone.drag-over { border-color: var(--accent); color: var(--text); background: rgba(255,255,255,0.04); }
+
 /* ─── DAY PICKER (reusable multi-day selector) ─── */
 .dp-toolbar { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
 .dp-nav { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; padding: 4px 10px; line-height: 1; font-family: inherit; }
@@ -297,10 +319,12 @@ html[dir="ltr"] .day-hour-label { text-align: left; padding-left: 4px; }
 
   #view-banner { inset-inline-start: 220px; inset-inline-end: 0; transform: none; max-width: calc(100vw - 220px); }
 
-  /* Summary: stat cards span horizontally across the top, monthly log below */
-  #screen-summary #summary-body { max-width: 1100px; margin: 0 auto; }
-  #screen-summary .summary-cards { display: flex; align-items: flex-start; }
-  #screen-summary .summary-cards > .card { flex: 1; }
+  /* Summary: two-column layout — stats left, session log right */
+  #screen-summary #summary-body { padding: 0 12px; }
+  .sum-grid { display: grid; grid-template-columns: 300px 1fr; gap: 0 20px; align-items: start; }
+  .sum-grid .card { margin-inline: 0; }
+  .sum-left > div[style] { padding-inline: 0 !important; }
+  .sum-right { padding-inline-start: 16px; border-inline-start: 0.5px solid var(--border); }
 }
 
 .sidebar-nav.auth-hidden { display: none !important; }

@@ -47,10 +47,17 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
     </div>`;
   }
 
-  // Build all-players datalist for private sessions
-  const allPlayersList = getAllPlayers().map(p => `<option value="${escH(p)}">`).join('');
+  // Build player options from the saved roster
+  const allPlayerOpts = getAllPlayers().map(name =>
+    `<option value="${escH(name)}" ${s?.assignedPlayerName===name?'selected':''}>${escH(name)}</option>`
+  ).join('');
 
   const deleteBtn = s ? `<button class="btn btn-danger" style="margin-top:4px" onclick="confirmDeleteSession('${s.id}')">${t('deleteSession')}</button>` : '';
+  const copyBtn   = s ? `<button class="btn btn-secondary" style="margin-top:4px" onclick="_toggleCopyPanel()">${lang==='he'?'העתק לתאריכים':'Copy to dates'}</button>
+    <div id="sm-copy-panel" style="display:none;margin-top:4px">
+      <div id="sm-copy-picker"></div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="_confirmCopySession('${escQ(s.id)}')">${lang==='he'?'העתק':'Copy'}</button>
+    </div>` : '';
 
   createModal(`
     <div class="sheet-title">${s ? t('editSession') : t('newSession')}</div>
@@ -79,13 +86,15 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
 
     <div class="form-group" id="sm-player-row" style="display:${(_sessionType==='private'||_sessionType==='double')?'':'none'}">
       <label class="form-label">${t('playerLabel')}</label>
-      <input type="text" id="sm-player" list="sm-players-list" value="${escH(s?.assignedPlayerName||'')}" placeholder="${t('playerPlaceholder')}">
-      <datalist id="sm-players-list">${allPlayersList}</datalist>
+      <select id="sm-player">
+        <option value="">${t('playerPlaceholder')}</option>
+        ${allPlayerOpts}
+      </select>
     </div>
 
     <div class="form-group">
-      <label class="form-label">${t('sessionName')}</label>
-      <input type="text" id="sm-name" value="${s?escH(s.name):''}" placeholder="${t('sessionName')}">
+      <label class="form-label">${t('sessionName')} <span style="font-weight:400;color:var(--text3)">(${lang==='he'?'אופציונלי':'optional'})</span></label>
+      <input type="text" id="sm-name" value="${s?escH(s.name):''}" placeholder="${lang==='he'?'אוטומטי מהשחקן/קבוצה':'Auto-filled from player / group'}">
     </div>
 
     <div class="form-group">
@@ -135,6 +144,7 @@ function openSessionModal(date, time, sessionId, presetGroupId) {
     ${rainSection}
     <button class="btn btn-primary" style="margin-top:4px" onclick="saveSessionModal()">${t('save')}</button>
     ${deleteBtn}
+    ${copyBtn}
     <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
   `);
 
@@ -213,7 +223,7 @@ function updateEndByDuration() {
 }
 
 async function saveSessionModal() {
-  const name  = document.getElementById('sm-name')?.value.trim();
+  let name    = document.getElementById('sm-name')?.value.trim();
   const start = document.getElementById('sm-start')?.value;
   const end   = document.getElementById('sm-end')?.value;
   const date  = dpGetDates('sm-date-picker')[0];
@@ -223,7 +233,14 @@ async function saveSessionModal() {
   const type   = _sessionType;
   const notes  = document.getElementById('sm-notes')?.value.trim() || '';
 
-  if (!name || !start || !end || !date) return;
+  // Auto-fill name from group or player if left blank
+  if (!name) {
+    if ((type === 'group' || type === 'camp') && grp) name = groups[grp]?.name || '';
+    else if (type === 'private' || type === 'double') name = player || '';
+    if (!name) name = t(type); // final fallback: "Private", "Group", etc.
+  }
+
+  if (!start || !end || !date) return;
 
   const timeErrEl = document.getElementById('sm-time-error');
   if (timeToMins(end) <= timeToMins(start)) {
@@ -289,4 +306,38 @@ function confirmDeleteSession(sessionId) {
     closeModal();
     await deleteSessionDoc(sessionId);
   });
+}
+
+function _toggleCopyPanel() {
+  const p = document.getElementById('sm-copy-panel');
+  if (!p) return;
+  if (p.style.display === 'none') {
+    p.style.display = '';
+    dpInit('sm-copy-picker', []);
+    dpRender('sm-copy-picker');
+  } else {
+    p.style.display = 'none';
+  }
+}
+
+async function _confirmCopySession(sessionId) {
+  if (!isAdmin()) return;
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  const dates = dpGetDates('sm-copy-picker').filter(d => d !== s.date);
+  if (!dates.length) return;
+  const batch = db.batch();
+  dates.forEach(d => {
+    const ref = db.collection('sessions').doc();
+    batch.set(ref, {
+      name: s.name, type: s.type, startTime: s.startTime, endTime: s.endTime, date: d,
+      notes: s.notes || '', assignedCoachId: s.assignedCoachId || null,
+      groupId: s.groupId || null, assignedPlayerName: s.assignedPlayerName || null,
+      cancelled: false, attendance: null, recurring: null,
+      createdBy: currentUser.id, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  });
+  await batch.commit();
+  logActivity('COPY_SESSION', `${s.name} x${dates.length}`);
+  closeModal();
 }
