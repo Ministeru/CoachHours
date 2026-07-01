@@ -82,6 +82,7 @@ const STRINGS = {
     roster: 'רשימת שחקנים', noEvents: 'אין אירועים עדיין', eventDays: 'ימים',
     day: 'ימים', deleteEvent: 'מחק אירוע', errEndBeforeStartDate: 'תאריך הסיום חייב להיות אחרי ההתחלה.',
     eventType: 'סוג אירוע', tournament: 'טורניר', errNoDays: 'בחר לפחות יום אחד.', editDays: 'ערוך ימים',
+    searchEvents: 'חיפוש שחקן או אירוע...', sortDate: 'לפי תאריך', sortName: 'לפי שם', sortCreated: 'לפי יצירה', noResults: 'אין תוצאות',
   },
   en: {
     appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups', playersTab: 'Players', groupsSection: 'Groups',
@@ -163,6 +164,7 @@ const STRINGS = {
     roster: 'Roster', noEvents: 'No events yet', eventDays: 'Days',
     day: 'days', deleteEvent: 'Delete event', errEndBeforeStartDate: 'End date must be after start date.',
     eventType: 'Event type', tournament: 'Tournament', errNoDays: 'Select at least one day.', editDays: 'Edit days',
+    searchEvents: 'Search player or event...', sortDate: 'By date', sortName: 'By name', sortCreated: 'By created', noResults: 'No results',
   }
 };
 

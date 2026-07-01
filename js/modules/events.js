@@ -74,10 +74,59 @@ function renderEvents() {
 
   const el = document.getElementById('events-list');
   if (!el) return;
+
+  // Preserve search/sort values across re-renders
+  const prevQuery = document.getElementById('events-search')?.value || '';
+  const prevSort  = document.getElementById('events-sort')?.value  || 'date';
+
+  // Inject controls into their container (only once per render cycle; values preserved above)
+  const ctrlEl = document.getElementById('events-controls');
+  if (ctrlEl) ctrlEl.innerHTML = `
+    <div style="padding:0 16px 10px;display:flex;gap:8px">
+      <input type="search" id="events-search" value="${escH(prevQuery)}" placeholder="${t('searchEvents')}" oninput="renderEvents()"
+        style="flex:1;min-width:0;width:0;padding:8px 12px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;outline:none">
+      <select id="events-sort" onchange="renderEvents()"
+        style="padding:8px 10px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;outline:none;cursor:pointer;flex-shrink:0">
+        <option value="date"${prevSort==='date'?' selected':''}>${t('sortDate')}</option>
+        <option value="name"${prevSort==='name'?' selected':''}>${t('sortName')}</option>
+        <option value="created"${prevSort==='created'?' selected':''}>${t('sortCreated')}</option>
+      </select>
+    </div>`;
+
+  const query = prevQuery.trim().toLowerCase();
+  const sort  = prevSort;
+
   // Coaches see only events they're assigned to.
   const uid = activeUid();
-  const visible = isAdmin() ? events : events.filter(ev => (ev.coaches || []).some(c => c.coachId === uid));
-  if (!visible.length) { el.innerHTML = `<div class="empty">${t('noEvents')}</div>`; return; }
+  let visible = isAdmin() ? [...events] : events.filter(ev => (ev.coaches || []).some(c => c.coachId === uid));
+
+  // Player / name search
+  if (query) {
+    visible = visible.filter(ev => {
+      if (ev.name?.toLowerCase().includes(query)) return true;
+      const allPlayers = [
+        ...(ev.roster || []),
+        ...(ev.groups || []).flatMap(g => g.players || [])
+      ];
+      return allPlayers.some(n => n.toLowerCase().includes(query));
+    });
+  }
+
+  // Sort
+  if (sort === 'name') {
+    visible.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+  } else if (sort === 'created') {
+    visible.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } else {
+    // By start date — soonest first
+    visible.sort((a, b) => {
+      const da = a.dates?.[0] || a.startDate || '';
+      const db = b.dates?.[0] || b.startDate || '';
+      return da.localeCompare(db);
+    });
+  }
+
+  if (!visible.length) { el.innerHTML = `<div class="empty">${query ? t('noResults') : t('noEvents')}</div>`; return; }
 
   el.innerHTML = visible.map(ev => {
     const days     = eventDates(ev);
@@ -87,12 +136,24 @@ function renderEvents() {
     const typeColor = ev.type === 'tournament' ? 'var(--orange)' : 'var(--blue)';
     const typeBg    = ev.type === 'tournament' ? 'rgba(251,146,60,0.18)' : 'rgba(96,165,250,0.18)';
     const typeBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${typeBg};color:${typeColor}">${t(ev.type || 'camp')}</span>`;
+
+    // Show matched player names under the card when searching
+    let matchRow = '';
+    if (query) {
+      const allPlayers = [...new Set([...(ev.roster || []), ...(ev.groups || []).flatMap(g => g.players || [])])];
+      const matched = allPlayers.filter(n => n.toLowerCase().includes(query));
+      if (matched.length) {
+        matchRow = `<div style="font-size:11px;color:var(--blue);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${matched.map(n => escH(n)).join(' · ')}</div>`;
+      }
+    }
+
     return `<div class="card" onclick="openEvent('${escQ(ev.id)}')" style="cursor:pointer">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="min-width:0">
+        <div style="min-width:0;flex:1">
           <div style="display:flex;align-items:center;gap:8px"><div style="font-size:16px;font-weight:600">${escH(ev.name)}</div>${typeBadge}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:3px">${fmtEventRange(ev.startDate, ev.endDate)}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px">${rosterN} ${t('players')}${SEP}${markedN}/${days.length} ${t('day')}</div>
+          ${matchRow}
         </div>
         <span style="font-size:22px;color:var(--text3);flex-shrink:0">›</span>
       </div>
@@ -163,6 +224,27 @@ async function saveNewEvent() {
   closeModal();
 }
 
+function buildRosterList(eventId, roster, query, sort) {
+  let players = query ? roster.filter(n => n.toLowerCase().includes(query.toLowerCase())) : [...roster];
+  if (sort === 'az') players.sort((a, b) => a.localeCompare(b, 'he'));
+  else if (sort === 'za') players.sort((a, b) => b.localeCompare(a, 'he'));
+  if (!players.length) return `<div style="font-size:13px;color:var(--text3);padding:8px 0">${t('noPlayers')}</div>`;
+  return players.map((n, i) =>
+    `<div style="display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      <span style="font-size:12px;color:var(--text3);min-width:26px">${i + 1}</span>
+      <span style="flex:1;font-size:14px">${escH(n)}</span>
+      <span onclick="removeEventRosterPlayer('${escQ(eventId)}','${escQ(n)}')" style="color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</span>
+    </div>`
+  ).join('');
+}
+
+function filterEventRoster(eventId, query, sort) {
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+  const el = document.getElementById('ev-roster-list');
+  if (el) el.innerHTML = buildRosterList(eventId, ev.roster || [], query, sort);
+}
+
 function openEvent(eventId) {
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
@@ -210,15 +292,7 @@ function openEvent(eventId) {
   // Admin-only management blocks (roster + camp coaches/groups)
   let adminBlocks = '';
   if (admin) {
-    const rosterList = (ev.roster || []).length
-      ? (ev.roster || []).map((n, i) =>
-        `<div style="display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
-          <span style="font-size:12px;color:var(--text3);min-width:26px">${i + 1}</span>
-          <span style="flex:1;font-size:14px">${escH(n)}</span>
-          <span onclick="removeEventRosterPlayer('${escQ(eventId)}','${escQ(n)}')" style="color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</span>
-        </div>`
-      ).join('')
-      : `<div style="font-size:13px;color:var(--text3);padding:8px 0">${t('noPlayers')}</div>`;
+    const rosterList = buildRosterList(eventId, ev.roster || [], '', '');
 
     let campSections = '';
     if ((ev.type || 'camp') === 'camp') {
@@ -262,7 +336,16 @@ function openEvent(eventId) {
 
     adminBlocks = `
       <div class="card-label" style="margin:16px 0 8px">${t('roster')}</div>
-      <div style="margin-bottom:10px">${rosterList}</div>
+      <input type="search" id="ev-roster-search" placeholder="${lang==='he'?'חיפוש שחקן...':'Search player...'}"
+        oninput="filterEventRoster('${escQ(eventId)}',this.value,document.getElementById('ev-roster-sort')?.value||'')"
+        style="display:block;width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:6px">
+      <select id="ev-roster-sort" onchange="filterEventRoster('${escQ(eventId)}',document.getElementById('ev-roster-search')?.value||'',this.value)"
+        style="display:block;width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;outline:none;cursor:pointer;margin-bottom:8px">
+        <option value="">${lang==='he'?'סדר הוספה':'Order added'}</option>
+        <option value="az">${lang==='he'?'א → ת':'A → Z'}</option>
+        <option value="za">${lang==='he'?'ת → א':'Z → A'}</option>
+      </select>
+      <div id="ev-roster-list" style="margin-bottom:10px">${rosterList}</div>
       <div class="add-row">
         <input type="text" id="ev-roster-input" placeholder="${t('playerPlaceholder')}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();addEventRosterPlayer('${escQ(eventId)}')}">
@@ -421,15 +504,27 @@ function openEventGroup(eventId, groupId) {
   if (!grp) return;
   const roster = ev.roster || [];
 
-  const rows = roster.map(n =>
-    `<label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer">
-      <input type="checkbox" data-name="${escH(n)}" ${(grp.players || []).includes(n) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--blue)">
-      <span style="font-size:15px">${escH(n)}</span>
-    </label>`
-  ).join('') || `<p style="font-size:13px;color:var(--text3);padding:10px 0">${t('noPlayers')}</p>`;
+  const rows = roster.map(n => {
+    const inCurrent = (grp.players || []).includes(n);
+    const otherGrp  = (ev.groups || []).find(g => g.id !== groupId && (g.players || []).includes(n));
+    const badge = otherGrp
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(251,146,60,0.15);color:var(--orange);white-space:nowrap;flex-shrink:0">${escH(otherGrp.name)}</span>`
+      : '';
+    return `<div data-pname="${escH(n)}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer"
+        onclick="var cb=this.querySelector('input');cb.checked=!cb.checked">
+      <input type="checkbox" data-name="${escH(n)}" data-other="${escH(otherGrp?.id || '')}" ${inCurrent ? 'checked' : ''}
+        style="width:18px;height:18px;accent-color:var(--blue);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
+      <span style="flex:1;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(n)}</span>
+      ${badge}
+    </div>`;
+  }).join('') || `<p style="font-size:13px;color:var(--text3);padding:10px 0">${t('noPlayers')}</p>`;
 
   const coachOpts = `<option value="">— ${t('selectCoach')} —</option>` +
     (ev.coaches || []).map(c => `<option value="${c.id}" ${grp.coachSlotId === c.id ? 'selected' : ''}>${escH(eventCoachName(c))}</option>`).join('');
+
+  const searchBar = roster.length > 4 ? `<input type="search" placeholder="${lang==='he'?'חיפוש שחקן...':'Search player...'}"
+    oninput="filterGroupPlayers(this.value)"
+    style="display:block;width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:6px">` : '';
 
   createModal(`
     <div class="sheet-title">${escH(grp.name)}</div>
@@ -438,7 +533,7 @@ function openEventGroup(eventId, groupId) {
       <select id="eg-coach">${coachOpts}</select>
     </div>
     <div class="card-label" style="margin:8px 0 4px">${t('roster')}</div>
-    <div id="eg-rows" style="max-height:42vh;overflow-y:auto">${rows}</div>
+    ${searchBar}<div id="eg-rows" style="max-height:42vh;overflow-y:auto">${rows}</div>
     <button class="btn btn-primary" style="margin-top:14px" onclick="saveEventGroup('${escQ(eventId)}','${escQ(groupId)}')">${t('save')}</button>
     <button class="btn btn-danger" style="margin-top:6px" onclick="deleteEventGroup('${escQ(eventId)}','${escQ(groupId)}')">${t('delete')}</button>
     <button class="btn btn-secondary" onclick="openEvent('${escQ(eventId)}')">${t('cancel')}</button>
@@ -449,11 +544,44 @@ async function saveEventGroup(eventId, groupId) {
   if (!isAdmin()) return;
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
-  const players = Array.from(document.querySelectorAll('#eg-rows input[type="checkbox"]:checked')).map(cb => cb.dataset.name);
   const coachSlotId = document.getElementById('eg-coach')?.value || null;
-  const groups = (ev.groups || []).map(g => g.id === groupId ? { ...g, players, coachSlotId } : g);
-  await saveEvent(eventId, { ...ev, groups });
-  openEvent(eventId);
+  const checkedCbs = Array.from(document.querySelectorAll('#eg-rows input[type="checkbox"]:checked'));
+  const players = checkedCbs.map(cb => cb.dataset.name).filter(Boolean);
+
+  // Detect players being moved from other groups
+  const moves = checkedCbs
+    .filter(cb => cb.dataset.other)
+    .map(cb => ({ name: cb.dataset.name, fromId: cb.dataset.other }))
+    .filter(m => m.name && m.fromId);
+
+  const grpName = (ev.groups || []).find(g => g.id === groupId)?.name || '';
+
+  const doSave = async () => {
+    const groups = (ev.groups || []).map(g => {
+      if (g.id === groupId) return { ...g, players, coachSlotId };
+      const taken = moves.filter(m => m.fromId === g.id).map(m => m.name);
+      return taken.length ? { ...g, players: (g.players || []).filter(n => !taken.includes(n)) } : g;
+    });
+    await saveEvent(eventId, { ...ev, groups });
+    openEvent(eventId);
+  };
+
+  if (!moves.length) { await doSave(); return; }
+
+  const moveLines = moves.map(m => {
+    const fromName = (ev.groups || []).find(g => g.id === m.fromId)?.name || m.fromId;
+    const dir = lang === 'he' ? `מ-${escH(fromName)} ל-${escH(grpName)}` : `${escH(fromName)} → ${escH(grpName)}`;
+    return `<div style="padding:4px 0;border-bottom:0.5px solid var(--border)">${escH(m.name)}<span style="color:var(--text3);font-size:12px"> · ${dir}</span></div>`;
+  }).join('');
+
+  createModal(`
+    <div class="sheet-title">${lang==='he'?'העברת שחקנים':'Move players'}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${lang==='he'?'השחקנים הבאים יועברו:':'The following players will be moved:'}</div>
+    <div style="margin-bottom:16px">${moveLines}</div>
+    <button class="btn btn-primary" onclick="window._modalCb&&window._modalCb()">${lang==='he'?'אישור':'Confirm'}</button>
+    <button class="btn btn-secondary" style="margin-top:6px" onclick="openEventGroup('${escQ(eventId)}','${escQ(groupId)}')">${t('cancel')}</button>
+  `);
+  window._modalCb = doSave;
 }
 
 function deleteEventGroup(eventId, groupId) {
@@ -521,6 +649,28 @@ async function togglePlayerSchedule(eventId, date, groupId, playerName, inAdminV
   else openEventGroupDay(eventId, date, groupId);
 }
 
+function schedPill(eventId, date, groupId, playerName, exp, admin, inAdminView) {
+  const click = admin ? `onclick="togglePlayerSchedule('${escQ(eventId)}','${date}','${escQ(groupId)}','${escQ(playerName)}',${inAdminView})"` : '';
+  if (exp === true)  return `<span ${click} style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(96,165,250,0.15);color:var(--blue);${admin?'cursor:pointer;':''}white-space:nowrap;flex-shrink:0">${lang==='he'?'מגיע':'Expected'}</span>`;
+  if (exp === false) return `<span ${click} style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(251,146,60,0.15);color:var(--orange);${admin?'cursor:pointer;':''}white-space:nowrap;flex-shrink:0">${lang==='he'?'לא מגיע':'Not expected'}</span>`;
+  if (admin)         return `<span ${click} style="font-size:11px;color:var(--text3);cursor:pointer;flex-shrink:0;min-width:24px;text-align:center">—</span>`;
+  return `<span style="flex-shrink:0;min-width:24px"></span>`;
+}
+
+function filterAttSearch(query) {
+  const q = (query || '').toLowerCase();
+  document.querySelectorAll('#att-rows > div[data-pname]').forEach(row => {
+    row.style.display = (!q || (row.dataset.pname || '').toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+function filterGroupPlayers(query) {
+  const q = (query || '').toLowerCase();
+  document.querySelectorAll('#eg-rows > div[data-pname]').forEach(row => {
+    row.style.display = (!q || (row.dataset.pname || '').toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
 function openEventGroupDay(eventId, date, groupId) {
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
@@ -534,14 +684,9 @@ function openEventGroupDay(eventId, date, groupId) {
 
   const rows = grp.players.map(n => {
     const exp = schedExpected(ev, date, groupId, n);
-    const dotBg  = exp === true ? 'var(--blue)' : exp === false ? 'var(--orange)' : 'transparent';
-    const dotBdr = exp === null ? '1.5px solid var(--border)' : 'none';
-    const dotTip = exp === true ? (lang==='he'?'מגיע':'Expected') : exp === false ? (lang==='he'?'לא מגיע':'Not expected') : '';
-    const dot = admin
-      ? `<span onclick="togglePlayerSchedule('${escQ(eventId)}','${date}','${escQ(groupId)}','${escQ(n)}',false)" title="${dotTip}" style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0;cursor:pointer"></span>`
-      : `<span title="${dotTip}" style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0"></span>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)">
-      ${dot}
+    const pill = schedPill(eventId, date, groupId, n, exp, admin, false);
+    return `<div data-pname="${escH(n)}" style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)">
+      ${pill}
       <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer">
         <input type="checkbox" id="att-${escId(n)}" data-name="${escH(n)}" ${present.includes(n)?'checked':''}
           style="width:18px;height:18px;accent-color:var(--blue)">
@@ -553,8 +698,11 @@ function openEventGroupDay(eventId, date, groupId) {
   const schedGrp = ev.schedule?.[date]?.[groupId];
   const expCount = schedGrp ? Object.values(schedGrp).filter(Boolean).length : null;
   const schedInfo = expCount !== null
-    ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">● <span style="color:var(--blue)">${expCount}</span> / <span style="color:var(--orange)">${grp.players.length - expCount}</span> ${lang==='he'?'לא מגיעים — לחץ על הנקודה לעריכה':'not expected — tap dot to edit'}</div>`
+    ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px"><span style="color:var(--blue)">${expCount}</span> ${lang==='he'?'מגיעים':'expected'} · <span style="color:var(--orange)">${grp.players.length - expCount}</span> ${lang==='he'?'לא מגיעים':'not expected'}</div>`
     : '';
+
+  const searchRow = grp.players.length > 4 ? `<input type="search" placeholder="${lang==='he'?'חיפוש שחקן...':'Search player...'}" oninput="filterAttSearch(this.value)"
+    style="width:100%;box-sizing:border-box;padding:7px 10px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:6px">` : '';
 
   const empty = !grp.players.length ? `<p id="att-empty" style="color:var(--text2);font-size:13px;padding:12px 0">${t('noPlayers')}</p>` : '';
   const addPlayerRow = admin ? `<div class="add-row" style="margin-top:10px">
@@ -566,7 +714,7 @@ function openEventGroupDay(eventId, date, groupId) {
   createModal(`
     <div class="sheet-title">${escH(grp.name)}</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${escH(ev.name)}${SEP}${t(EV_DAY_KEYS[dow])}${SEP}${dd}/${mo}/${y}${att.savedAt ? SEP + escH(att.savedAt) + (att.savedBy ? ' · ' + escH(att.savedBy) : '') : ''}</div>
-    ${schedInfo}
+    ${schedInfo}${searchRow}
     <div id="att-rows">${rows}</div>${empty}
     ${addPlayerRow}
     <button class="btn btn-primary" style="margin-top:14px" onclick="saveEventGroupDay('${escQ(eventId)}','${date}','${escQ(groupId)}')">${t('saveAttendance')}</button>
@@ -667,12 +815,9 @@ function openEventDayAdmin(eventId, date) {
     const expCount = schedGrp ? Object.values(schedGrp).filter(Boolean).length : null;
     const rows = g.players.map(n => {
       const exp = schedExpected(ev, date, g.id, n);
-      const dotBg  = exp === true ? 'var(--blue)' : exp === false ? 'var(--orange)' : 'transparent';
-      const dotBdr = exp === null ? '1.5px solid var(--border)' : 'none';
-      const dotTip = exp === true ? (lang==='he'?'מגיע':'Expected') : exp === false ? (lang==='he'?'לא מגיע':'Not expected') : '';
+      const pill = schedPill(eventId, date, g.id, n, exp, true, true);
       return `<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)">
-        <span onclick="togglePlayerSchedule('${escQ(eventId)}','${date}','${escQ(g.id)}','${escQ(n)}',true)" title="${dotTip}"
-          style="width:10px;height:10px;border-radius:50%;background:${dotBg};border:${dotBdr};display:inline-block;flex-shrink:0;cursor:pointer"></span>
+        ${pill}
         <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer">
           <input type="checkbox" data-group="${escH(g.id)}" data-name="${escH(n)}" ${present.includes(n)?'checked':''}
             style="width:18px;height:18px;accent-color:var(--blue)">
@@ -680,8 +825,8 @@ function openEventDayAdmin(eventId, date) {
         </label>
       </div>`;
     }).join('') || `<p style="color:var(--text2);font-size:13px;padding:8px 0">${t('noPlayers')}</p>`;
-    const savedLabel = att.savedAt ? `<span style="font-size:11px;color:var(--text3);margin-left:6px">${escH(att.savedAt)}${att.savedBy ? ' · ' + escH(att.savedBy) : ''}</span>` : '';
-    const expLabel = expCount !== null ? `<span style="font-size:11px;color:var(--text3);margin-inline-start:6px">·  <span style="color:var(--blue)">●</span> ${expCount} <span style="color:var(--orange)">●</span> ${g.players.length - expCount}</span>` : '';
+    const savedLabel = att.savedAt ? `<span style="font-size:11px;color:var(--text3);margin-inline-start:6px">${escH(att.savedAt)}${att.savedBy ? ' · ' + escH(att.savedBy) : ''}</span>` : '';
+    const expLabel = expCount !== null ? `<span style="font-size:11px;color:var(--text3);margin-inline-start:6px">· <span style="color:var(--blue)">${expCount}</span> ${lang==='he'?'מגיעים':'expected'} · <span style="color:var(--orange)">${g.players.length - expCount}</span> ${lang==='he'?'לא מגיעים':'not'}</span>` : '';
     return `<div class="card-label" style="margin:14px 0 4px">${escH(g.name)}${expLabel}${savedLabel}</div>
       <div>${rows}</div>`;
   }).join('');
