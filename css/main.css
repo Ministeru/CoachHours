@@ -182,10 +182,53 @@ html[dir="ltr"] .day-hour-label { text-align: left; padding-left: 4px; }
 .add-row button { padding: 9px 14px; background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .add-row button:active { opacity: 0.7; }
 
+/* ROSTER ROW — tap-to-rename name + explicit pencil affordance (tap target alone had no visible
+   hint that it was editable, so this makes the action discoverable on touch, not just via title) */
+.roster-name-display { transition: color 0.15s; border-radius: 6px; }
+.roster-name-display:hover, .roster-name-display:focus-visible { color: var(--accent); }
+.roster-name-display:active { opacity: 0.7; }
+.roster-rename-btn { transition: color 0.15s; }
+.roster-rename-btn:hover, .roster-rename-btn:focus-visible { color: var(--text); }
+.roster-rename-btn:active { opacity: 0.6; }
+
 /* COMPACT ADD BUTTON (pill, sized to content) */
 .btn-add { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--accent); color: #111; border: none; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
 .btn-add:hover { opacity: 0.9; }
 .btn-add:active { opacity: 0.8; }
+
+/* EXPECTED-ATTENDANCE GRID (bus roster / camp schedule) — styled like a printed roster sheet:
+   solid dark section bars, full grid ruling, bold high-contrast marks. The modal itself gets a
+   wider sheet (.grid-sheet) so a whole camp's worth of day-columns fits without excess scrolling —
+   the point is to see the whole roster at a glance, like the paper sheet it replaces. */
+.bottom-sheet.grid-sheet { padding-inline: 14px; }
+.grid-table-wrap { overflow-x: auto; margin: 0 -14px; padding: 0 14px 6px; }
+.grid-table { border-collapse: collapse; font-size: 12px; border: 1px solid var(--border2); }
+.grid-table th, .grid-table td { padding: 7px 9px; text-align: center; border: 0.5px solid var(--border2); white-space: nowrap; }
+.grid-table thead th { background: var(--bg); color: var(--text); font-weight: 700; position: sticky; top: 0; z-index: 2; }
+.grid-sticky { position: sticky; inset-inline-start: 0; background: var(--bg); color: var(--text); z-index: 1; text-align: start; max-width: 110px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; font-weight: 600; }
+.grid-loc-row td { background: var(--bg); color: #fff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; text-align: start; padding: 8px 9px; }
+.grid-loc-row .grid-sticky { background: var(--bg); color: #fff; }
+.exp-cell { cursor: pointer; font-weight: 800; font-size: 13px; }
+.exp-cell.readonly { cursor: default; }
+.grid-sticky.readonly { cursor: default; }
+.exp-pending, .exp-no { color: var(--text2); }
+.exp-ok { color: var(--green); }
+.exp-miss { background: var(--red-bg); color: var(--red); }
+.exp-extra { background: var(--orange-bg); color: var(--orange); }
+.grid-total-row td { font-weight: 700; background: var(--bg3); border-top: 1px solid var(--border2); }
+.grid-total-row .grid-sticky { font-size: 11px; text-transform: uppercase; color: var(--text2); background: var(--bg3); }
+.grid-total-cell { font-weight: 700; background: var(--bg3); color: var(--text); font-size: 11px; }
+
+@media (min-width: 880px) {
+  /* Give the grid room to breathe on a laptop: a near-full-width, tall sheet instead of the
+     narrow 520px dialog every other modal uses, so most camps fit with zero horizontal scroll. */
+  .bottom-sheet.grid-sheet { max-width: min(94vw, 1320px); width: 94vw; max-height: 92vh; padding: 22px 26px; }
+  .grid-sheet .grid-table-wrap { margin-inline: -26px; padding-inline: 26px; }
+  .grid-sheet .grid-table { font-size: 13px; width: 100%; }
+  .grid-sheet .grid-table th, .grid-sheet .grid-table td { padding: 9px 14px; }
+  .grid-sheet .grid-sticky { max-width: 190px; font-size: 13px; }
+  .grid-sheet .exp-cell { font-size: 15px; }
+}
 
 /* ─── SUMMARY: bank-statement style ─── */
 .sum-balance { background: linear-gradient(165deg, rgba(34,197,94,0.10), var(--bg2) 58%); border-color: rgba(34,197,94,0.22); box-shadow: 0 10px 28px -14px rgba(34,197,94,0.40), 0 2px 10px -6px rgba(0,0,0,0.6); }
@@ -316,6 +359,10 @@ html[dir="ltr"] .day-hour-label { text-align: left; padding-left: 4px; }
 
   .bottom-overlay { align-items: center; }
   .bottom-sheet { max-width: 520px; border-radius: 16px; }
+  /* Content-heavy screens (event details, roster/group lists, attendance marking) were pinned to
+     the same narrow 520px dialog as a 2-line confirm popup, leaving most of a laptop's width
+     empty. Give those specific screens real room to breathe; small dialogs stay compact. */
+  .bottom-sheet.wide-sheet { max-width: min(90vw, 980px); width: 90vw; }
 
   #view-banner { inset-inline-start: 220px; inset-inline-end: 0; transform: none; max-width: calc(100vw - 220px); }
 

@@ -1,10 +1,10 @@
 // ─── MODAL HELPERS ────────────────────────────────────────
-function createModal(html) {
+function createModal(html, extraClass) {
   document.getElementById('app-modal')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'app-modal';
   overlay.className = 'bottom-overlay';
-  overlay.innerHTML = `<div class="bottom-sheet">${html}</div>`;
+  overlay.innerHTML = `<div class="bottom-sheet${extraClass ? ' ' + extraClass : ''}">${html}</div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
   document.body.appendChild(overlay);
 }

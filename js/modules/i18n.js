@@ -83,6 +83,15 @@ const STRINGS = {
     day: 'ימים', deleteEvent: 'מחק אירוע', errEndBeforeStartDate: 'תאריך הסיום חייב להיות אחרי ההתחלה.',
     eventType: 'סוג אירוע', tournament: 'טורניר', errNoDays: 'בחר לפחות יום אחד.', editDays: 'ערוך ימים',
     searchEvents: 'חיפוש שחקן או אירוע...', sortDate: 'לפי תאריך', sortName: 'לפי שם', sortCreated: 'לפי יצירה', noResults: 'אין תוצאות',
+    homeCoach: 'מאמן קבוע', noCoach: 'ללא מאמן', notOnRoster: 'לא ברשימה', tapDayHint: 'הקש על תאריך לרישום מי עלה',
+    pickupLocation: 'נקודת איסוף', noLocation: 'ללא נקודת איסוף', editLocation: 'ערוך נקודת איסוף',
+    totalLabel: 'סה״כ', editHomeCoach: 'ערוך מאמן קבוע', legendOk: 'עלה כצפוי', legendMiss: 'ציפינו - לא עלה',
+    legendExtra: 'לא ציפינו - עלה', legendPending: 'צפוי לעלות, טרם נבדק', legendNo: 'לא ברשימת ההסעה', installApp: 'התקן אפליקציה',
+    installAppDesc: 'הוסף למסך הבית לגישה מהירה בלי דפדפן', installBtn: 'התקן', iosInstallHint: 'ב-iPhone: הקש על שיתוף ← הוסף למסך הבית',
+    scanToInstall: 'סרוק כדי לפתוח באפליקציה', genericInstallHint: 'פתח את תפריט הדפדפן ובחר "הוסף למסך הבית" או "התקן אפליקציה"',
+    copyLink: 'העתק קישור', renamePlayer: 'שינוי שם שחקן', rename: 'שנה שם', errDuplicatePlayer: 'שם זה כבר קיים ברשימה.',
+    attendanceSection: 'נוכחות', campAttendance: 'נוכחות מחנה', newAttendanceName: 'שם הנוכחות (למשל: הסעה)', createAttendance: '+ צור נוכחות',
+    selectAll: 'בחר הכל', selectNone: 'נקה בחירה', selectPlayersHint: 'בחר אילו שחקנים משתתפים בנוכחות זו.',
   },
   en: {
     appTitle: 'CoachHours', calendar: 'Calendar', groups: 'Groups', playersTab: 'Players', groupsSection: 'Groups',
@@ -165,6 +174,15 @@ const STRINGS = {
     day: 'days', deleteEvent: 'Delete event', errEndBeforeStartDate: 'End date must be after start date.',
     eventType: 'Event type', tournament: 'Tournament', errNoDays: 'Select at least one day.', editDays: 'Edit days',
     searchEvents: 'Search player or event...', sortDate: 'By date', sortName: 'By name', sortCreated: 'By created', noResults: 'No results',
+    homeCoach: 'Home Coach', noCoach: 'No Coach', notOnRoster: 'Not on Roster', tapDayHint: 'Tap a date to record who rode',
+    pickupLocation: 'Pickup Location', noLocation: 'No Location', editLocation: 'Edit Pickup Location',
+    totalLabel: 'Total', editHomeCoach: 'Edit Home Coach', legendOk: 'Rode as expected', legendMiss: 'Expected - didn\'t ride',
+    legendExtra: 'Unexpected - rode', legendPending: 'Expected to ride, not yet checked', legendNo: 'Not on bus list', installApp: 'Install App',
+    installAppDesc: 'Add to your home screen for quick access without the browser', installBtn: 'Install', iosInstallHint: 'On iPhone: tap Share → Add to Home Screen',
+    scanToInstall: 'Scan to open the app', genericInstallHint: 'Open your browser menu and choose "Add to Home Screen" or "Install App"',
+    copyLink: 'Copy Link', renamePlayer: 'Rename Player', rename: 'Rename', errDuplicatePlayer: 'This name is already in the list.',
+    attendanceSection: 'Attendance', campAttendance: 'Camp Attendance', newAttendanceName: 'Attendance name (e.g. Bus)', createAttendance: '+ Create Attendance',
+    selectAll: 'Select All', selectNone: 'Clear', selectPlayersHint: 'Choose which players are included in this attendance.',
   }
 };
 

@@ -17,3 +17,5 @@ let eventsUnsub    = null;
 
 let calView = 'month';
 let calDate = new Date();
+
+let deferredInstallPrompt = null; // captured 'beforeinstallprompt' event, replayed by the Settings install button

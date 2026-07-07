@@ -72,7 +72,7 @@ function renderGroups() {
     if (expanded) {
       const editMode = expandedGroupEditMode.has(g.id);
       const chips = g.players.map(name =>
-        `<span class="player-chip">${escH(name)}${(isAdmin()&&editMode)?`<span class="rm" onclick="confirmRemovePlayer('${g.id}','${escQ(name)}')">×</span>`:''}
+        `<span class="player-chip">${escH(name)}${(isAdmin()&&editMode)?`<span class="rm" onclick="renameGroupPlayer('${g.id}','${escQ(name)}')" title="${t('rename')}" style="font-size:12px">✎</span><span class="rm" onclick="confirmRemovePlayer('${g.id}','${escQ(name)}')">×</span>`:''}
         </span>`
       ).join('') || `<span style="font-size:13px;color:var(--text3)">${t('noPlayers')}</span>`;
 
@@ -202,6 +202,77 @@ function confirmRemovePlayer(groupId, name) {
   });
 }
 
+// ─── RENAME PLAYER ────────────────────────────────────────
+// Generic rename prompt. onConfirm(newName) should return an error string to show inline,
+// or a falsy value on success (in which case the modal closes).
+function openRenamePlayerModal(currentName, onConfirm) {
+  createModal(`
+    <div class="sheet-title">${t('renamePlayer')}</div>
+    <div class="form-group">
+      <input type="text" id="rename-player-input" value="${escH(currentName)}"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('rename-player-ok').click()}">
+    </div>
+    <div id="rename-player-error" class="error-box" style="margin-bottom:8px"></div>
+    <button id="rename-player-ok" class="btn btn-primary" style="margin-top:0" onclick="window._renamePlayerCb&&window._renamePlayerCb()">${t('save')}</button>
+    <button class="btn btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  `);
+  window._renamePlayerCb = async () => {
+    const val = document.getElementById('rename-player-input')?.value.trim();
+    const errEl = document.getElementById('rename-player-error');
+    const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+    if (!val) { showErr(t('fillAllFields')); return; }
+    if (val === currentName) { closeModal(); return; }
+    const err = await onConfirm(val);
+    if (err) { showErr(err); return; }
+    closeModal();
+  };
+  setTimeout(() => { const el = document.getElementById('rename-player-input'); el?.focus(); el?.select(); }, 80);
+}
+
+// Renames a player within one group's roster, and cascades the rename into that group's
+// historical attendance records so past stats stay attributed to the same player.
+function renameGroupPlayer(groupId, oldName) {
+  if (!isAdmin()) return;
+  openRenamePlayerModal(oldName, async (newName) => {
+    const g = groups[groupId];
+    if (!g) return t('errGeneric');
+    if (g.players.includes(newName)) return t('errDuplicatePlayer');
+    await saveGroup(groupId, { ...g, players: g.players.map(n => n === oldName ? newName : n) });
+    const affected = sessions.filter(s => s.groupId === groupId && (s.attendance?.present || []).includes(oldName));
+    if (affected.length) {
+      const batch = db.batch();
+      affected.forEach(s => {
+        const present = s.attendance.present.map(n => n === oldName ? newName : n);
+        batch.update(db.collection('sessions').doc(s.id), { 'attendance.present': present });
+      });
+      await batch.commit();
+    }
+    logActivity('RENAME_PLAYER', `${oldName} → ${newName}`);
+    renderGroups();
+    return null;
+  });
+}
+
+// Renames an individual (private) player and cascades into past sessions' assignedPlayerName.
+function renameIndividualPlayer(id, oldName) {
+  if (!isAdmin()) return;
+  openRenamePlayerModal(oldName, async (newName) => {
+    const p = players[id];
+    if (!p) return t('errGeneric');
+    if (Object.values(players).some(x => x.id !== id && x.name === newName)) return t('errDuplicatePlayer');
+    await saveIndividualPlayer(id, { ...p, name: newName });
+    const affected = sessions.filter(s => s.type === 'private' && s.assignedPlayerName === oldName);
+    if (affected.length) {
+      const batch = db.batch();
+      affected.forEach(s => batch.update(db.collection('sessions').doc(s.id), { assignedPlayerName: newName }));
+      await batch.commit();
+    }
+    logActivity('RENAME_PLAYER', `${oldName} → ${newName}`);
+    renderGroups();
+    return null;
+  });
+}
+
 function confirmDeleteGroupUI(id) {
   const g = groups[id];
   if (!g) return;
@@ -282,6 +353,7 @@ function playerRosterCard(p, accentColor) {
       <div style="flex:1;min-width:0">
         <div style="font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(p.name)}</div>
       </div>
+      ${isAdmin() ? `<button onclick="event.stopPropagation();renameIndividualPlayer('${p.id}','${escQ(p.name)}')" title="${t('rename')}" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px 6px;line-height:1">✎</button>` : ''}
       ${isAdmin() ? `<button onclick="event.stopPropagation();confirmDeleteIndividualPlayer('${p.id}','${escQ(p.name)}')" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1">×</button>` : ''}
       ${isAdmin() ? `<span style="color:var(--text3);font-size:13px;user-select:none">⠿</span>` : ''}
     </div>

@@ -1,4 +1,4 @@
-const CACHE = 'coach-hours-v9';
+const CACHE = 'coach-hours-v10';
 const ASSETS = [
   './index.html', './manifest.json',
   './css/main.css',
@@ -8,6 +8,7 @@ const ASSETS = [
   './js/modules/i18n.js',
   './js/modules/utils.js',
   './js/modules/data.js',
+  './js/modules/qrcode-lib.js',
   './js/modules/ui.js',
   './js/modules/calendar.js',
   './js/modules/sessions.js',

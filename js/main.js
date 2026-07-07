@@ -76,3 +76,15 @@ applyLangStrings();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+// Chrome/Edge/Android: capture the native install prompt instead of letting it show unprompted,
+// so the Settings screen can offer a one-tap "Install App" button.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (document.getElementById('screen-settings')?.classList.contains('active')) renderSettings();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  if (document.getElementById('screen-settings')?.classList.contains('active')) renderSettings();
+});
