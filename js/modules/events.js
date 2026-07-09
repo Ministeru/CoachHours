@@ -142,6 +142,17 @@ function campActualPresentSet(ev, date) {
   return set;
 }
 
+// Which real coaching group (if any) a player belongs to — used only to know which bucket of
+// ev.attendance a direct grid-tap edit should write into (falls back to the 'all' pseudo-group
+// when the camp has no real groups yet, matching accessibleGroups' own fallback).
+function campGroupIdForName(ev, name) {
+  if ((ev.type || 'camp') === 'camp' && ev.groups && ev.groups.length) {
+    const g = ev.groups.find(g => (g.players || []).includes(name));
+    if (g) return g.id;
+  }
+  return 'all';
+}
+
 // Real actual-attendance record for the whole-camp default tracker: read straight from the
 // existing daily roll-call (ev.attendance) that coaches already fill in every day. Matches by
 // exact name across *every* group recorded that day, rather than requiring the player to be a
@@ -155,21 +166,46 @@ function campDayAttendance(ev, date, name) {
   return { present: campActualPresentSet(ev, date).has(name) ? [name] : [] };
 }
 
-// Whether a player is expected on a given tracker/day. The default Camp Attendance tracker
-// treats every roster player as expected unless explicitly marked otherwise (being enrolled in
-// camp IS the expectation); custom trackers (bus, etc.) default to not-expected until opted in,
-// since only a subset of the roster usually participates.
+// Whether a player is expected on a given (custom-tracker) day. Custom trackers like Bus
+// Attendance default to not-expected until opted in, since only a subset of the roster
+// usually participates. Camp Attendance uses a five-state click-cycle instead — see
+// CAMP_CELL_CYCLE / cycleCampCell below.
 function dayExpected(ev, trackerId, date, name) {
-  const mark = ev.trackerData?.[trackerId]?.schedule?.[date]?.[name];
-  return trackerId === DEFAULT_TRACKER_ID ? mark !== false : !!mark;
+  return !!ev.trackerData?.[trackerId]?.schedule?.[date]?.[name];
+}
+
+// Camp Attendance's five-state click-cycle: tapping a cell just advances it to the next state
+// here, wrapping around. "expected" (raw) is stored tri-state — undefined/true/false — so a
+// totally untouched cell (undefined, not present) can render truly blank, distinct from an
+// explicit "not expected" gray X. Both facts are written straight into the same real data the
+// day-by-day roll call uses (schedule for expected, ev.attendance for present), so the grid and
+// the daily screen always agree no matter which one was edited last.
+const CAMP_CELL_CYCLE = [
+  { raw: undefined, came: false, sym: '',  cls: '' },           // 1. empty — nothing recorded
+  { raw: true,       came: true,  sym: '✓', cls: 'exp-ok' },    // 2. came, as expected
+  { raw: false,      came: false, sym: '✕', cls: 'exp-no' },    // 3. not expected, didn't come
+  { raw: false,      came: true,  sym: '✓', cls: 'exp-extra' }, // 4. came, unexpectedly
+  { raw: true,       came: false, sym: '✕', cls: 'exp-miss' },  // 5. expected, but missed
+];
+
+function campCellStateIndex(raw, came) {
+  if (!came && raw === undefined) return 0;
+  const expected = raw !== false;
+  if (expected && came) return 1;
+  if (!expected && !came) return 2;
+  if (!expected && came) return 3;
+  return 4; // expected && !came
 }
 
 // One grid cell's glyph + CSS class, comparing this tracker's expected-vs-actual data.
 function cellMarker(ev, trackerId, date, name) {
+  if (trackerId === DEFAULT_TRACKER_ID) {
+    const raw = ev.trackerData?.[DEFAULT_TRACKER_ID]?.schedule?.[date]?.[name];
+    const came = campActualPresentSet(ev, date).has(name);
+    return CAMP_CELL_CYCLE[campCellStateIndex(raw, came)];
+  }
   const expected = dayExpected(ev, trackerId, date, name);
-  const att = trackerId === DEFAULT_TRACKER_ID
-    ? campDayAttendance(ev, date, name)
-    : (ev.trackerData?.[trackerId]?.attendance?.[date] || null);
+  const att = ev.trackerData?.[trackerId]?.attendance?.[date] || null;
   if (!att) return expected ? { sym: '✓', cls: 'exp-pending' } : { sym: '✕', cls: 'exp-no' };
   const came = (att.present || []).includes(name);
   if (expected && came) return { sym: '✓', cls: 'exp-ok' };
@@ -1166,14 +1202,19 @@ function openEventGrid(eventId, trackerId) {
   const bodyRows = sections.map(sec => {
     const locRow = `<tr class="grid-loc-row"><td class="grid-sticky" colspan="${days.length + 2}">${escH(sec.label)}</td></tr>`;
     const playerRows = sec.players.map(name => {
+      const nameKey = encodeURIComponent(name);
       const cells = days.map(d => {
         const m = cellMarker(ev, trackerId, d, name);
-        const onclick = admin ? ` onclick="toggleGridCell('${escQ(eventId)}','${escQ(trackerId)}','${d}','${escQ(name)}')"` : '';
-        return `<td class="exp-cell ${m.cls}${stickyRO}"${onclick}>${m.sym}</td>`;
+        const cellAttrs = admin
+          ? (isDefaultTracker
+              ? ` onclick="cycleCampCell(this,'${escQ(eventId)}','${d}','${escQ(name)}')"`
+              : ` onclick="toggleGridCell(this,'${escQ(eventId)}','${escQ(trackerId)}','${d}','${escQ(name)}')"`)
+          : '';
+        return `<td class="exp-cell ${m.cls}${stickyRO}"${cellAttrs}>${m.sym}</td>`;
       }).join('');
       const onclick = admin ? ` onclick="openPlayerGroupEdit('${escQ(eventId)}','${escQ(trackerId)}','${escQ(name)}')"` : '';
       const { present, marked } = trackerPlayerTotal(ev, trackerId, days, name);
-      const totalCell = `<td class="grid-total-cell">${present}/${marked}</td>`;
+      const totalCell = `<td id="rowtot_${escQ(trackerId)}_${nameKey}" class="grid-total-cell">${present}/${marked}</td>`;
       return `<tr><td class="grid-sticky${stickyRO}"${onclick}>${escH(name)}</td>${cells}${totalCell}</tr>`;
     }).join('');
     return locRow + playerRows;
@@ -1185,13 +1226,20 @@ function openEventGrid(eventId, trackerId) {
       const att = isDefaultTracker ? campDayAttendance(ev, d, n) : ev.trackerData?.[trackerId]?.attendance?.[d];
       return att && (att.present || []).includes(n);
     }).length;
-    return `<td>${total}</td>`;
+    return `<td id="coltot_${escQ(trackerId)}_${d}">${total}</td>`;
   }).join('') + `<td></td>`;
   const totalRow = sections.length
     ? `<tr class="grid-total-row"><td class="grid-sticky">${t('totalLabel')}</td>${totalCells}</tr>`
     : '';
 
-  const legend = `
+  const legend = isDefaultTracker ? `
+    <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:12px;font-size:11px;color:var(--text2)">
+      <span><span style="display:inline-block;width:13px;height:13px;border:1px dashed var(--border2);border-radius:3px;vertical-align:middle"></span> ${t('legendEmpty')}</span>
+      <span><span class="exp-ok">✓</span> ${t('legendCampOk')}</span>
+      <span><span class="exp-no">✕</span> ${t('legendCampNo')}</span>
+      <span><span class="exp-extra" style="padding:1px 5px">✓</span> ${t('legendCampExtra')}</span>
+      <span><span class="exp-miss" style="padding:1px 5px">✕</span> ${t('legendCampMiss')}</span>
+    </div>` : `
     <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:12px;font-size:11px;color:var(--text2)">
       <span><span class="exp-ok">✓</span> ${t('legendOk')}</span>
       <span><span class="exp-miss" style="padding:1px 5px">✕</span> ${t('legendMiss')}</span>
@@ -1202,7 +1250,7 @@ function openEventGrid(eventId, trackerId) {
 
   createModal(`
     <div class="sheet-title">${escH(tracker.name)}</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${escH(ev.name)}${admin ? SEP + t('tapDayHint') : ''}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${escH(ev.name)}${admin ? SEP + (isDefaultTracker ? t('campCellHint') : t('tapDayHint')) : ''}</div>
     ${legend}
     <div class="grid-table-wrap">
       <table class="grid-table">
@@ -1214,19 +1262,66 @@ function openEventGrid(eventId, trackerId) {
   `, 'grid-sheet');
 }
 
-// Binary toggle of this tracker's expected mark for one player/day.
-async function toggleGridCell(eventId, trackerId, date, name) {
+// Advances one Camp Attendance cell to the next state in CAMP_CELL_CYCLE. Writes both facts the
+// state implies straight into the same real data the day-by-day roll call uses (schedule for
+// expected, ev.attendance for present) — there's still only one place this data lives, this is
+// just a faster way to edit it — then patches the tapped cell plus its row/column totals in
+// place instead of re-rendering the whole grid, so the page doesn't jump back to the top.
+async function cycleCampCell(cellEl, eventId, date, name) {
+  if (!isAdmin()) return;
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return;
+
+  const rawNow = ev.trackerData?.[DEFAULT_TRACKER_ID]?.schedule?.[date]?.[name];
+  const cameNow = campActualPresentSet(ev, date).has(name);
+  const next = CAMP_CELL_CYCLE[(campCellStateIndex(rawNow, cameNow) + 1) % CAMP_CELL_CYCLE.length];
+
+  const dayMap = { ...(ev.trackerData?.[DEFAULT_TRACKER_ID]?.schedule?.[date] || {}) };
+  if (next.raw === undefined) delete dayMap[name]; else dayMap[name] = next.raw;
+  const trackerData = {
+    ...(ev.trackerData || {}),
+    [DEFAULT_TRACKER_ID]: {
+      ...(ev.trackerData?.[DEFAULT_TRACKER_ID] || {}),
+      schedule: { ...(ev.trackerData?.[DEFAULT_TRACKER_ID]?.schedule || {}), [date]: dayMap }
+    }
+  };
+
+  const groupId = campGroupIdForName(ev, name);
+  let day = ev.attendance?.[date];
+  if (day && Array.isArray(day.present)) day = { all: day }; // migrate legacy flat shape
+  day = { ...(day || {}) };
+  const rec = day[groupId] || {};
+  const present = new Set(rec.present || []);
+  if (next.came) present.add(name); else present.delete(name);
+  const now = new Date();
+  const savedAt = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  day[groupId] = { ...rec, present: [...present], savedAt, savedBy: currentUser?.username || '' };
+  const attendance = { ...(ev.attendance || {}), [date]: day };
+
+  await saveEvent(eventId, { ...ev, attendance, trackerData, attendanceTrackers: getEventTrackers(ev) });
+  logActivity('EVENT_ATTENDANCE', `${ev.name} ${date} ${groupId}`);
+
+  cellEl.className = `exp-cell ${next.cls}`;
+  cellEl.textContent = next.sym;
+
+  const fresh = events.find(e => e.id === eventId) || ev;
+  const rowTotEl = document.getElementById(`rowtot_${DEFAULT_TRACKER_ID}_${encodeURIComponent(name)}`);
+  if (rowTotEl) {
+    const { present: p, marked } = trackerPlayerTotal(fresh, DEFAULT_TRACKER_ID, eventDates(fresh), name);
+    rowTotEl.textContent = `${p}/${marked}`;
+  }
+  const colTotEl = document.getElementById(`coltot_${DEFAULT_TRACKER_ID}_${date}`);
+  if (colTotEl) colTotEl.textContent = String(campActualPresentSet(fresh, date).size);
+}
+
+// Binary toggle of a custom tracker's expected mark for one player/day (Camp Attendance uses
+// cycleCampCell instead — it edits real attendance directly, not an expected exception).
+async function toggleGridCell(cellEl, eventId, trackerId, date, name) {
   if (!isAdmin()) return;
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
   const dayMap = { ...(ev.trackerData?.[trackerId]?.schedule?.[date] || {}) };
-  if (trackerId === DEFAULT_TRACKER_ID) {
-    // Default tracker: everyone is expected unless explicitly excepted, so tapping toggles an
-    // explicit "not expected" (false) exception on and off rather than adding/removing "true".
-    if (dayMap[name] === false) delete dayMap[name]; else dayMap[name] = false;
-  } else {
-    if (dayMap[name]) delete dayMap[name]; else dayMap[name] = true;
-  }
+  if (dayMap[name]) delete dayMap[name]; else dayMap[name] = true;
   const trackerData = {
     ...(ev.trackerData || {}),
     [trackerId]: {
@@ -1235,7 +1330,10 @@ async function toggleGridCell(eventId, trackerId, date, name) {
     }
   };
   await saveEvent(eventId, { ...ev, trackerData, attendanceTrackers: getEventTrackers(ev) });
-  openEventGrid(eventId, trackerId);
+  const fresh = events.find(e => e.id === eventId) || ev;
+  const m = cellMarker(fresh, trackerId, date, name);
+  cellEl.className = `exp-cell ${m.cls}`;
+  cellEl.textContent = m.sym;
 }
 
 // Roll-call for who actually attended this tracker on a given day.

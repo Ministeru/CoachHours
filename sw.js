@@ -1,4 +1,4 @@
-const CACHE = 'coach-hours-v10';
+const CACHE = 'coach-hours-v11';
 const ASSETS = [
   './index.html', './manifest.json',
   './css/main.css',
@@ -20,9 +20,17 @@ const ASSETS = [
   './js/modules/events.js',
   './js/modules/auth.js',
 ];
+// PDF export (summary.js) loads these from a CDN — warm the cache for offline use too, but as a
+// best-effort side step, not part of the critical install path: a CDN hiccup here should never
+// be able to fail the whole app-shell install the way a rejected addAll(ASSETS) would.
+const CDN_ASSETS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  caches.open(CACHE).then(c => c.addAll(CDN_ASSETS)).catch(() => {});
   self.skipWaiting();
 });
 

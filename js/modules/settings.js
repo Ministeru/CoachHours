@@ -6,10 +6,19 @@ function isStandalonePWA() {
 }
 
 function appQrSvg() {
-  const qr = qrcode(0, 'M');
-  qr.addData(APP_URL);
-  qr.make();
-  return qr.createSvgTag({ cellSize: 4, margin: 8, scalable: true });
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(APP_URL);
+    qr.make();
+    const svg = qr.createSvgTag({ cellSize: 4, margin: 8, scalable: true });
+    // The library's "scalable" mode omits width/height, relying on the SVG's intrinsic sizing —
+    // several mobile browsers don't scale that down to fit the container and instead render it
+    // at a large default size, so force it to fill its box via CSS explicitly.
+    return svg.replace('<svg ', '<svg style="width:100%;height:100%;display:block" ');
+  } catch (e) {
+    console.error('[CoachHours] QR generation failed:', e);
+    return '';
+  }
 }
 
 function renderInstallSection() {
@@ -30,6 +39,7 @@ function renderInstallSection() {
           <div style="display:flex;align-items:center;gap:8px">
             <input type="text" readonly value="${APP_URL}" style="flex:1;font-size:11px;padding:8px 10px" dir="ltr" onclick="this.select()">
             <button onclick="copyAppLink()" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">${t('copyLink')}</button>
+            ${navigator.share ? `<button onclick="shareAppLink()" style="background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">${t('shareLink')}</button>` : ''}
           </div>
         </div>
       </div>
@@ -49,6 +59,10 @@ async function copyAppLink() {
   try { await navigator.clipboard.writeText(APP_URL); } catch(e) {}
   const el = document.getElementById('install-copy-msg');
   if (el) { el.style.display = 'block'; setTimeout(() => { if (el) el.style.display = 'none'; }, 2000); }
+}
+
+async function shareAppLink() {
+  try { await navigator.share({ title: 'CoachHours', url: APP_URL }); } catch(e) {}
 }
 
 function renderSettings() {
